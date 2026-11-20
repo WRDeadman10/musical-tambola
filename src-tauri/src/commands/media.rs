@@ -1,6 +1,7 @@
 use crate::db::repositories::media::MediaRepository;
 use crate::db::DbState;
 use crate::domain::media::{MediaSlot, MediaValidationReport, SaveMediaInput, ValidationStatus};
+use crate::errors::AppError;
 use crate::services::media_validation::{summarize_report, validate_slot};
 use rusqlite::Connection;
 use serde::Serialize;
@@ -24,53 +25,78 @@ type ValidationTaskResult = (
 );
 
 #[tauri::command]
-pub fn list_media(state: State<'_, DbState>) -> Result<Vec<MediaSlot>, String> {
-    let conn: MutexGuard<'_, Connection> = state
-        .conn
-        .lock()
-        .map_err(|_| "Failed to acquire database lock".to_string())?;
+pub fn list_media(state: State<'_, DbState>) -> Result<Vec<MediaSlot>, AppError> {
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
 
-    MediaRepository::list_all(&conn)
+    MediaRepository::list_all(&conn).map_err(AppError::database_error)
 }
 
 #[tauri::command]
-pub fn get_media(number: u8, state: State<'_, DbState>) -> Result<MediaSlot, String> {
-    let conn: MutexGuard<'_, Connection> = state
-        .conn
-        .lock()
-        .map_err(|_| "Failed to acquire database lock".to_string())?;
+pub fn get_media(number: u8, state: State<'_, DbState>) -> Result<MediaSlot, AppError> {
+    if !(1..=90).contains(&number) {
+        return Err(AppError::new(
+            "MEDIA_SLOT_OUT_OF_RANGE",
+            format!("Media slot number must be between 1 and 90, got {}", number),
+        )
+        .with_param("number", number.to_string()));
+    }
 
-    MediaRepository::get_by_number(&conn, number)
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+
+    MediaRepository::get_by_number(&conn, number).map_err(AppError::database_error)
 }
 
 #[tauri::command]
-pub fn save_media(input: SaveMediaInput, state: State<'_, DbState>) -> Result<MediaSlot, String> {
-    let conn: MutexGuard<'_, Connection> = state
-        .conn
-        .lock()
-        .map_err(|_| "Failed to acquire database lock".to_string())?;
+pub fn save_media(input: SaveMediaInput, state: State<'_, DbState>) -> Result<MediaSlot, AppError> {
+    if !(1..=90).contains(&input.number) {
+        return Err(AppError::new(
+            "MEDIA_SLOT_OUT_OF_RANGE",
+            format!(
+                "Media slot number must be between 1 and 90, got {}",
+                input.number
+            ),
+        )
+        .with_param("number", input.number.to_string()));
+    }
+    if input.title.trim().is_empty() {
+        return Err(AppError::new(
+            "MEDIA_EMPTY_TITLE",
+            "Media title cannot be empty",
+        ));
+    }
+    if input.source.trim().is_empty() {
+        return Err(AppError::new(
+            "MEDIA_EMPTY_SOURCE",
+            "Media source path or URL cannot be empty",
+        ));
+    }
 
-    MediaRepository::upsert(&conn, &input)
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+
+    MediaRepository::upsert(&conn, &input).map_err(AppError::database_error)
 }
 
 #[tauri::command]
-pub fn clear_media(number: u8, state: State<'_, DbState>) -> Result<MediaSlot, String> {
-    let conn: MutexGuard<'_, Connection> = state
-        .conn
-        .lock()
-        .map_err(|_| "Failed to acquire database lock".to_string())?;
+pub fn clear_media(number: u8, state: State<'_, DbState>) -> Result<MediaSlot, AppError> {
+    if !(1..=90).contains(&number) {
+        return Err(AppError::new(
+            "MEDIA_SLOT_OUT_OF_RANGE",
+            format!("Media slot number must be between 1 and 90, got {}", number),
+        )
+        .with_param("number", number.to_string()));
+    }
 
-    MediaRepository::clear(&conn, number)
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+
+    MediaRepository::clear(&conn, number).map_err(AppError::database_error)
 }
 
 #[tauri::command]
-pub async fn validate_media(number: u8, state: State<'_, DbState>) -> Result<MediaSlot, String> {
+pub async fn validate_media(number: u8, state: State<'_, DbState>) -> Result<MediaSlot, AppError> {
     let slot: MediaSlot = {
-        let conn: MutexGuard<'_, Connection> = state
-            .conn
-            .lock()
-            .map_err(|_| "Failed to acquire database lock".to_string())?;
-        MediaRepository::get_by_number(&conn, number)?
+        let conn: MutexGuard<'_, Connection> =
+            state.conn.lock().map_err(|_| AppError::lock_error())?;
+        MediaRepository::get_by_number(&conn, number).map_err(AppError::database_error)?
     };
 
     let (status, message, code, params_json): (
@@ -80,10 +106,7 @@ pub async fn validate_media(number: u8, state: State<'_, DbState>) -> Result<Med
         Option<String>,
     ) = validate_slot(&slot).await;
 
-    let conn: MutexGuard<'_, Connection> = state
-        .conn
-        .lock()
-        .map_err(|_| "Failed to acquire database lock".to_string())?;
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
 
     MediaRepository::update_validation_status(
         &conn,
@@ -93,25 +116,23 @@ pub async fn validate_media(number: u8, state: State<'_, DbState>) -> Result<Med
         code.as_deref(),
         params_json.as_deref(),
     )
+    .map_err(AppError::database_error)
 }
 
 #[tauri::command]
 pub async fn validate_all_media(
     app_handle: AppHandle,
     state: State<'_, DbState>,
-) -> Result<MediaValidationReport, String> {
+) -> Result<MediaValidationReport, AppError> {
     let slots: Vec<MediaSlot> = {
-        let conn: MutexGuard<'_, Connection> = state
-            .conn
-            .lock()
-            .map_err(|_| "Failed to acquire database lock".to_string())?;
-        MediaRepository::list_all(&conn)?
+        let conn: MutexGuard<'_, Connection> =
+            state.conn.lock().map_err(|_| AppError::lock_error())?;
+        MediaRepository::list_all(&conn).map_err(AppError::database_error)?
     };
 
     let total: usize = slots.len();
     let mut updated_slots: Vec<MediaSlot> = Vec::with_capacity(total);
 
-    // Limit concurrency to 4 simultaneous checks
     let semaphore: Arc<tokio::sync::Semaphore> = Arc::new(tokio::sync::Semaphore::new(4));
     let mut handles: Vec<tokio::task::JoinHandle<ValidationTaskResult>> = Vec::with_capacity(total);
 
@@ -136,10 +157,8 @@ pub async fn validate_all_media(
                 },
             );
 
-            let conn: MutexGuard<'_, Connection> = state
-                .conn
-                .lock()
-                .map_err(|_| "Failed to acquire database lock".to_string())?;
+            let conn: MutexGuard<'_, Connection> =
+                state.conn.lock().map_err(|_| AppError::lock_error())?;
 
             if let Ok(updated) = MediaRepository::update_validation_status(
                 &conn,
@@ -161,7 +180,7 @@ pub async fn validate_all_media(
 pub async fn pick_media_file(
     kind: String,
     app_handle: AppHandle,
-) -> Result<Option<String>, String> {
+) -> Result<Option<String>, AppError> {
     let mut builder = app_handle.dialog().file();
 
     let extensions: Vec<&str> = match kind.to_ascii_uppercase().as_str() {

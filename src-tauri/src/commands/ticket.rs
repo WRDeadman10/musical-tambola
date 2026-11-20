@@ -2,6 +2,7 @@ use crate::db::repositories::ticket::TicketRepository;
 use crate::db::DbState;
 use crate::domain::random::OsRngSource;
 use crate::domain::tambola::{TicketBatch, TicketDto, TicketPage};
+use crate::errors::AppError;
 use rusqlite::Connection;
 use serde::Serialize;
 use std::sync::MutexGuard;
@@ -19,14 +20,23 @@ pub async fn generate_ticket_batch(
     name: String,
     count: u32,
     app_handle: AppHandle,
-) -> Result<TicketBatch, String> {
+) -> Result<TicketBatch, AppError> {
+    if !(1..=10_000).contains(&count) {
+        return Err(AppError::new(
+            "BATCH_COUNT_INVALID",
+            format!(
+                "Ticket batch count must be between 1 and 10000, got {}",
+                count
+            ),
+        )
+        .with_param("count", count.to_string()));
+    }
+
     let app: AppHandle = app_handle.clone();
     tokio::task::spawn_blocking(move || {
         let state: State<'_, DbState> = app.state::<DbState>();
-        let mut conn: MutexGuard<'_, Connection> = state
-            .conn
-            .lock()
-            .map_err(|_| "Failed to acquire database lock".to_string())?;
+        let mut conn: MutexGuard<'_, Connection> =
+            state.conn.lock().map_err(|_| AppError::lock_error())?;
 
         let mut rng: OsRngSource = OsRngSource::new();
         TicketRepository::generate_batch(
@@ -41,19 +51,19 @@ pub async fn generate_ticket_batch(
                 );
             },
         )
+        .map_err(AppError::database_error)
     })
     .await
-    .map_err(|e: tokio::task::JoinError| format!("Task join failed: {}", e))?
+    .map_err(|e: tokio::task::JoinError| {
+        AppError::with_detail("UNKNOWN_ERROR", "Task execution failed", e.to_string())
+    })?
 }
 
 #[tauri::command]
-pub fn list_ticket_batches(state: State<'_, DbState>) -> Result<Vec<TicketBatch>, String> {
-    let conn: MutexGuard<'_, Connection> = state
-        .conn
-        .lock()
-        .map_err(|_| "Failed to acquire database lock".to_string())?;
+pub fn list_ticket_batches(state: State<'_, DbState>) -> Result<Vec<TicketBatch>, AppError> {
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
 
-    TicketRepository::list_batches(&conn)
+    TicketRepository::list_batches(&conn).map_err(AppError::database_error)
 }
 
 #[tauri::command]
@@ -62,23 +72,28 @@ pub fn list_batch_tickets(
     offset: u32,
     limit: u32,
     state: State<'_, DbState>,
-) -> Result<TicketPage, String> {
-    let conn: MutexGuard<'_, Connection> = state
-        .conn
-        .lock()
-        .map_err(|_| "Failed to acquire database lock".to_string())?;
+) -> Result<TicketPage, AppError> {
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
 
     TicketRepository::list_batch_tickets(&conn, batch_id, offset, limit)
+        .map_err(AppError::database_error)
 }
 
 #[tauri::command]
-pub fn get_ticket(code: String, state: State<'_, DbState>) -> Result<TicketDto, String> {
-    let conn: MutexGuard<'_, Connection> = state
-        .conn
-        .lock()
-        .map_err(|_| "Failed to acquire database lock".to_string())?;
+pub fn get_ticket(code: String, state: State<'_, DbState>) -> Result<TicketDto, AppError> {
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
 
-    TicketRepository::get_ticket(&conn, &code)
+    TicketRepository::get_ticket(&conn, &code).map_err(|e| {
+        if e.contains("not found") {
+            AppError::new(
+                "TICKET_NOT_FOUND",
+                format!("Ticket was not found: {}", code),
+            )
+            .with_param("code", code)
+        } else {
+            AppError::database_error(e)
+        }
+    })
 }
 
 #[tauri::command]
@@ -86,21 +101,32 @@ pub fn search_tickets(
     query: String,
     limit: u32,
     state: State<'_, DbState>,
-) -> Result<Vec<TicketDto>, String> {
-    let conn: MutexGuard<'_, Connection> = state
-        .conn
-        .lock()
-        .map_err(|_| "Failed to acquire database lock".to_string())?;
+) -> Result<Vec<TicketDto>, AppError> {
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
 
-    TicketRepository::search_tickets(&conn, &query, limit)
+    TicketRepository::search_tickets(&conn, &query, limit).map_err(AppError::database_error)
 }
 
 #[tauri::command]
-pub fn delete_ticket_batch(batch_id: i64, state: State<'_, DbState>) -> Result<(), String> {
-    let conn: MutexGuard<'_, Connection> = state
-        .conn
-        .lock()
-        .map_err(|_| "Failed to acquire database lock".to_string())?;
+pub fn delete_ticket_batch(batch_id: i64, state: State<'_, DbState>) -> Result<(), AppError> {
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
 
-    TicketRepository::delete_batch(&conn, batch_id)
+    TicketRepository::delete_batch(&conn, batch_id).map_err(|e| {
+        if e.contains("Cannot delete ticket batch") || e.contains("assigned to") {
+            AppError::new(
+                "BATCH_IN_USE",
+                "Cannot delete ticket batch because it is assigned to an existing game or claim"
+                    .to_string(),
+            )
+            .with_param("batchId", batch_id.to_string())
+        } else if e.contains("not found") {
+            AppError::new(
+                "BATCH_NOT_FOUND",
+                format!("Ticket batch was not found: {}", batch_id),
+            )
+            .with_param("batchId", batch_id.to_string())
+        } else {
+            AppError::database_error(e)
+        }
+    })
 }
