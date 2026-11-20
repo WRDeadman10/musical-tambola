@@ -18,7 +18,7 @@ tauri-plugin-dialog = "2"
 tauri-plugin-log = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.32", features = ["bundled", "backup"] }
 thiserror = "2"
 log = "0.4"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
@@ -26,9 +26,11 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 rand = "0.8"
 sha2 = "0.10"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+zip = { version = "2.2", default-features = false, features = ["deflate"] }
+argon2 = "0.5"
+tempfile = "3"
 
 [dev-dependencies]
-tempfile = "3"
 
 [profile.release]
 codegen-units = 1

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-clear-admin-pin"
+description = "Enables the clear_admin_pin command without any pre-configured scope."
+commands.allow = ["clear_admin_pin"]
+
+[[permission]]
+identifier = "deny-clear-admin-pin"
+description = "Denies the clear_admin_pin command without any pre-configured scope."
+commands.deny = ["clear_admin_pin"]

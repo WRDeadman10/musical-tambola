@@ -502,15 +502,30 @@ pub fn set_app_setting(
     key: String,
     value: String,
     window: tauri::Window,
+    app: tauri::AppHandle,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<(), AppError> {
+    use tauri::Emitter;
     crate::errors::require_main_window(&window)?;
     let conn: std::sync::MutexGuard<'_, rusqlite::Connection> = state
         .conn
         .lock()
         .map_err(|_| AppError::new("LOCK_ERROR", "Failed to acquire database lock"))?;
 
-    set_app_setting_internal(&conn, &key, &value)
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
+    set_app_setting_internal(&conn, &key, &value)?;
+
+    let event_payload: serde_json::Value = serde_json::json!({
+        "command": "SETTINGS_CHANGED",
+        "payload": {
+            "key": key,
+            "value": value
+        }
+    });
+    let _ = app.emit("presentation-command", &event_payload);
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -519,7 +534,9 @@ pub fn upload_idle_poster(
     window: tauri::Window,
     app: tauri::AppHandle,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<String, AppError> {
+    use tauri::Emitter;
     crate::errors::require_main_window(&window)?;
 
     const MAX_POSTER_SIZE: usize = 5 * 1024 * 1024;
@@ -576,19 +593,49 @@ pub fn upload_idle_poster(
         .conn
         .lock()
         .map_err(|_| AppError::new("LOCK_ERROR", "Failed to acquire database lock"))?;
+
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
     set_app_setting_internal(&conn, "idle_poster", &poster_path_str)?;
+
+    let event_payload: serde_json::Value = serde_json::json!({
+        "command": "SETTINGS_CHANGED",
+        "payload": {
+            "key": "idle_poster",
+            "value": &poster_path_str
+        }
+    });
+    let _ = app.emit("presentation-command", &event_payload);
 
     Ok(poster_path_str)
 }
 
 #[tauri::command]
-pub fn clear_idle_poster(window: tauri::Window, state: State<'_, DbState>) -> Result<(), AppError> {
+pub fn clear_idle_poster(
+    window: tauri::Window,
+    app: tauri::AppHandle,
+    state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
+) -> Result<(), AppError> {
+    use tauri::Emitter;
     crate::errors::require_main_window(&window)?;
     let conn: std::sync::MutexGuard<'_, rusqlite::Connection> = state
         .conn
         .lock()
         .map_err(|_| AppError::new("LOCK_ERROR", "Failed to acquire database lock"))?;
-    set_app_setting_internal(&conn, "idle_poster", "")
+
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
+    set_app_setting_internal(&conn, "idle_poster", "")?;
+
+    let event_payload: serde_json::Value = serde_json::json!({
+        "command": "SETTINGS_CHANGED",
+        "payload": {
+            "key": "idle_poster",
+            "value": ""
+        }
+    });
+    let _ = app.emit("presentation-command", &event_payload);
+
+    Ok(())
 }
 
 #[cfg(test)]

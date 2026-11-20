@@ -56,6 +56,7 @@ pub fn save_media(
     input: SaveMediaInput,
     window: Window,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<MediaSlot, AppError> {
     crate::errors::require_main_window(&window)?;
     if !(1..=90).contains(&input.number) {
@@ -82,6 +83,7 @@ pub fn save_media(
     }
 
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
 
     MediaRepository::upsert(&conn, &input).map_err(AppError::database_error)
 }
@@ -91,6 +93,7 @@ pub fn clear_media(
     number: u8,
     window: Window,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<MediaSlot, AppError> {
     crate::errors::require_main_window(&window)?;
     if !(1..=90).contains(&number) {
@@ -102,6 +105,7 @@ pub fn clear_media(
     }
 
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
 
     MediaRepository::clear(&conn, number).map_err(AppError::database_error)
 }
@@ -308,10 +312,12 @@ pub fn apply_media_assignments(
     assignments: Vec<MediaAssignment>,
     window: Window,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<Vec<MediaSlot>, AppError> {
     crate::errors::require_main_window(&window)?;
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
     MediaRepository::apply_assignments(&mut conn, &assignments).map_err(AppError::database_error)
 }
 
@@ -344,6 +350,7 @@ pub fn save_media_poster(
     app_handle: AppHandle,
     window: Window,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<MediaSlot, AppError> {
     crate::errors::require_main_window(&window)?;
     if !(1..=90).contains(&number) {
@@ -396,6 +403,7 @@ pub fn save_media_poster(
     let poster_path_str: String = poster_file.to_string_lossy().to_string();
 
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
 
     let old_poster_path: Option<String> = conn
         .query_row(
@@ -423,6 +431,7 @@ pub fn clear_media_poster(
     _app_handle: AppHandle,
     window: Window,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<MediaSlot, AppError> {
     crate::errors::require_main_window(&window)?;
     if !(1..=90).contains(&number) {
@@ -433,6 +442,7 @@ pub fn clear_media_poster(
     }
 
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
 
     let old_poster_path: Option<String> = conn
         .query_row(

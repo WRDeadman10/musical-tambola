@@ -42,6 +42,9 @@ pub async fn generate_ticket_batch(
         let state: State<'_, DbState> = app.state::<DbState>();
         let mut conn: MutexGuard<'_, Connection> =
             state.conn.lock().map_err(|_| AppError::lock_error())?;
+        if let Some(pin_state) = app.try_state::<crate::services::admin_pin::AdminPinState>() {
+            crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
+        }
 
         let mut rng: OsRngSource = OsRngSource::new();
         TicketRepository::generate_batch(
@@ -119,9 +122,11 @@ pub fn delete_ticket_batch(
     batch_id: i64,
     window: tauri::Window,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<(), AppError> {
     crate::errors::require_main_window(&window)?;
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
 
     TicketRepository::delete_batch(&conn, batch_id).map_err(|e| {
         if e.contains("Cannot delete ticket batch") || e.contains("assigned to") {

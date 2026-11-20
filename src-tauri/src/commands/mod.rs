@@ -1,4 +1,6 @@
+pub mod admin_pin;
 pub mod app_info;
+pub mod backup;
 pub mod claim;
 pub mod game;
 pub mod history;

@@ -115,8 +115,12 @@ pub fn upload_template_background(
     window: Window,
     app: AppHandle,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<TicketTemplateDto, AppError> {
     crate::errors::require_main_window(&window)?;
+
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
 
     let trimmed_name: String = name.trim().to_string();
     if trimmed_name.is_empty() {
@@ -155,7 +159,6 @@ pub fn upload_template_background(
 
     let file_path_str: String = template_file.to_string_lossy().to_string();
 
-    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
     TemplateRepository::insert_template(&conn, &trimmed_name, &file_path_str)
 }
 
@@ -164,16 +167,24 @@ pub fn set_active_template(
     id: i64,
     window: Window,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<TicketTemplateDto, AppError> {
     crate::errors::require_main_window(&window)?;
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
     TemplateRepository::set_active(&conn, id)
 }
 
 #[tauri::command]
-pub fn delete_template(id: i64, window: Window, state: State<'_, DbState>) -> Result<(), AppError> {
+pub fn delete_template(
+    id: i64,
+    window: Window,
+    state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
+) -> Result<(), AppError> {
     crate::errors::require_main_window(&window)?;
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
     let path_to_clean: Option<String> = TemplateRepository::delete_template(&conn, id)?;
 
     if let Some(p) = path_to_clean {

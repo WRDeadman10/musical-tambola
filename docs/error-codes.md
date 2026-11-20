@@ -98,7 +98,21 @@ All backend errors are serialized to the frontend in the standard envelope:
 
 ---
 
-## 7. System & Infrastructure
+## 7. Admin PIN & Backup / Restore
+
+| Error Code | Parameters | English Fallback Description |
+|---|---|---|
+| `ADMIN_PIN_REQUIRED` | — | Admin PIN verification required while a game is in progress. |
+| `ADMIN_PIN_INVALID` | — | Invalid admin PIN provided. |
+| `ADMIN_PIN_RATE_LIMITED` | — | Too many failed PIN attempts. Locked out for 1 minute. |
+| `ADMIN_PIN_INVALID_FORMAT` | — | Admin PIN must be between 4 and 8 numeric digits. |
+| `BACKUP_SCHEMA_INCOMPATIBLE` | `backupSchemaVersion`, `currentSchemaVersion` | Backup schema version is newer than current application schema. |
+| `CANNOT_RESTORE_ACTIVE_GAME` | — | Cannot restore backup while a game session is active or paused. |
+| `BACKUP_INVALID_FILE` | — | Backup file is invalid, corrupt, or missing manifest.json. |
+
+---
+
+## 8. System & Infrastructure
 
 | Error Code | English Fallback Description |
 |---|---|

@@ -243,12 +243,6 @@ pub fn handle_media_protocol<R: tauri::Runtime>(
                 candidate_path = Some(local_path);
             }
         }
-        if candidate_path.is_none() {
-            let public_path: PathBuf = PathBuf::from("public").join("sounds").join(&file_name);
-            if public_path.exists() {
-                candidate_path = Some(public_path);
-            }
-        }
 
         candidate_path.map(|p: PathBuf| p.to_string_lossy().to_string())
     } else {

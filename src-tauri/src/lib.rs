@@ -5,7 +5,9 @@ pub mod errors;
 pub mod services;
 pub mod smoke;
 
+use commands::admin_pin::{clear_admin_pin, get_admin_pin_status, set_admin_pin, verify_admin_pin};
 use commands::app_info::{clear_idle_poster, get_app_info, set_app_setting, upload_idle_poster};
+use commands::backup::{create_backup, restore_backup};
 use commands::claim::{list_game_claims, submit_claim};
 use commands::game::{
     create_game, draw_next, end_game, get_active_game, get_game, get_game_format, list_games,
@@ -67,6 +69,7 @@ pub fn run() {
                 db_path,
             });
             app.manage(PresentationStateManaged::default());
+            app.manage(services::admin_pin::AdminPinState::new());
 
             Ok(())
         })
@@ -130,6 +133,12 @@ pub fn run() {
             list_lucky_draws,
             upload_idle_poster,
             clear_idle_poster,
+            create_backup,
+            restore_backup,
+            set_admin_pin,
+            verify_admin_pin,
+            clear_admin_pin,
+            get_admin_pin_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");

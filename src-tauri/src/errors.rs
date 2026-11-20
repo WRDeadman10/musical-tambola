@@ -267,6 +267,8 @@ mod tests {
             assert!(!perm_str.contains("next-item"));
             assert!(!perm_str.contains("template"));
             assert!(!perm_str.contains("lucky"));
+            assert!(!perm_str.contains("backup"));
+            assert!(!perm_str.contains("admin-pin"));
         }
     }
 
@@ -289,5 +291,29 @@ mod tests {
 
         let err2 = AppError::new("LUCKY_DRAW_EMPTY_ITEMS", "At least one item is required");
         assert_eq!(err2.code, "LUCKY_DRAW_EMPTY_ITEMS");
+    }
+
+    #[test]
+    fn test_admin_pin_and_backup_error_codes() {
+        let err1: AppError = AppError::new("ADMIN_PIN_REQUIRED", "Admin PIN verification required");
+        assert_eq!(err1.code, "ADMIN_PIN_REQUIRED");
+
+        let err2: AppError = AppError::new("ADMIN_PIN_INVALID", "Invalid admin PIN");
+        assert_eq!(err2.code, "ADMIN_PIN_INVALID");
+
+        let err3: AppError = AppError::new("ADMIN_PIN_RATE_LIMITED", "Too many failed attempts");
+        assert_eq!(err3.code, "ADMIN_PIN_RATE_LIMITED");
+
+        let err4: AppError = AppError::new("ADMIN_PIN_FORMAT_INVALID", "PIN must be 4 to 8 digits");
+        assert_eq!(err4.code, "ADMIN_PIN_FORMAT_INVALID");
+
+        let err5: AppError = AppError::new("BACKUP_SCHEMA_INCOMPATIBLE", "Schema incompatible");
+        assert_eq!(err5.code, "BACKUP_SCHEMA_INCOMPATIBLE");
+
+        let err6: AppError = AppError::new("CANNOT_RESTORE_ACTIVE_GAME", "Game active");
+        assert_eq!(err6.code, "CANNOT_RESTORE_ACTIVE_GAME");
+
+        let err7: AppError = AppError::new("BACKUP_INVALID_FILE", "Invalid file");
+        assert_eq!(err7.code, "BACKUP_INVALID_FILE");
     }
 }

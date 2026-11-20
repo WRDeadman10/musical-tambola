@@ -362,3 +362,35 @@ Tambola winning schemes extend beyond the standard 6 rules (Early Five, Lines, F
   - User can define arbitrary custom masks via `SaveSchemeInput`.
 - **Cons**:
   - Expanding `prize_schemes` requires versioned migration 0007.
+
+---
+
+## ADR-013: Backup / Restore and In-Session Admin PIN Protection (W3-4)
+
+### Context
+Live Tambola events require disaster recovery (backing up game state, assets, and settings) and protection against accidental or unauthorized mid-game configuration changes (such as modifying schemes, ticket formats, uploading media, or restoring databases while a live game is in progress).
+
+### Decision
+1. **Admin PIN Security Model (`services/admin_pin.rs`)**:
+   - Stored in `app_settings` as `admin_pin_hash` using Argon2id (`argon2` crate).
+   - Format requirement: 4 to 8 numeric ASCII digits (`ADMIN_PIN_INVALID_FORMAT`).
+   - Rate limiting: 5 failed attempts per rolling minute locks out further attempts with `ADMIN_PIN_RATE_LIMITED`.
+   - In-memory session: Once verified, `AdminPinState` grants a 10-minute unlocked session timestamp.
+   - Protected actions: When an admin PIN is configured AND a game session is `ACTIVE` or `PAUSED`, mutating setup commands (media changes, ticket generation/deletion, scheme mutations, format switching, branding uploads, restore) require valid session authentication (`ADMIN_PIN_REQUIRED`).
+2. **Online SQLite Backup & Asset Archiving (`services/backup.rs`)**:
+   - Uses SQLite's online backup API (`rusqlite::backup::Backup`) to create a transaction-safe snapshot of `tambola.sqlite` without locking out reads or risking WAL-mode corruption.
+   - Bundles `tambola.sqlite`, `manifest.json`, `posters/`, and `templates/` into a single compressed `.zip` archive using the `zip` crate.
+   - `manifest.json` tracks `app_version`, `schema_version`, and `files` list.
+3. **Staged Restore & Migration Guard**:
+   - Restore is strictly rejected during an active or paused game (`CANNOT_RESTORE_ACTIVE_GAME`).
+   - Rejects backups with schema version newer than current running schema (`BACKUP_SCHEMA_INCOMPATIBLE`).
+   - Safely stages archive extraction into `<app_data_dir>/restore_staging/` with marker `<app_data_dir>/restore_staged.json`.
+   - On application startup (`connection.rs::apply_staged_restore_if_present`), staged database and media folders overwrite active runtime directories and clean up staging, requiring a restart.
+
+### Consequences
+- **Pros**:
+  - Zero risk of SQLite corruption during active backup creation.
+  - Safe, atomic restore lifecycle that cannot corrupt live running database connections.
+  - High host security against accidental destructive edits during live shows.
+- **Cons**:
+  - Restoring a backup requires restarting the application to swap SQLite databases.

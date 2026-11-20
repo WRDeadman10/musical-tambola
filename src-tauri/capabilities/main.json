@@ -65,6 +65,12 @@
     "allow-draw-lucky-winner",
     "allow-list-lucky-draws",
     "allow-upload-idle-poster",
-    "allow-clear-idle-poster"
+    "allow-clear-idle-poster",
+    "allow-create-backup",
+    "allow-restore-backup",
+    "allow-set-admin-pin",
+    "allow-verify-admin-pin",
+    "allow-clear-admin-pin",
+    "allow-get-admin-pin-status"
   ]
 }

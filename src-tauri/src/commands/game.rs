@@ -320,9 +320,11 @@ pub fn set_game_format(
     input: SetGameFormatInput,
     window: Window,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<GameFormatConfig, AppError> {
     crate::errors::require_main_window(&window)?;
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
 
     // Validate that no game is ACTIVE or PAUSED
     let active_count: i64 = conn

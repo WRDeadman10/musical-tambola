@@ -70,13 +70,15 @@
 - **W3-1 (Ticket Template Storage Backend)**: ACCEPTED by Claude (`MSG-187`), committed by AG in `48cc635` and pushed to `origin/main`.
 - **W3-2 (Lucky Draw Backend Engine)**: ACCEPTED by Claude (`MSG-193`), committed by AG in `3925752` and pushed to `origin/main`. Legacy `input` parameter removed from `draw_lucky_winner` so `drawId` is the sole input per `MSG-193`.
 - **U2 (Lucky Draw UI)**: ACCEPTED by Claude (`MSG-193`, `MSG-194`), committed by AG in `dfe4701` and pushed to `origin/main` ("Implemented by Codex").
-- **W3-3 (Event Branding & Sound Settings Backend)**: IMPLEMENTED by AG per `MSG-178` & `MSG-193`:
-  - Migration 0010: `0010_event_branding_and_sounds.sql` added to schema migrations, seeding `event_name` ('Musical Tambola'), `ticker_text` (''), `idle_poster` (''), `accent_color` ('#6366f1'), `sound_enabled` ('true'), `sound_volume` ('80'), `sound_projector` ('true').
-  - `AppSettingKey` allowlist expanded with `EventName`, `TickerText`, `IdlePoster`, `AccentColor`, `SoundEnabled`, `SoundVolume`, `SoundProjector`. Lengths <= 200/256, hex format `^#[0-9a-fA-F]{6}$`, volume 0..=100, boolean validations.
-  - `AppInfo` struct & `get_app_info` command expose all branding and sound settings.
-  - Commands: `upload_idle_poster` (<= 5MB, PNG/JPEG magic bytes, sha16 hashed file in `app_data_dir/posters/idle_poster_<sha16>.<ext>`, persisted to `app_settings`), `clear_idle_poster`. Guarded with `require_main_window`.
-  - Audio bundle: 5 procedural 16-bit 44.1kHz mono WAVs generated under `src-tauri/resources/sounds/` and `public/sounds/` (`draw.wav`, `reveal.wav`, `accepted.wav`, `rejected.wav`, `lucky.wav`). Documented in `docs/audio-licenses.md` (MIT/CC0 public domain).
-  - Protocol streaming: `media://idle_poster` and `media://sound/<name>` supported in `services/media_protocol.rs` with `audio/wav`, `audio/ogg`, `audio/mpeg` mime types.
-  - 105 Cargo unit tests + 1 acceptance test pass (106 total), clippy clean, rustfmt clean.
-- **Next Task for AG**: Submit W3-3 REVIEW to Claude, commit Codex U3 when accepted, proceed to W3-4 (Backup/Restore + Admin PIN).
-- **Next Task for Codex**: Implement U3 Event Branding & Sounds UI per `MSG-179` & `MSG-194`.
+- **W3-3 (Event Branding & Sound Settings Backend)**: ACCEPTED by Claude (`MSG-200`), committed by AG in `34e779b` and pushed to `origin/main`.
+- **W3-4 (Backup / Restore + Admin PIN)**: IMPLEMENTED by AG:
+  - Argon2id password hashing for admin PIN (`services/admin_pin.rs`), strict 4-8 digit numeric check, 5 attempts/minute rate limiting, 10-minute authenticated session timestamp.
+  - Guards setup-mutating commands (media, schemes, ticket generation/deletion, format switching, branding uploads, restore) with `require_admin_pin_if_game_in_progress`.
+  - SQLite online backup API (`rusqlite::backup::Backup`) with `zip` compression into archive containing `tambola.sqlite`, `manifest.json`, `posters/`, and `templates/`.
+  - Safe staged restore (`services/backup.rs`): rejects active/paused games (`CANNOT_RESTORE_ACTIVE_GAME`), rejects newer schema backups (`BACKUP_SCHEMA_INCOMPATIBLE`), extracts to `restore_staging/` with `restore_staged.json` marker. Applied on startup in `connection.rs::apply_staged_restore_if_present`.
+  - Commands: `create_backup`, `restore_backup`, `set_admin_pin`, `verify_admin_pin`, `clear_admin_pin`, `get_admin_pin_status`.
+  - Frontend API modules: `src/lib/api/adminPin.ts` and `src/lib/api/backup.ts`.
+  - Removed redundant `public/sounds/` directory per `MSG-200` (single source of truth in `resources/sounds/` streamed via media protocol).
+  - 113 Cargo unit tests + 1 acceptance test pass (114 total), clippy clean (-D warnings), rustfmt clean.
+- **Next Task for AG**: Commit W3-4, submit REVIEW to Claude, commit U3 when accepted, implement W3-5 Song Title Import.
+- **Next Task for Codex**: Await review on U3 corrective submission (MSG-204).

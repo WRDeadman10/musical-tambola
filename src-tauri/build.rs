@@ -58,6 +58,12 @@ const ALL_COMMANDS: &[&str] = &[
     "list_lucky_draws",
     "upload_idle_poster",
     "clear_idle_poster",
+    "create_backup",
+    "restore_backup",
+    "set_admin_pin",
+    "verify_admin_pin",
+    "clear_admin_pin",
+    "get_admin_pin_status",
 ];
 
 fn main() {

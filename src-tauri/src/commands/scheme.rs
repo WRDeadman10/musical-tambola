@@ -20,6 +20,7 @@ pub fn save_scheme(
     input: SaveSchemeInput,
     window: tauri::Window,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<PrizeScheme, AppError> {
     crate::errors::require_main_window(&window)?;
     if !(1..=100).contains(&input.max_winners) {
@@ -34,6 +35,7 @@ pub fn save_scheme(
     }
 
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
 
     SchemeRepository::save(&conn, &input).map_err(|e| {
         if e.contains("already exists") || e.contains("uniqueness") {
@@ -64,9 +66,11 @@ pub fn set_scheme_active(
     is_active: bool,
     window: tauri::Window,
     state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
 ) -> Result<PrizeScheme, AppError> {
     crate::errors::require_main_window(&window)?;
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
 
     SchemeRepository::set_active(&conn, id, is_active).map_err(|e| {
         if e.contains("not found") {
