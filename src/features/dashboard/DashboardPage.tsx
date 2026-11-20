@@ -11,10 +11,34 @@ import {
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
+import { getDashboardStats } from "../../lib/api/history";
+import { DashboardStats } from "../../types/history";
 
 export const DashboardPage: React.FC = () => {
     const t = useAppStore((state) => state.t);
     const navigate = useNavigate();
+    const [stats, setStats] = React.useState<DashboardStats | null>(null);
+    const [error, setError] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        let cancelled: boolean = false;
+        const load: () => Promise<void> = async (): Promise<void> => {
+            try {
+                const result: DashboardStats = await getDashboardStats();
+                if (!cancelled) {
+                    setStats(result);
+                }
+            } catch (loadError: unknown) {
+                if (!cancelled) {
+                    setError(loadError instanceof Error ? loadError.message : String(loadError));
+                }
+            }
+        };
+        void load();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     return (
         <div className="p-8 max-w-6xl mx-auto space-y-8">
@@ -37,7 +61,9 @@ export const DashboardPage: React.FC = () => {
                         <Film className="w-5 h-5 text-indigo-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-extrabold text-white">0 / 90</div>
+                        <div className="text-3xl font-extrabold text-white">
+                            {stats === null ? "—" : `${stats.mediaValid} / ${stats.mediaTotal}`}
+                        </div>
                         <CardDescription className="mt-2">
                             Required before starting game
                         </CardDescription>
@@ -52,7 +78,9 @@ export const DashboardPage: React.FC = () => {
                         <Ticket className="w-5 h-5 text-amber-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-extrabold text-white">0</div>
+                        <div className="text-3xl font-extrabold text-white">
+                            {stats === null ? "—" : stats.totalTickets}
+                        </div>
                         <CardDescription className="mt-2">No batches generated yet</CardDescription>
                     </CardContent>
                 </Card>
@@ -66,31 +94,54 @@ export const DashboardPage: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="text-lg font-semibold text-zinc-300">
-                            {t("dashboard.noActiveGame")}
+                            {stats?.activeGame === null || stats === null
+                                ? t("dashboard.noActiveGame")
+                                : stats.activeGame.name}
                         </div>
-                        <CardDescription className="mt-2">{t("common.ready")}</CardDescription>
+                        <CardDescription className="mt-2">
+                            {stats?.activeGame === null || stats === null
+                                ? t("common.ready")
+                                : stats.activeGame.status}
+                        </CardDescription>
                     </CardContent>
                 </Card>
             </div>
 
-            <Card className="flex items-center justify-between p-6">
-                <div>
-                    <h3 className="text-lg font-semibold text-white">
-                        {t("dashboard.quickStatus")}
-                    </h3>
-                    <p className="text-sm text-zinc-400 mt-1">
-                        Foundation setup complete. Ready for Media Manager phase.
-                    </p>
-                </div>
-                <Button
-                    onClick={() => navigate("/game")}
-                    variant="secondary"
-                    className="flex items-center gap-2"
-                >
-                    <Play className="w-4 h-4" />
-                    {t("dashboard.startGame")}
+            {error !== null && (
+                <p className="rounded-lg bg-red-950 p-3 text-sm text-red-200">{error}</p>
+            )}
+            {stats?.activeGame !== null && stats?.activeGame !== undefined && (
+                <Card className="flex items-center justify-between p-6">
+                    <div>
+                        <h3 className="text-lg font-semibold text-white">
+                            {t("dashboard.quickStatus")}
+                        </h3>
+                        <p className="text-sm text-zinc-400 mt-1">
+                            Foundation setup complete. Ready for Media Manager phase.
+                        </p>
+                    </div>
+                    <Button
+                        onClick={() => navigate("/game")}
+                        variant="secondary"
+                        className="flex items-center gap-2"
+                    >
+                        <Play className="w-4 h-4" />
+                        {t("dashboard.openActiveGame")}
+                    </Button>
+                </Card>
+            )}
+            <div className="flex flex-wrap gap-3">
+                <Button onClick={() => navigate("/media")}>{t("dashboard.manageMedia")}</Button>
+                <Button onClick={() => navigate("/tickets/generate")} variant="secondary">
+                    {t("dashboard.generateTickets")}
                 </Button>
-            </Card>
+                <Button onClick={() => navigate("/schemes")} variant="secondary">
+                    {t("dashboard.manageSchemes")}
+                </Button>
+                <Button onClick={() => navigate("/history")} variant="secondary">
+                    {t("dashboard.winnerHistory")}
+                </Button>
+            </div>
         </div>
     );
 };

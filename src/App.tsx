@@ -9,6 +9,7 @@ import { TicketBatchesPage } from "./features/ticket-batches/TicketBatchesPage";
 import { SchemesPage } from "./features/schemes/SchemesPage";
 import { GameControllerPage } from "./features/game-controller/GameControllerPage";
 import { ClaimDeskPage } from "./features/claim-desk/ClaimDeskPage";
+import { HistoryPage } from "./features/history/HistoryPage";
 
 export const App: React.FC = () => {
     return (
@@ -25,6 +26,7 @@ export const App: React.FC = () => {
                         <Route path="/schemes" element={<SchemesPage />} />
                         <Route path="/game" element={<GameControllerPage />} />
                         <Route path="/claims" element={<ClaimDeskPage />} />
+                        <Route path="/history" element={<HistoryPage />} />
                     </Routes>
                 </main>
             </div>

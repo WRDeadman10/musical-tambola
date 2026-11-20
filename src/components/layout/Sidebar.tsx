@@ -8,6 +8,7 @@ import {
     Ticket,
     Trophy,
     ShieldCheck,
+    History,
 } from "lucide-react";
 import { useAppStore } from "../../stores/appStore";
 
@@ -46,6 +47,7 @@ export const Sidebar: React.FC = () => {
         { labelKey: "nav.schemes", path: "/schemes", icon: <Trophy className="w-5 h-5" /> },
         { labelKey: "nav.gameController", path: "/game", icon: <Gamepad2 className="w-5 h-5" /> },
         { labelKey: "nav.claimDesk", path: "/claims", icon: <ShieldCheck className="w-5 h-5" /> },
+        { labelKey: "nav.winnerHistory", path: "/history", icon: <History className="w-5 h-5" /> },
     ];
 
     return (

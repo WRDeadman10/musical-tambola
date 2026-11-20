@@ -27,7 +27,14 @@
         "noActiveGame": "કોઈ ચાલુ રમત નથી",
         "startGame": "રમત શરૂ કરો",
         "manageMedia": "મીડિયા ગોઠવો",
-        "generateTickets": "ટિકિટ્સ બનાવો"
+        "generateTickets": "ટિકિટ્સ બનાવો",
+        "gamesPlayed": "રમતો રમાઈ",
+        "winners": "તાજેતરના વિજેતાઓ",
+        "openActiveGame": "ચાલતી રમત ખોલો",
+        "manageSchemes": "વિજેતા યોજનાઓ સંચાલિત કરો",
+        "newGame": "નવી રમત",
+        "winnerHistory": "વિજેતા ઇતિહાસ",
+        "emptyGames": "હજી સુધી કોઈ રમત રમાઈ નથી."
     },
     "settings": {
         "title": "એપ્લિકેશન સેટિંગ્સ",
@@ -41,6 +48,26 @@
         "soundVolume": "અવાજ વોલ્યુમ",
         "autoplay": "ઓટોપ્લે ડ્રો",
         "showNumbersAdmin": "નંબર્સ દર્શાવો (એડમિન ડાયગ્નોસ્ટિક)",
+        "showNumbersDescription": "ફક્ત એડમિન ડાયગ્નોસ્ટિક માટે ટિકિટમાં નંબર્સ બતાવો.",
+        "autoplayDescription": "મીડિયા દેખાય ત્યારે વિડિયો આપમેળે ચલાવો.",
+        "playback": "પ્લેબેક",
+        "about": "વિશે અને ગુજરાતી રેન્ડરિંગ",
+        "ipcConnected": "IPC જોડાયેલું",
+        "ipcError": "બેકએન્ડ ભૂલ",
+        "dbStatus": "ડેટાબેઝ સ્થિતિ",
+        "dbOk": "બરાબર",
+        "dbError": "ભૂલ",
+        "gujaratiSample": "મીડિયા તંબોલા — ગુજરાતી અને English મિશ્રિત લખાણ સાથે જોડાક્ષરનું રેન્ડરિંગ.",
+        "themes": {
+            "dark": "ડાર્ક",
+            "light": "લાઇટ",
+            "system": "સિસ્ટમ"
+        },
+        "gujaratiVowels": "અ આ ઇ ઈ ઉ ઊ એ ઐ ઓ ઔ",
+        "gujaratiMatras": "કા કિ કી કુ કૂ કે કૈ કો કૌ",
+        "gujaratiConjuncts": "ક્ષ જ્ઞ શ્ર ત્ર દ્વ સ્ત",
+        "gujaratiNumerals": "૦ ૧ ૨ ૩ ૪ ૫ ૬ ૭ ૮ ૯",
+        "gujaratiMixed": "મીડિયા તંબોલા — Media Tambola",
         "save": "ફેરફારો સાચવો",
         "savedSuccess": "સેટિંગ્સ સફળતાપૂર્વક સાચવવામાં આવી"
     },
@@ -53,7 +80,10 @@
         "saving": "સાચવી રહ્યું છે...",
         "active": "સક્રિય",
         "inactive": "નિષ્ક્રિય",
-        "ready": "તૈયાર"
+        "ready": "તૈયાર",
+        "previous": "પાછળ",
+        "next": "આગળ",
+        "close": "બંધ કરો"
     },
     "tickets": {
         "generatorTitle": "ટિકિટ જનરેટર",
@@ -206,6 +236,8 @@
     },
     "claims": {
         "title": "ક્લેમ ડેસ્ક",
+        "accepted": "સ્વીકૃત",
+        "rejected": "નામંજૂર",
         "subtitle": "ચાલુ ગેમના વિજેતા ક્લેમ ચકાસો.",
         "validate": "ક્લેમ ચકાસો",
         "noActiveGame": "ચાલુ ગેમ નથી. ક્લેમ સ્વીકારવામાં આવતા નથી.",
@@ -222,5 +254,29 @@
             "ONLY_FULL_HOUSE_ELIGIBLE": "હવે માત્ર ફુલ હાઉસ ક્લેમ માન્ય છે.",
             "WINNER_LIMIT_REACHED": "વિજેતાઓની મર્યાદા પહોંચી ગઈ છે."
         }
+    },
+    "history": {
+        "title": "વિજેતા ઇતિહાસ",
+        "description": "વિજેતાઓ અને ક્લેમ પ્રયાસોની સમીક્ષા કરો.",
+        "records": "રેકોર્ડ્સ",
+        "winners": "વિજેતાઓ",
+        "claims": "ક્લેમ્સ",
+        "ticketFilter": "ટિકિટ કોડથી ફિલ્ટર કરો",
+        "allSchemes": "બધી યોજનાઓ",
+        "allStatuses": "બધી સ્થિતિઓ",
+        "dateFrom": "તારીખથી",
+        "dateTo": "તારીખ સુધી",
+        "of": "માંથી",
+        "ticket": "ટિકિટ",
+        "scheme": "સ્કીમ",
+        "position": "સ્થાન",
+        "status": "સ્થિતિ",
+        "reason": "કારણ",
+        "date": "તારીખ",
+        "empty": "કોઈ ઇતિહાસ રેકોર્ડ મળ્યો નથી.",
+        "ticketDetails": "ટિકિટ દાવાનો ઇતિહાસ",
+        "loading": "ઇતિહાસ લોડ થઈ રહ્યો છે…",
+        "ticketEmpty": "આ ટિકિટ માટે કોઈ દાવા મળ્યા નથી.",
+        "ticketDetails": "ટિકિટ ઇતિહાસ"
     }
 }

@@ -27,7 +27,14 @@
         "noActiveGame": "No active game in progress",
         "startGame": "Start Game",
         "manageMedia": "Configure Media",
-        "generateTickets": "Generate Tickets"
+        "generateTickets": "Generate Tickets",
+        "gamesPlayed": "Games Played",
+        "winners": "Recent Winners",
+        "openActiveGame": "Open Active Game",
+        "manageSchemes": "Manage Winning Schemes",
+        "newGame": "New Game",
+        "winnerHistory": "Winner History",
+        "emptyGames": "No games have been played yet."
     },
     "settings": {
         "title": "Application Settings",
@@ -41,6 +48,26 @@
         "soundVolume": "Sound Volume",
         "autoplay": "Autoplay Draw",
         "showNumbersAdmin": "Show Numbers (Admin Diagnostic)",
+        "showNumbersDescription": "Reveal numbers in ticket grids for admin diagnostics only.",
+        "autoplayDescription": "Start video playback automatically when media is revealed.",
+        "playback": "Playback",
+        "about": "About & Gujarati rendering",
+        "ipcConnected": "IPC Connected",
+        "ipcError": "Backend Error",
+        "dbStatus": "Database Status",
+        "dbOk": "OK",
+        "dbError": "Error",
+        "gujaratiSample": "મીડિયા તંબોલા — Gujarati sample with mixed English text and conjunct rendering.",
+        "themes": {
+            "dark": "Dark",
+            "light": "Light",
+            "system": "System"
+        },
+        "gujaratiVowels": "અ આ ઇ ઈ ઉ ઊ એ ઐ ઓ ઔ",
+        "gujaratiMatras": "કા કિ કી કુ કૂ કે કૈ કો કૌ",
+        "gujaratiConjuncts": "ક્ષ જ્ઞ શ્ર ત્ર દ્વ સ્ત",
+        "gujaratiNumerals": "૦ ૧ ૨ ૩ ૪ ૫ ૬ ૭ ૮ ૯",
+        "gujaratiMixed": "મીડિયા તંબોલા — Media Tambola",
         "save": "Save Changes",
         "savedSuccess": "Settings saved successfully"
     },
@@ -53,7 +80,10 @@
         "saving": "Saving...",
         "active": "Active",
         "inactive": "Inactive",
-        "ready": "Ready"
+        "ready": "Ready",
+        "previous": "Previous",
+        "next": "Next",
+        "close": "Close"
     },
     "tickets": {
         "generatorTitle": "Ticket Generator",
@@ -206,6 +236,8 @@
     },
     "claims": {
         "title": "Claim Desk",
+        "accepted": "Accepted",
+        "rejected": "Rejected",
         "subtitle": "Validate winning claims for the active game.",
         "validate": "Validate claim",
         "noActiveGame": "No active game. Claims are not accepted.",
@@ -222,5 +254,29 @@
             "ONLY_FULL_HOUSE_ELIGIBLE": "Only Full House claims are eligible now.",
             "WINNER_LIMIT_REACHED": "The winner limit has been reached."
         }
+    },
+    "history": {
+        "title": "Winner History",
+        "description": "Review winners and claim attempts.",
+        "records": "Records",
+        "winners": "Winners",
+        "claims": "Claims",
+        "ticketFilter": "Filter by ticket code",
+        "allSchemes": "All schemes",
+        "allStatuses": "All statuses",
+        "dateFrom": "Date from",
+        "dateTo": "Date to",
+        "of": "of",
+        "ticket": "Ticket",
+        "scheme": "Scheme",
+        "position": "Position",
+        "status": "Status",
+        "reason": "Reason",
+        "date": "Date",
+        "empty": "No history records found.",
+        "ticketDetails": "Ticket claim history",
+        "loading": "Loading history…",
+        "ticketEmpty": "No claims found for this ticket.",
+        "ticketDetails": "Ticket history"
     }
 }
