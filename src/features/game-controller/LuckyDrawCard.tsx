@@ -23,7 +23,7 @@ export function LuckyDrawCard(): React.JSX.Element {
     );
     useEffect(() => {
         void listLuckyDraws()
-            .then(setHistory)
+            .then((loaded) => setHistory(Array.isArray(loaded) ? loaded : []))
             .catch(() => undefined);
     }, []);
     const handleDraw = async (): Promise<void> => {
@@ -111,7 +111,7 @@ export function LuckyDrawCard(): React.JSX.Element {
             )}
             <h3>{translate("luckyDraw.history")}</h3>
             <ol>
-                {history
+                {(Array.isArray(history) ? history : [])
                     .flatMap((item) => item.winners)
                     .map((item) => (
                         <li key={item.id}>{item.value}</li>

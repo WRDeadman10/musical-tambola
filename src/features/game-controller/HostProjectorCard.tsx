@@ -48,7 +48,7 @@ export function HostProjectorCard({
     useEffect(() => {
         void listDisplays()
             .then((nextDisplays) => {
-                setDisplays(nextDisplays);
+                setDisplays(Array.isArray(nextDisplays) ? nextDisplays : []);
                 const saved: number = Number(
                     useAppStore.getState().appInfo?.settings?.presentation_display,
                 );

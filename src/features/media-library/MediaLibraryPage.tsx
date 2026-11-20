@@ -26,6 +26,7 @@ import { MediaFolderImportDialog } from "./MediaFolderImportDialog";
 import { MediaPosterDialog } from "./MediaPosterDialog";
 import { generateMissingPosters } from "./posterGeneration";
 import { getGameFormat } from "../../lib/api/formats";
+import { listenToPresentationCommand } from "../../lib/api/presentation";
 import { GameFormat } from "../../types/game";
 import { TitleImportCard } from "./TitleImportCard";
 
@@ -88,12 +89,32 @@ export const MediaLibraryPage: React.FC = () => {
         new Map<number, HTMLTableRowElement>(),
     );
     useEffect(() => {
-        void getGameFormat()
-            .then((info) => {
-                setGameFormat(info.format);
-                setSongCount(info.songCount);
+        let mounted: boolean = true;
+        const refreshFormat = async (): Promise<void> => {
+            try {
+                const info = await getGameFormat();
+                if (mounted) {
+                    setGameFormat(info.format);
+                    setSongCount(info.songCount);
+                }
+            } catch {
+                // The media table remains usable if the format command is unavailable.
+            }
+        };
+        void refreshFormat();
+        let stop: (() => void) | null = null;
+        void listenToPresentationCommand((command) => {
+            if (command.command === "SETTINGS_CHANGED") void refreshFormat();
+        })
+            .then((cleanup) => {
+                if (mounted) stop = cleanup;
+                else cleanup();
             })
             .catch(() => undefined);
+        return () => {
+            mounted = false;
+            stop?.();
+        };
     }, []);
     useEffect(() => {
         if (toast === null) return;

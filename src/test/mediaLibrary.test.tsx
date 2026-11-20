@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MediaLibraryPage, mediaFormSchema } from "../features/media-library/MediaLibraryPage";
 import { MediaTable } from "../features/media-library/MediaTable";
 import { MediaSlot } from "../types/media";
@@ -14,8 +14,12 @@ const mockedMediaApi = vi.hoisted(() => ({
     validateAllMedia: vi.fn(),
     validateMedia: vi.fn(),
 }));
+const mockedFormats = vi.hoisted(() => ({ getGameFormat: vi.fn() }));
+const mockedPresentation = vi.hoisted(() => ({ listenToPresentationCommand: vi.fn() }));
 
 vi.mock("../lib/api/media", () => mockedMediaApi);
+vi.mock("../lib/api/formats", () => mockedFormats);
+vi.mock("../lib/api/presentation", () => mockedPresentation);
 
 function createSlot(number: number, overrides: Partial<MediaSlot> = {}): MediaSlot {
     return {
@@ -34,6 +38,10 @@ function createSlot(number: number, overrides: Partial<MediaSlot> = {}): MediaSl
 }
 
 describe("MediaLibraryPage", () => {
+    beforeEach(() => {
+        mockedFormats.getGameFormat.mockResolvedValue({ format: "CLASSIC_90", songCount: 90 });
+        mockedPresentation.listenToPresentationCommand.mockResolvedValue(() => undefined);
+    });
     it("renders localized validation codes and falls back to legacy messages", () => {
         const translate = (key: string): string => {
             if (key === "errors.MEDIA_REMOTE_HTTP_STATUS") {
@@ -175,5 +183,26 @@ describe("MediaLibraryPage", () => {
                 .closest("tr") as HTMLElement;
             expect(row.className).toContain("bg-amber-500/20");
         });
+    });
+
+    it("media library refetches format on SETTINGS_CHANGED", async () => {
+        useAppStore.setState({ language: "en" });
+        const slots: MediaSlot[] = Array.from({ length: 90 }, (_value: undefined, index: number) =>
+            createSlot(index + 1),
+        );
+        mockedMediaApi.listMedia.mockResolvedValueOnce(slots);
+        mockedMediaApi.listenToMediaValidationProgress.mockResolvedValue(() => undefined);
+        let onCommand: ((command: { command: string }) => void) | undefined;
+        mockedPresentation.listenToPresentationCommand.mockImplementationOnce(
+            (callback: (command: { command: string }) => void) => {
+                onCommand = callback;
+                return Promise.resolve(() => undefined);
+            },
+        );
+        render(<MediaLibraryPage />);
+        await waitFor(() => expect(screen.getAllByRole("row")).toHaveLength(91));
+        mockedFormats.getGameFormat.mockResolvedValueOnce({ format: "SONG_GRID", songCount: 45 });
+        onCommand?.({ command: "SETTINGS_CHANGED" });
+        await waitFor(() => expect(screen.getAllByRole("row")).toHaveLength(46));
     });
 });

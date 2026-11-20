@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAppStore, Language } from "../../stores/appStore";
 import { getAppInfo, setAppSetting, AppInfo } from "../../lib/api";
 import { toErrorMessage } from "../../lib/api/errors";
@@ -9,6 +9,7 @@ import { getGameFormat, setGameFormat } from "../../lib/api/formats";
 import { GameFormat } from "../../types/game";
 import { EventBrandingCard } from "./EventBrandingCard";
 import { DataManagementCard } from "./DataManagementCard";
+import { presentationCommand } from "../../lib/api/presentation";
 
 type Theme = "dark" | "light" | "system";
 
@@ -23,6 +24,7 @@ export const SettingsPage: React.FC = () => {
     const [songCount, setSongCount] = useState<number>(45);
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const formatRequestSequence = useRef<number>(0);
 
     useEffect(() => {
         let mounted: boolean = true;
@@ -47,6 +49,7 @@ export const SettingsPage: React.FC = () => {
             });
         getGameFormat()
             .then((info) => {
+                if (formatRequestSequence.current !== 0) return;
                 if (mounted) {
                     setGameFormatState(info.format);
                     setSongCount(info.songCount);
@@ -103,10 +106,12 @@ export const SettingsPage: React.FC = () => {
         await persist(key, String(next));
     };
     const changeFormat = async (format: GameFormat): Promise<void> => {
+        formatRequestSequence.current += 1;
         try {
             const info = await setGameFormat(format, format === "SONG_GRID" ? songCount : 90);
             setGameFormatState(info.format);
             setSongCount(info.songCount);
+            await presentationCommand("SETTINGS_CHANGED");
             setMessage(t("settings.savedSuccess"));
         } catch (caught: unknown) {
             setError(toErrorMessage(caught, t));

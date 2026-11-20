@@ -7,8 +7,11 @@ const mockedApi = vi.hoisted(() => ({
     getAppInfo: vi.fn(),
     setAppSetting: vi.fn(),
 }));
+const mockedFormats = vi.hoisted(() => ({ getGameFormat: vi.fn(), setGameFormat: vi.fn() }));
 
 vi.mock("../lib/api", () => mockedApi);
+vi.mock("../lib/api/formats", () => mockedFormats);
+vi.mock("../lib/api/presentation", () => ({ presentationCommand: vi.fn() }));
 
 const appInfo = {
     version: "1.0.0",
@@ -29,6 +32,8 @@ describe("SettingsPage", () => {
         mockedApi.setAppSetting.mockReset();
         mockedApi.getAppInfo.mockResolvedValue(appInfo);
         mockedApi.setAppSetting.mockResolvedValue(undefined);
+        mockedFormats.getGameFormat.mockResolvedValue({ format: "CLASSIC_90", songCount: 90 });
+        mockedFormats.setGameFormat.mockResolvedValue({ format: "SONG_GRID", songCount: 45 });
         document.documentElement.className = "";
     });
 
@@ -88,5 +93,23 @@ describe("SettingsPage", () => {
         expect(screen.getByText("કા કિ કી કુ કૂ કે કૈ કો કૌ")).toBeTruthy();
         expect(screen.getByText("ક્ષ જ્ઞ શ્ર ત્ર દ્વ સ્ત")).toBeTruthy();
         expect(screen.getByText("૦ ૧ ૨ ૩ ૪ ૫ ૬ ૭ ૮ ૯")).toBeTruthy();
+    });
+
+    it("late initial format load does not overwrite confirmed song grid", async () => {
+        let resolveInitial: ((value: { format: string; songCount: number }) => void) | null = null;
+        mockedFormats.getGameFormat.mockImplementationOnce(
+            () => new Promise((resolve) => (resolveInitial = resolve)),
+        );
+        render(<SettingsPage />);
+        await waitFor(() => expect(screen.getByText("1.0.0")).toBeTruthy());
+        fireEvent.click(screen.getByRole("button", { name: /Song Grid/ }));
+        await waitFor(() =>
+            expect(mockedFormats.setGameFormat).toHaveBeenCalledWith("SONG_GRID", 45),
+        );
+        const completeInitial = resolveInitial as
+            ((value: { format: string; songCount: number }) => void) | null;
+        completeInitial?.({ format: "CLASSIC_90", songCount: 90 });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(mockedFormats.setGameFormat).toHaveBeenCalledTimes(1);
     });
 });

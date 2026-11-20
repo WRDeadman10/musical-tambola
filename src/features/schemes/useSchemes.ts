@@ -60,7 +60,7 @@ export function useSchemes(): SchemesState {
             ]);
             setSchemes(loadedSchemes);
             setTypes(loadedTypes);
-            setPresets(loadedPresets);
+            setPresets(Array.isArray(loadedPresets) ? loadedPresets : []);
         } catch (caught: unknown) {
             setError(toErrorMessage(caught, translate));
         }

@@ -32,7 +32,7 @@ export function PrintTicketsPage(): React.JSX.Element {
         void Promise.all([listTicketBatches(), listTemplates(), getActiveTemplate()]).then(
             ([loadedBatches, loadedTemplates, loadedActive]) => {
                 setBatches(loadedBatches);
-                setTemplates(loadedTemplates);
+                setTemplates(Array.isArray(loadedTemplates) ? loadedTemplates : []);
                 setActive(loadedActive);
             },
         );
