@@ -7,6 +7,7 @@ export interface AppInfo {
     schema_version: number;
     language: string;
     theme: string;
+    settings?: Record<string, unknown>;
 }
 
 export async function getAppInfo(): Promise<AppInfo> {

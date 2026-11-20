@@ -6,6 +6,7 @@ import {
     MediaValidationReport,
     SaveMediaInput,
 } from "../../types/media";
+export { toErrorMessage } from "./errors";
 
 export async function listMedia(): Promise<MediaSlot[]> {
     return await invoke<MediaSlot[]>("list_media");
@@ -31,14 +32,19 @@ export async function validateAllMedia(): Promise<MediaValidationReport> {
     return await invoke<MediaValidationReport>("validate_all_media");
 }
 
-export async function pickMediaFile(kind: "IMAGE" | "VIDEO"): Promise<string | null> {
+export async function pickMediaFile(
+    kind: "IMAGE" | "VIDEO",
+): Promise<string | null> {
     return await invoke<string | null>("pick_media_file", { kind });
 }
 
 export async function listenToMediaValidationProgress(
-    callback: (progress: MediaValidationProgress) => void
+    callback: (progress: MediaValidationProgress) => void,
 ): Promise<UnlistenFn> {
-    return await listen<MediaValidationProgress>("media-validation-progress", (event) => {
-        callback(event.payload);
-    });
+    return await listen<MediaValidationProgress>(
+        "media-validation-progress",
+        (event) => {
+            callback(event.payload);
+        },
+    );
 }

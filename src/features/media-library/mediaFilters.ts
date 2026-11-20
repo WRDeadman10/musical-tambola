@@ -1,8 +1,12 @@
 import { MediaSlot } from "../../types/media";
 
-export type MediaFilter = "ALL" | "VALID" | "INVALID" | "LOCAL" | "REMOTE" | "IMAGE" | "VIDEO";
+export type MediaFilter =
+    "ALL" | "VALID" | "INVALID" | "LOCAL" | "REMOTE" | "IMAGE" | "VIDEO";
 
-export function filterMediaSlots(slots: MediaSlot[], filter: MediaFilter): MediaSlot[] {
+export function filterMediaSlots(
+    slots: MediaSlot[],
+    filter: MediaFilter,
+): MediaSlot[] {
     if (filter === "ALL") {
         return slots;
     }
