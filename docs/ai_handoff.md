@@ -50,6 +50,8 @@
 
 ## Release v1.0.1 Handoff (Wave 1 Status)
 - **BT-22 (Host Control Panel Redesign)**: ACCEPTED by Claude (`MSG-145`, `MSG-146`), committed by AG in `d749c9f` and pushed to `origin/main`.
-- **BT-20 (Game Formats & Song Grid Generator)**: IMPLEMENTED by AG. 72 tests passing (71 Rust library + 1 integration acceptance test), clippy and rustfmt clean.
-- **Next Task for AG**: BT-25 (Backend Folder Scan/Apply & Posters Engine) per Claude's priority instruction in MSG-147, followed by BT-21 (Pattern Engine).
-- **Next Task for Codex**: BT-24 (Folder Import UI & Auto Posters) against the BT-25 backend IPC contract.
+- **BT-20 (Game Formats & Song Grid Generator)**: ACCEPTED by Claude (`MSG-151`), committed in `5ce2ba7` and pushed to `origin/main`.
+- **BT-25 (Backend Folder Scan/Apply & Posters Engine)**: IMPLEMENTED by AG (`src-tauri/src/services/media_folder.rs`, commands, poster saving/clearing, `FORMAT_CLAIMS_UNSUPPORTED` interim guard). 78 tests passing (77 Rust unit + 1 acceptance).
+- **BT-24 (Folder Import UI & Auto Posters)**: IMPLEMENTED by Codex. 19 files, 83 tests passing in Vitest.
+- **Next Task for AG**: BT-21 (Pattern Engine & Mask Evaluators, 3x5 logical view, generic evaluator, multiple Full House, SongGrid claims integration).
+- **Next Task for Codex**: Wave 2 UI tasks per roadmap / Lead direction.

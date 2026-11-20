@@ -1,5 +1,6 @@
 use crate::domain::media::{
-    validate_save_media_input, MediaSlot, MediaType, SaveMediaInput, SourceType, ValidationStatus,
+    validate_save_media_input, MediaAssignment, MediaSlot, MediaType, SaveMediaInput, SourceType,
+    ValidationStatus,
 };
 use rusqlite::{params, Connection, OptionalExtension};
 use std::collections::HashMap;
@@ -256,6 +257,105 @@ impl MediaRepository {
 
         Self::get_by_number(conn, number)
     }
+
+    pub fn apply_assignments(
+        conn: &mut Connection,
+        assignments: &[MediaAssignment],
+    ) -> Result<Vec<MediaSlot>, String> {
+        let tx = conn
+            .transaction()
+            .map_err(|e: rusqlite::Error| format!("Failed to begin transaction: {}", e))?;
+
+        for a in assignments {
+            if !(1..=90).contains(&a.number) {
+                return Err(format!(
+                    "Media slot number must be between 1 and 90, got {}",
+                    a.number
+                ));
+            }
+
+            let path_buf = std::path::PathBuf::from(&a.path);
+            let default_title = path_buf
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or(&a.path)
+                .to_string();
+            let title: String = a.title.clone().unwrap_or(default_title);
+
+            tx.execute(
+                "INSERT INTO media_assets (
+                    number, media_type, source_type, path_or_url, poster_path,
+                    title_gujarati, is_valid, validation_error, last_validated_at,
+                    validation_code, validation_params_json, updated_at
+                ) VALUES (?1, ?2, 'LOCAL', ?3, NULL, ?4, 1, NULL, CURRENT_TIMESTAMP, NULL, NULL, CURRENT_TIMESTAMP)
+                ON CONFLICT(number) DO UPDATE SET
+                    media_type = excluded.media_type,
+                    source_type = 'LOCAL',
+                    path_or_url = excluded.path_or_url,
+                    title_gujarati = excluded.title_gujarati,
+                    is_valid = 1,
+                    validation_error = NULL,
+                    validation_code = NULL,
+                    validation_params_json = NULL,
+                    last_validated_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP;",
+                params![
+                    a.number,
+                    a.media_type.as_str(),
+                    a.path.trim(),
+                    title.trim(),
+                ],
+            )
+            .map_err(|e: rusqlite::Error| format!("Failed to apply assignment for slot {}: {}", a.number, e))?;
+        }
+
+        tx.commit()
+            .map_err(|e: rusqlite::Error| format!("Failed to commit assignments: {}", e))?;
+
+        Self::list_all(conn)
+    }
+
+    pub fn save_poster(
+        conn: &Connection,
+        number: u8,
+        poster_path: &str,
+    ) -> Result<MediaSlot, String> {
+        if !(1..=90).contains(&number) {
+            return Err(format!("Number must be between 1 and 90, got {}", number));
+        }
+
+        conn.execute(
+            "UPDATE media_assets SET
+                poster_path = ?1,
+                updated_at = CURRENT_TIMESTAMP
+             WHERE number = ?2;",
+            params![poster_path.trim(), number],
+        )
+        .map_err(|e: rusqlite::Error| {
+            format!("Failed to save poster for slot {}: {}", number, e)
+        })?;
+
+        Self::get_by_number(conn, number)
+    }
+
+    pub fn clear_poster(conn: &Connection, number: u8) -> Result<MediaSlot, String> {
+        if !(1..=90).contains(&number) {
+            return Err(format!("Number must be between 1 and 90, got {}", number));
+        }
+
+        conn.execute(
+            "UPDATE media_assets SET
+                poster_path = NULL,
+                updated_at = CURRENT_TIMESTAMP
+             WHERE number = ?1;",
+            params![number],
+        )
+        .map_err(|e: rusqlite::Error| {
+            format!("Failed to clear poster for slot {}: {}", number, e)
+        })?;
+
+        Self::get_by_number(conn, number)
+    }
 }
 
 #[cfg(test)]
@@ -339,5 +439,48 @@ mod tests {
         };
         let slot_edited: MediaSlot = MediaRepository::upsert(&conn, &edit_input).unwrap();
         assert_eq!(slot_edited.validation_status, ValidationStatus::NotTested);
+    }
+
+    #[test]
+    fn test_apply_assignments_and_posters() {
+        let mut conn: Connection = Connection::open_in_memory().unwrap();
+        run_migrations(&conn).unwrap();
+
+        let assignments = vec![
+            MediaAssignment {
+                number: 1,
+                path: "C:/media/intro.mp4".to_string(),
+                media_type: MediaType::Video,
+                title: Some("Opening Theme".to_string()),
+            },
+            MediaAssignment {
+                number: 2,
+                path: "C:/media/song2.jpg".to_string(),
+                media_type: MediaType::Image,
+                title: None, // should default to file stem "song2"
+            },
+        ];
+
+        let slots = MediaRepository::apply_assignments(&mut conn, &assignments).unwrap();
+        assert_eq!(slots.len(), 90);
+        assert!(slots[0].configured);
+        assert_eq!(slots[0].title.as_deref(), Some("Opening Theme"));
+        assert_eq!(slots[0].media_type, Some(MediaType::Video));
+        assert_eq!(slots[0].validation_status, ValidationStatus::Valid);
+
+        assert!(slots[1].configured);
+        assert_eq!(slots[1].title.as_deref(), Some("song2"));
+
+        // Save poster
+        let with_poster =
+            MediaRepository::save_poster(&conn, 1, "C:/posters/poster_1.jpg").unwrap();
+        assert_eq!(
+            with_poster.thumbnail_source.as_deref(),
+            Some("C:/posters/poster_1.jpg")
+        );
+
+        // Clear poster
+        let without_poster = MediaRepository::clear_poster(&conn, 1).unwrap();
+        assert!(without_poster.thumbnail_source.is_none());
     }
 }

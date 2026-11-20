@@ -212,3 +212,46 @@ pub fn validate_save_media_input(input: &SaveMediaInput) -> Result<(), String> {
 
     Ok(())
 }
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum MediaFolderOrder {
+    Number,
+    Asc,
+    Desc,
+    Random,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ScannedMediaFile {
+    pub path: String,
+    pub file_name: String,
+    pub media_type: MediaType,
+    pub size_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaAssignment {
+    pub number: u8,
+    pub path: String,
+    pub media_type: MediaType,
+    pub title: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaAssignmentPair {
+    pub number: u8,
+    pub path: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaFolderScanResult {
+    pub files: Vec<ScannedMediaFile>,
+    pub assignments: Vec<MediaAssignmentPair>,
+    pub unassigned: Vec<String>,
+    pub missing_numbers: Vec<u8>,
+}

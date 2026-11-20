@@ -30,6 +30,7 @@ All backend errors are serialized to the frontend in the standard envelope:
 | `MEDIA_SLOT_OUT_OF_RANGE` | `number` | Media slot number must be between 1 and 90. |
 | `MEDIA_EMPTY_TITLE` | — | Media title cannot be empty. |
 | `MEDIA_EMPTY_SOURCE` | — | Media source path or URL cannot be empty. |
+| `FOLDER_SCAN_ERROR` | — | Failed to scan media folder or read directory entries. |
 
 ---
 
@@ -45,6 +46,7 @@ All backend errors are serialized to the frontend in the standard envelope:
 | `GAME_ALREADY_COMPLETED` | — | All numbers have already been drawn for this game session. |
 | `BATCH_FORMAT_MISMATCH` | `expectedFormat`, `actualFormat` | Selected ticket batch format or song count does not match active game format. |
 | `FORMAT_LOCKED_GAME_ACTIVE` | — | Cannot change game format while a game is active or paused. |
+| `FORMAT_CLAIMS_UNSUPPORTED` | — | Claims for SONG_GRID games are not supported until BT-21 pattern engine lands. |
 | `SONG_COUNT_INVALID` | `songCount` | Song count is invalid for the selected game format. |
 
 ---

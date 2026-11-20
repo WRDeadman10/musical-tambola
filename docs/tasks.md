@@ -193,8 +193,8 @@
 |---------|-------|--------|----------|------|----------------------|
 | **BT-20** | Game Formats (`CLASSIC_90` & `SONG_GRID`) | DONE | AG (A) | Wave 1 | Migration 0006, 3×5 generator, format snapshot, songCount 15..90, draw engine |
 | **BT-22** | Host Control Panel Redesign | DONE | Codex (X) | Wave 1 | 3-column layout, large NEXT button, shortcuts, quick claim, countdown timer, Present toggle |
-| **BT-25** | Media Folder Scan/Apply & Posters Engine | IN_PROGRESS | AG (A) | Wave 1 | scan_media_folder, apply_media_assignments, save_media_poster, clear_media_poster |
-| **BT-24** | Media Folder Import UI & Auto Posters | IN_PROGRESS | Codex (X) | Wave 1 | Folder import wizard, segmented order, previews, scrubber, frame poster generator |
+| **BT-25** | Media Folder Scan/Apply & Posters Engine | DONE | AG (A) | Wave 1 | scan_media_folder, apply_media_assignments, save_media_poster, clear_media_poster |
+| **BT-24** | Media Folder Import UI & Auto Posters | DONE | Codex (X) | Wave 1 | Folder import wizard, segmented order, previews, scrubber, frame poster generator |
 | **BT-21** | Pattern Engine & Mask Evaluators | TODO | AG (A) | Wave 2 | Migration 0007, 3×5 masks, EARLY_N, generic evaluator, multiple Full House |
 | **BT-26** | Presentation Window Management & IPC | TODO | AG (A) | Wave 2 | Multi-window Tauri lifecycle, target display, presentation state sync |
 | **BT-23** | Projector Scenes & Presentation Display | TODO | Codex (X) | Wave 2 | Idle poster, media stage, number badge, countdown, prize announcement |

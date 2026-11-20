@@ -1,13 +1,16 @@
 use crate::db::repositories::media::MediaRepository;
 use crate::db::DbState;
 use crate::domain::format::GameFormat;
-use crate::domain::media::{MediaSlot, MediaValidationReport, SaveMediaInput, ValidationStatus};
+use crate::domain::media::{
+    MediaAssignment, MediaFolderOrder, MediaFolderScanResult, MediaSlot, MediaValidationReport,
+    SaveMediaInput, ValidationStatus,
+};
 use crate::errors::AppError;
 use crate::services::media_validation::{summarize_report, validate_slot};
 use rusqlite::Connection;
 use serde::Serialize;
 use std::sync::{Arc, MutexGuard};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
 
 #[derive(Debug, Clone, Serialize)]
@@ -223,4 +226,122 @@ pub async fn pick_media_file(
         tauri_plugin_dialog::FilePath::Path(path_buf) => path_buf.to_string_lossy().to_string(),
         tauri_plugin_dialog::FilePath::Url(url) => url.to_string(),
     }))
+}
+
+#[tauri::command]
+pub async fn pick_media_folder(app_handle: AppHandle) -> Result<Option<String>, AppError> {
+    let folder_path: Option<tauri_plugin_dialog::FilePath> =
+        app_handle.dialog().file().blocking_pick_folder();
+    Ok(folder_path.map(|p: tauri_plugin_dialog::FilePath| match p {
+        tauri_plugin_dialog::FilePath::Path(path_buf) => path_buf.to_string_lossy().to_string(),
+        tauri_plugin_dialog::FilePath::Url(url) => url.to_string(),
+    }))
+}
+
+#[tauri::command]
+pub fn scan_media_folder(
+    root_path: String,
+    order: MediaFolderOrder,
+    recursive: bool,
+    seed: Option<u64>,
+    state: State<'_, DbState>,
+) -> Result<MediaFolderScanResult, AppError> {
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    let active_format_str: String = conn
+        .query_row(
+            "SELECT value FROM app_settings WHERE key = 'active_game_format';",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| "CLASSIC_90".to_string());
+    let active_format: GameFormat =
+        GameFormat::from_db_str(&active_format_str).unwrap_or(GameFormat::Classic90);
+
+    let song_count: u32 = match active_format {
+        GameFormat::Classic90 => 90,
+        GameFormat::SongGrid => conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'active_song_count';",
+                [],
+                |r| r.get(0),
+            )
+            .ok()
+            .and_then(|s: String| s.parse::<u32>().ok())
+            .unwrap_or(45),
+    };
+
+    drop(conn);
+
+    let path = std::path::Path::new(&root_path);
+    crate::services::media_folder::scan_media_folder(path, order, recursive, seed, song_count)
+        .map_err(|e| AppError::new("FOLDER_SCAN_ERROR", e))
+}
+
+#[tauri::command]
+pub fn apply_media_assignments(
+    assignments: Vec<MediaAssignment>,
+    state: State<'_, DbState>,
+) -> Result<Vec<MediaSlot>, AppError> {
+    let mut conn: MutexGuard<'_, Connection> =
+        state.conn.lock().map_err(|_| AppError::lock_error())?;
+    MediaRepository::apply_assignments(&mut conn, &assignments).map_err(AppError::database_error)
+}
+
+#[tauri::command]
+pub fn save_media_poster(
+    number: u8,
+    image_bytes: Vec<u8>,
+    app_handle: AppHandle,
+    state: State<'_, DbState>,
+) -> Result<MediaSlot, AppError> {
+    if !(1..=90).contains(&number) {
+        return Err(AppError::new(
+            "MEDIA_SLOT_OUT_OF_RANGE",
+            format!("Media slot number must be between 1 and 90, got {}", number),
+        ));
+    }
+
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| AppError::internal_error(format!("Failed to get app data dir: {}", e)))?;
+    let posters_dir = app_data_dir.join("posters");
+    std::fs::create_dir_all(&posters_dir).map_err(|e| {
+        AppError::internal_error(format!("Failed to create posters directory: {}", e))
+    })?;
+
+    let poster_file = posters_dir.join(format!("poster_{}.jpg", number));
+    std::fs::write(&poster_file, &image_bytes)
+        .map_err(|e| AppError::internal_error(format!("Failed to write poster file: {}", e)))?;
+
+    let poster_path_str: String = poster_file.to_string_lossy().to_string();
+
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    MediaRepository::save_poster(&conn, number, &poster_path_str).map_err(AppError::database_error)
+}
+
+#[tauri::command]
+pub fn clear_media_poster(
+    number: u8,
+    app_handle: AppHandle,
+    state: State<'_, DbState>,
+) -> Result<MediaSlot, AppError> {
+    if !(1..=90).contains(&number) {
+        return Err(AppError::new(
+            "MEDIA_SLOT_OUT_OF_RANGE",
+            format!("Media slot number must be between 1 and 90, got {}", number),
+        ));
+    }
+
+    if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
+        let poster_file = app_data_dir
+            .join("posters")
+            .join(format!("poster_{}.jpg", number));
+        if poster_file.exists() {
+            let _ = std::fs::remove_file(&poster_file);
+        }
+    }
+
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    MediaRepository::clear_poster(&conn, number).map_err(AppError::database_error)
 }

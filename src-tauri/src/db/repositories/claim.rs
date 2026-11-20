@@ -48,30 +48,38 @@ impl ClaimRepository {
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
             .map_err(|e| format!("Failed to begin transaction: {}", e))?;
 
-        // 1. Fetch game status and current_draw_position
-        let game_info: Option<(GameStatus, u32)> = tx
+        // 1. Fetch game status, current_draw_position, and format
+        let game_info: Option<(GameStatus, u32, String)> = tx
             .query_row(
-                "SELECT status, current_draw_position FROM games WHERE id = ?1;",
+                "SELECT status, current_draw_position, format FROM games WHERE id = ?1;",
                 params![game_id],
                 |r| {
                     let status_str: String = r.get(0)?;
                     let pos: u32 = r.get(1)?;
+                    let fmt_str: String = r.get(2)?;
                     let status: GameStatus = GameStatus::from_str(&status_str).map_err(|e| {
                         rusqlite::Error::ToSqlConversionFailure(Box::new(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
                             e,
                         )))
                     })?;
-                    Ok((status, pos))
+                    Ok((status, pos, fmt_str))
                 },
             )
             .optional()
             .map_err(|e| format!("Failed to query game info: {}", e))?;
 
-        let (game_status, current_draw_position): (Option<GameStatus>, u32) = match game_info {
-            Some((s, p)) => (Some(s), p),
-            None => (None, 0),
-        };
+        let (game_status, current_draw_position, game_format): (Option<GameStatus>, u32, Option<String>) =
+            match game_info {
+                Some((s, p, f)) => (Some(s), p, Some(f)),
+                None => (None, 0, None),
+            };
+
+        if let Some(ref fmt) = game_format {
+            if fmt == "SONG_GRID" {
+                return Err("FORMAT_CLAIMS_UNSUPPORTED: Claims for SONG_GRID games are not supported until BT-21 pattern engine lands".to_string());
+            }
+        }
 
         // 2. Fetch ticket if exists by normalized ticket code
         let ticket_db_info: Option<(i64, String, String)> = tx

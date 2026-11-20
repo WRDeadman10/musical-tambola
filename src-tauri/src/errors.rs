@@ -51,6 +51,14 @@ impl AppError {
             detail.to_string(),
         )
     }
+
+    pub fn internal_error(detail: impl ToString) -> Self {
+        AppError::with_detail(
+            "INTERNAL_ERROR",
+            "An internal error occurred",
+            detail.to_string(),
+        )
+    }
 }
 
 impl fmt::Display for AppError {

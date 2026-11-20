@@ -13,8 +13,9 @@ use commands::game::{
 };
 use commands::history::{get_dashboard_stats, list_claim_history, list_winners};
 use commands::media::{
-    clear_media, get_media, list_media, pick_media_file, save_media, validate_all_media,
-    validate_media,
+    apply_media_assignments, clear_media, clear_media_poster, get_media, list_media,
+    pick_media_file, pick_media_folder, save_media, save_media_poster, scan_media_folder,
+    validate_all_media, validate_media,
 };
 use commands::scheme::{list_scheme_types, list_schemes, save_scheme, set_scheme_active};
 use commands::ticket::{
@@ -67,6 +68,11 @@ pub fn run() {
             validate_media,
             validate_all_media,
             pick_media_file,
+            pick_media_folder,
+            scan_media_folder,
+            apply_media_assignments,
+            save_media_poster,
+            clear_media_poster,
             generate_ticket_batch,
             list_ticket_batches,
             list_batch_tickets,

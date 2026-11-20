@@ -16,8 +16,13 @@ pub fn submit_claim(
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
 
-    ClaimRepository::submit_claim(&mut conn, game_id, scheme_id, &ticket_code)
-        .map_err(AppError::database_error)
+    ClaimRepository::submit_claim(&mut conn, game_id, scheme_id, &ticket_code).map_err(|e| {
+        if e.starts_with("FORMAT_CLAIMS_UNSUPPORTED") {
+            AppError::new("FORMAT_CLAIMS_UNSUPPORTED", e)
+        } else {
+            AppError::database_error(e)
+        }
+    })
 }
 
 #[tauri::command]
