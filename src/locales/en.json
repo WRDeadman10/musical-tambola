@@ -441,6 +441,22 @@
         "present": "Present",
         "exitPresent": "Exit present mode"
     },
+    "luckyDraw": {
+        "title": "Lucky draw",
+        "shortcut": "Shortcut: L",
+        "source": "Draw source",
+        "names": "Names",
+        "tickets": "Tickets",
+        "items": "Names or ticket codes",
+        "itemsPlaceholder": "Paste one name or ticket code per line",
+        "excludePrevious": "Exclude previous winners",
+        "draw": "Draw",
+        "defaultName": "Lucky Draw",
+        "drawing": "Drawing…",
+        "newDraw": "New draw",
+        "winner": "Winner",
+        "history": "Lucky draw history"
+    },
     "claims": {
         "title": "Claim Desk",
         "accepted": "Accepted",

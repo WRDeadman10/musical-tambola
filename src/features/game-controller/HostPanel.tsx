@@ -14,6 +14,7 @@ import { ShortcutHelp } from "./ShortcutHelp";
 import { StatusBar } from "./StatusBar";
 import { useHostShortcuts } from "./useHostShortcuts";
 import { WinnersList } from "./WinnersList";
+import { LuckyDrawCard } from "./LuckyDrawCard";
 
 export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.Element {
     const translate = useAppStore((state) => state.t);
@@ -50,6 +51,8 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
         onNumber: toggleNumber,
         onClaim: focusClaim,
         onHelp: () => setHelpOpen(true),
+        onLuckyDraw: () =>
+            document.getElementById("lucky-draw")?.scrollIntoView({ behavior: "smooth" }),
         dialogOpen: helpOpen,
     });
     if (model.state === null) return <div className="p-8">{translate("claims.noActiveGame")}</div>;
@@ -115,6 +118,9 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                     />
                     <HostProjectorCard state={model.state} acceptedClaim={acceptedClaim} />
                     <WinnersList schemes={model.state.schemes} translate={translate} />
+                    <div id="lucky-draw">
+                        <LuckyDrawCard />
+                    </div>
                     <button
                         className="text-sm text-indigo-300 underline"
                         onClick={() => navigate("/claims")}

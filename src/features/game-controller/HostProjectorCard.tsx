@@ -19,6 +19,14 @@ interface HostProjectorCardProps {
     acceptedClaim: { schemeId: number; schemeName: string; ticketCode: string } | null;
 }
 
+function wasSuggestionDismissed(): boolean {
+    try {
+        return sessionStorage.getItem("presentation-suggestion-dismissed") === "1";
+    } catch {
+        return false;
+    }
+}
+
 export function HostProjectorCard({
     state,
     acceptedClaim,
@@ -35,9 +43,8 @@ export function HostProjectorCard({
     );
     const [autoplayBlocked, setAutoplayBlocked] = useState<number | null>(null);
     const [suggestedDisplay, setSuggestedDisplay] = useState<number | null>(null);
-    const [suggestionDismissed, setSuggestionDismissed] = useState<boolean>(
-        sessionStorage.getItem("presentation-suggestion-dismissed") === "1",
-    );
+    const [suggestionDismissed, setSuggestionDismissed] =
+        useState<boolean>(wasSuggestionDismissed());
     useEffect(() => {
         void listDisplays()
             .then((nextDisplays) => {
@@ -201,7 +208,11 @@ export function HostProjectorCard({
                         type="button"
                         variant="ghost"
                         onClick={() => {
-                            sessionStorage.setItem("presentation-suggestion-dismissed", "1");
+                            try {
+                                sessionStorage.setItem("presentation-suggestion-dismissed", "1");
+                            } catch {
+                                // Locked-down WebView storage is optional.
+                            }
                             setSuggestionDismissed(true);
                         }}
                     >

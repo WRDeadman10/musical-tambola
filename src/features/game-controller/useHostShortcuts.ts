@@ -7,6 +7,7 @@ export function useHostShortcuts({
     onNumber,
     onClaim,
     onHelp,
+    onLuckyDraw,
     enabled = true,
     dialogOpen = false,
 }: {
@@ -16,6 +17,7 @@ export function useHostShortcuts({
     onNumber: () => void;
     onClaim: () => void;
     onHelp: () => void;
+    onLuckyDraw: () => void;
     enabled?: boolean;
     dialogOpen?: boolean;
 }): void {
@@ -41,9 +43,10 @@ export function useHostShortcuts({
             else if (event.key.toLowerCase() === "a") onAnswer();
             else if (event.key.toLowerCase() === "n") onNumber();
             else if (event.key.toLowerCase() === "c") onClaim();
+            else if (event.key.toLowerCase() === "l") onLuckyDraw();
             else if (event.key === "?") onHelp();
         };
         window.addEventListener("keydown", handler);
         return () => window.removeEventListener("keydown", handler);
-    }, [dialogOpen, enabled, onAnswer, onClaim, onHelp, onNext, onNumber, onPause]);
+    }, [dialogOpen, enabled, onAnswer, onClaim, onHelp, onLuckyDraw, onNext, onNumber, onPause]);
 }
