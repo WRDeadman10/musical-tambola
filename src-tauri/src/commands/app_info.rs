@@ -10,12 +10,8 @@ pub enum AppSettingKey {
     Language,
     Theme,
     DefaultVideoVolume,
-    SoundVolume,
     VideoAutoplay,
-    AutoplayEnabled,
-    AutoplayIntervalSeconds,
     ShowInternalNumbers,
-    ShowNumbersAdmin,
 }
 
 impl FromStr for AppSettingKey {
@@ -26,12 +22,8 @@ impl FromStr for AppSettingKey {
             "language" => Ok(Self::Language),
             "theme" => Ok(Self::Theme),
             "default_video_volume" => Ok(Self::DefaultVideoVolume),
-            "sound_volume" => Ok(Self::SoundVolume),
             "video_autoplay" => Ok(Self::VideoAutoplay),
-            "autoplay_enabled" => Ok(Self::AutoplayEnabled),
-            "autoplay_interval_seconds" => Ok(Self::AutoplayIntervalSeconds),
             "show_internal_numbers" => Ok(Self::ShowInternalNumbers),
-            "show_numbers_admin" => Ok(Self::ShowNumbersAdmin),
             _ => {
                 log::warn!("Rejected invalid app setting key: '{}'", s);
                 Err(format!("Unsupported or unrecognized setting key: '{}'", s))
@@ -83,7 +75,7 @@ pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey,
                 ));
             }
         }
-        AppSettingKey::DefaultVideoVolume | AppSettingKey::SoundVolume => {
+        AppSettingKey::DefaultVideoVolume => {
             let vol: u8 = value.parse::<u8>().map_err(|_| {
                 log::warn!("Non-numeric volume setting value: '{}'", value);
                 "Volume must be an integer between 0 and 100".to_string()
@@ -93,7 +85,7 @@ pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey,
                 return Err("Volume must not exceed 100".to_string());
             }
         }
-        AppSettingKey::VideoAutoplay | AppSettingKey::AutoplayEnabled => {
+        AppSettingKey::VideoAutoplay => {
             if value != "true" && value != "false" {
                 log::warn!("Invalid boolean setting value for autoplay: '{}'", value);
                 return Err(format!(
@@ -102,17 +94,7 @@ pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey,
                 ));
             }
         }
-        AppSettingKey::AutoplayIntervalSeconds => {
-            let secs: u32 = value.parse::<u32>().map_err(|_| {
-                log::warn!("Non-numeric autoplay interval value: '{}'", value);
-                "Autoplay interval must be a positive integer".to_string()
-            })?;
-            if secs == 0 || secs > 60 {
-                log::warn!("Autoplay interval out of range: {}", secs);
-                return Err("Autoplay interval must be between 1 and 60 seconds".to_string());
-            }
-        }
-        AppSettingKey::ShowInternalNumbers | AppSettingKey::ShowNumbersAdmin => {
+        AppSettingKey::ShowInternalNumbers => {
             if value != "true" && value != "false" {
                 log::warn!(
                     "Invalid boolean setting value for show numbers: '{}'",
@@ -227,12 +209,14 @@ mod tests {
         assert!(validate_app_setting("theme", "light").is_ok());
         assert!(validate_app_setting("theme", "system").is_ok());
         assert!(validate_app_setting("default_video_volume", "80").is_ok());
-        assert!(validate_app_setting("sound_volume", "50").is_ok());
         assert!(validate_app_setting("video_autoplay", "true").is_ok());
-        assert!(validate_app_setting("autoplay_enabled", "false").is_ok());
-        assert!(validate_app_setting("autoplay_interval_seconds", "5").is_ok());
-        assert!(validate_app_setting("show_internal_numbers", "true").is_ok());
-        assert!(validate_app_setting("show_numbers_admin", "false").is_ok());
+        assert!(validate_app_setting("show_internal_numbers", "false").is_ok());
+
+        // Removed / forbidden settings
+        assert!(validate_app_setting("sound_volume", "50").is_err());
+        assert!(validate_app_setting("autoplay_enabled", "false").is_err());
+        assert!(validate_app_setting("autoplay_interval_seconds", "5").is_err());
+        assert!(validate_app_setting("show_numbers_admin", "false").is_err());
 
         // Empty / oversized checks
         assert!(validate_app_setting("", "en").is_err());
@@ -240,18 +224,11 @@ mod tests {
         assert!(validate_app_setting(&"a".repeat(300), "en").is_err());
         assert!(validate_app_setting("language", &"a".repeat(300)).is_err());
 
-        // Invalid keys
-        assert!(validate_app_setting("unknown_key", "value").is_err());
-        assert!(validate_app_setting("hacked_setting", "123").is_err());
-
         // Invalid values
         assert!(validate_app_setting("language", "fr").is_err());
         assert!(validate_app_setting("theme", "neon").is_err());
-        assert!(validate_app_setting("sound_volume", "150").is_err());
-        assert!(validate_app_setting("sound_volume", "-5").is_err());
-        assert!(validate_app_setting("autoplay_enabled", "yes").is_err());
-        assert!(validate_app_setting("autoplay_interval_seconds", "0").is_err());
-        assert!(validate_app_setting("autoplay_interval_seconds", "100").is_err());
+        assert!(validate_app_setting("default_video_volume", "150").is_err());
+        assert!(validate_app_setting("video_autoplay", "yes").is_err());
     }
 
     #[test]

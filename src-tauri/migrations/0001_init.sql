@@ -177,7 +177,6 @@ INSERT OR IGNORE INTO app_settings (key, value)
 VALUES
     ('language', 'gu'),
     ('theme', 'dark'),
-    ('sound_volume', '80'),
-    ('autoplay_enabled', 'false'),
-    ('autoplay_interval_seconds', '5'),
-    ('show_numbers_admin', 'false');
+    ('default_video_volume', '80'),
+    ('video_autoplay', 'false'),
+    ('show_internal_numbers', 'false');
