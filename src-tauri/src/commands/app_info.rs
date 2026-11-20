@@ -2,77 +2,131 @@ use crate::db::migrations::get_schema_version;
 use crate::db::DbState;
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use tauri::State;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AppInfo {
-    pub version: String,
-    pub data_dir: String,
-    pub db_path: String,
-    pub schema_version: i32,
-    pub language: String,
-    pub theme: String,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AppSettingKey {
+    Language,
+    Theme,
+    DefaultVideoVolume,
+    SoundVolume,
+    VideoAutoplay,
+    AutoplayEnabled,
+    AutoplayIntervalSeconds,
+    ShowInternalNumbers,
+    ShowNumbersAdmin,
 }
 
-pub fn validate_app_setting(key: &str, value: &str) -> Result<(), String> {
+impl FromStr for AppSettingKey {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "language" => Ok(Self::Language),
+            "theme" => Ok(Self::Theme),
+            "default_video_volume" => Ok(Self::DefaultVideoVolume),
+            "sound_volume" => Ok(Self::SoundVolume),
+            "video_autoplay" => Ok(Self::VideoAutoplay),
+            "autoplay_enabled" => Ok(Self::AutoplayEnabled),
+            "autoplay_interval_seconds" => Ok(Self::AutoplayIntervalSeconds),
+            "show_internal_numbers" => Ok(Self::ShowInternalNumbers),
+            "show_numbers_admin" => Ok(Self::ShowNumbersAdmin),
+            _ => {
+                log::warn!("Rejected invalid app setting key: '{}'", s);
+                Err(format!("Unsupported or unrecognized setting key: '{}'", s))
+            }
+        }
+    }
+}
+
+pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey, String> {
+    if key_str.trim().is_empty() {
+        log::warn!("Rejected empty setting key");
+        return Err("Setting key cannot be empty".to_string());
+    }
+    if key_str.len() > 256 {
+        log::warn!("Rejected oversized setting key (length: {})", key_str.len());
+        return Err("Setting key exceeds maximum length of 256 characters".to_string());
+    }
+    if value.trim().is_empty() {
+        log::warn!("Rejected empty setting value for key '{}'", key_str);
+        return Err(format!("Setting value for '{}' cannot be empty", key_str));
+    }
+    if value.len() > 256 {
+        log::warn!(
+            "Rejected oversized setting value for key '{}' (length: {})",
+            key_str,
+            value.len()
+        );
+        return Err("Setting value exceeds maximum length of 256 characters".to_string());
+    }
+
+    let key: AppSettingKey = AppSettingKey::from_str(key_str)?;
+
     match key {
-        "language" => {
+        AppSettingKey::Language => {
             if value != "en" && value != "gu" {
+                log::warn!("Invalid language setting value: '{}'", value);
                 return Err(format!(
                     "Invalid value '{}' for 'language'. Allowed values are 'en' or 'gu'.",
                     value
                 ));
             }
         }
-        "theme" => {
-            if value != "dark" && value != "light" {
+        AppSettingKey::Theme => {
+            if value != "dark" && value != "light" && value != "system" {
+                log::warn!("Invalid theme setting value: '{}'", value);
                 return Err(format!(
-                    "Invalid value '{}' for 'theme'. Allowed values are 'dark' or 'light'.",
+                    "Invalid value '{}' for 'theme'. Allowed values are 'dark', 'light', or 'system'.",
                     value
                 ));
             }
         }
-        "sound_volume" => {
-            let vol: u8 = value
-                .parse::<u8>()
-                .map_err(|_| "Sound volume must be an integer between 0 and 100".to_string())?;
+        AppSettingKey::DefaultVideoVolume | AppSettingKey::SoundVolume => {
+            let vol: u8 = value.parse::<u8>().map_err(|_| {
+                log::warn!("Non-numeric volume setting value: '{}'", value);
+                "Volume must be an integer between 0 and 100".to_string()
+            })?;
             if vol > 100 {
-                return Err("Sound volume must not exceed 100".to_string());
+                log::warn!("Volume out of range: {}", vol);
+                return Err("Volume must not exceed 100".to_string());
             }
         }
-        "autoplay_enabled" => {
+        AppSettingKey::VideoAutoplay | AppSettingKey::AutoplayEnabled => {
             if value != "true" && value != "false" {
+                log::warn!("Invalid boolean setting value for autoplay: '{}'", value);
                 return Err(format!(
-                    "Invalid boolean value '{}' for 'autoplay_enabled'",
+                    "Invalid boolean value '{}' for autoplay setting. Allowed values are 'true' or 'false'.",
                     value
                 ));
             }
         }
-        "autoplay_interval_seconds" => {
-            let secs: u32 = value
-                .parse::<u32>()
-                .map_err(|_| "Autoplay interval must be a positive integer".to_string())?;
+        AppSettingKey::AutoplayIntervalSeconds => {
+            let secs: u32 = value.parse::<u32>().map_err(|_| {
+                log::warn!("Non-numeric autoplay interval value: '{}'", value);
+                "Autoplay interval must be a positive integer".to_string()
+            })?;
             if secs == 0 || secs > 60 {
+                log::warn!("Autoplay interval out of range: {}", secs);
                 return Err("Autoplay interval must be between 1 and 60 seconds".to_string());
             }
         }
-        "show_numbers_admin" => {
+        AppSettingKey::ShowInternalNumbers | AppSettingKey::ShowNumbersAdmin => {
             if value != "true" && value != "false" {
+                log::warn!(
+                    "Invalid boolean setting value for show numbers: '{}'",
+                    value
+                );
                 return Err(format!(
-                    "Invalid boolean value '{}' for 'show_numbers_admin'",
+                    "Invalid boolean value '{}' for show numbers setting. Allowed values are 'true' or 'false'.",
                     value
                 ));
             }
         }
-        _ => {
-            return Err(format!(
-                "Unsupported or unrecognized app setting key: '{}'",
-                key
-            ));
-        }
     }
 
-    Ok(())
+    Ok(key)
 }
 
 pub fn set_app_setting_internal(
@@ -90,6 +144,16 @@ pub fn set_app_setting_internal(
     .map_err(|e: rusqlite::Error| format!("Failed to update app setting: {}", e))?;
 
     Ok(())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AppInfo {
+    pub version: String,
+    pub data_dir: String,
+    pub db_path: String,
+    pub schema_version: i32,
+    pub language: String,
+    pub theme: String,
 }
 
 #[tauri::command]
@@ -161,10 +225,20 @@ mod tests {
         assert!(validate_app_setting("language", "gu").is_ok());
         assert!(validate_app_setting("theme", "dark").is_ok());
         assert!(validate_app_setting("theme", "light").is_ok());
+        assert!(validate_app_setting("theme", "system").is_ok());
+        assert!(validate_app_setting("default_video_volume", "80").is_ok());
         assert!(validate_app_setting("sound_volume", "50").is_ok());
-        assert!(validate_app_setting("autoplay_enabled", "true").is_ok());
+        assert!(validate_app_setting("video_autoplay", "true").is_ok());
+        assert!(validate_app_setting("autoplay_enabled", "false").is_ok());
         assert!(validate_app_setting("autoplay_interval_seconds", "5").is_ok());
+        assert!(validate_app_setting("show_internal_numbers", "true").is_ok());
         assert!(validate_app_setting("show_numbers_admin", "false").is_ok());
+
+        // Empty / oversized checks
+        assert!(validate_app_setting("", "en").is_err());
+        assert!(validate_app_setting("language", "").is_err());
+        assert!(validate_app_setting(&"a".repeat(300), "en").is_err());
+        assert!(validate_app_setting("language", &"a".repeat(300)).is_err());
 
         // Invalid keys
         assert!(validate_app_setting("unknown_key", "value").is_err());
@@ -212,6 +286,9 @@ mod tests {
 
             // Update language to 'en'
             set_app_setting_internal(&conn, "language", "en").expect("Valid update must succeed");
+
+            // Update theme to 'system'
+            set_app_setting_internal(&conn, "theme", "system").expect("Valid update must succeed");
         }
 
         // Re-open DB from disk and verify persistence
@@ -227,6 +304,18 @@ mod tests {
             assert_eq!(
                 reloaded_lang, "en",
                 "Language setting must persist across reopen"
+            );
+
+            let reloaded_theme: String = conn
+                .query_row(
+                    "SELECT value FROM app_settings WHERE key = 'theme';",
+                    [],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert_eq!(
+                reloaded_theme, "system",
+                "Theme setting must persist across reopen"
             );
         }
     }

@@ -10,9 +10,11 @@
 1. If Rust is not installed, install Rustup:
    ```powershell
    winget install --id Rustlang.Rustup -e
-   # Restart your terminal or reload PATH
+   # Restart your terminal to refresh PATH with %USERPROFILE%\.cargo\bin
    rustup default stable-x86_64-pc-windows-msvc
    ```
+   > [!IMPORTANT]
+   > The developer shell requires `%USERPROFILE%\.cargo\bin` on PATH for running `cargo` and `npm test`. If opening a new session, ensure PATH includes `%USERPROFILE%\.cargo\bin` (restart the terminal after rustup installation). Do not hardcode user paths in npm scripts.
 2. Verify dependencies:
    ```powershell
    rustc --version
