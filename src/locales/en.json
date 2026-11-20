@@ -9,6 +9,7 @@
         "mediaLibrary": "Media Library",
         "ticketGenerator": "Ticket Generator",
         "ticketBatches": "Ticket Batches",
+        "ticketPrinting": "Print Tickets",
         "schemes": "Winning Schemes",
         "tickets": "Tickets",
         "schemes": "Winning Schemes",
@@ -115,6 +116,21 @@
         "search": "Search ticket code",
         "previous": "Previous",
         "next": "Next"
+    },
+    "printing": {
+        "title": "Print tickets",
+        "batch": "Batch",
+        "chooseBatch": "Choose a batch",
+        "from": "From ticket code",
+        "to": "To ticket code",
+        "perPage": "Tickets per A4 page",
+        "print": "Print",
+        "guide": "Download template guide",
+        "templates": "Templates",
+        "activate": "Set active",
+        "default": "Default",
+        "upload": "Upload background",
+        "delete": "Delete"
     },
     "media": {
         "title": "Media Library",

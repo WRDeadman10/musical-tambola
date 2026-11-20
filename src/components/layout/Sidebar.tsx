@@ -44,6 +44,11 @@ export const Sidebar: React.FC = () => {
             icon: <Ticket className="w-5 h-5" />,
         },
         { labelKey: "nav.ticketBatches", path: "/tickets", icon: <Ticket className="w-5 h-5" /> },
+        {
+            labelKey: "nav.ticketPrinting",
+            path: "/tickets/print",
+            icon: <Ticket className="w-5 h-5" />,
+        },
         { labelKey: "nav.schemes", path: "/schemes", icon: <Trophy className="w-5 h-5" /> },
         { labelKey: "nav.gameController", path: "/game", icon: <Gamepad2 className="w-5 h-5" /> },
         { labelKey: "nav.claimDesk", path: "/claims", icon: <ShieldCheck className="w-5 h-5" /> },

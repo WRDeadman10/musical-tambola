@@ -11,6 +11,7 @@ import { GameControllerPage } from "./features/game-controller/GameControllerPag
 import { ClaimDeskPage } from "./features/claim-desk/ClaimDeskPage";
 import { HistoryPage } from "./features/history/HistoryPage";
 import { PresentationPage } from "./features/presentation/PresentationPage";
+import { PrintTicketsPage } from "./features/ticket-printing/PrintTicketsPage";
 
 function AppRoutes(): React.JSX.Element {
     const location = useLocation();
@@ -25,6 +26,7 @@ function AppRoutes(): React.JSX.Element {
                     <Route path="/media" element={<MediaLibraryPage />} />
                     <Route path="/tickets/generate" element={<TicketGeneratorPage />} />
                     <Route path="/tickets" element={<TicketBatchesPage />} />
+                    <Route path="/tickets/print" element={<PrintTicketsPage />} />
                     <Route path="/schemes" element={<SchemesPage />} />
                     <Route path="/game" element={<GameControllerPage />} />
                     <Route path="/claims" element={<ClaimDeskPage />} />
