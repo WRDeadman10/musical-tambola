@@ -28,7 +28,12 @@ export function StatusBar({
                 <span className="font-semibold">
                     {translate("hostPanel.draw")}{" "}
                     {formatNumber(state.game.currentDrawPosition, language, useGujaratiNumerals)} /{" "}
-                    {formatNumber(90, language, useGujaratiNumerals)}
+                    {formatNumber(
+                        state.game.totalNumbers ??
+                            (state.game.format === "SONG_GRID" ? (state.game.songCount ?? 45) : 90),
+                        language,
+                        useGujaratiNumerals,
+                    )}
                 </span>
                 <Badge variant="outline">{translate("hostPanel.projectorDisconnected")}</Badge>
             </div>

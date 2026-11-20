@@ -8,6 +8,8 @@ import { generateTicketBatch, listenToTicketGenerationProgress } from "../../lib
 import { toErrorMessage } from "../../lib/api/errors";
 import { TicketGenerationProgress } from "../../types/ticket";
 import { useAppStore } from "../../stores/appStore";
+import { getGameFormat } from "../../lib/api/formats";
+import { GameFormat } from "../../types/game";
 
 const schema = z.object({
     name: z.string().trim().min(1).max(200),
@@ -24,6 +26,16 @@ export function TicketGeneratorPage(): React.JSX.Element {
     });
     const [error, setError] = useState<string | null>(null);
     const [generating, setGenerating] = useState<boolean>(false);
+    const [format, setFormat] = useState<GameFormat>("CLASSIC_90");
+    const [songCount, setSongCount] = useState<number>(45);
+    useEffect(() => {
+        void getGameFormat()
+            .then((info) => {
+                setFormat(info.format);
+                setSongCount(info.songCount);
+            })
+            .catch(() => undefined);
+    }, []);
     const form = useForm<FormValues>({
         resolver: zodResolver(schema),
         defaultValues: { name: "", count: 100 },
@@ -60,6 +72,10 @@ export function TicketGeneratorPage(): React.JSX.Element {
             <Card>
                 <CardContent className="flex items-center justify-between p-6">
                     <span className="text-zinc-300">{t("tickets.generatorReady")}</span>
+                    <span className="text-xs text-indigo-300">
+                        {format}
+                        {format === "SONG_GRID" ? ` · ${songCount}` : ""}
+                    </span>
                     <Button onClick={() => setOpen(true)}>{t("tickets.generate")}</Button>
                 </CardContent>
             </Card>

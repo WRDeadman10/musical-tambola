@@ -46,11 +46,17 @@ export function NewGameWizard({
                         onChange={(event) => setBatch(Number(event.target.value))}
                     >
                         <option value={0}>{translate("game.chooseBatch")}</option>
-                        {model.batches.map((item) => (
-                            <option key={item.id} value={item.id}>
-                                {item.name} ({item.generatedCount})
-                            </option>
-                        ))}
+                        {model.batches.map((item) => {
+                            const currentFormat: string = model.format;
+                            const disabled: boolean =
+                                item.format !== undefined && item.format !== currentFormat;
+                            return (
+                                <option key={item.id} value={item.id} disabled={disabled}>
+                                    {item.name} ({item.generatedCount})
+                                    {disabled ? " — wrong format" : ""}
+                                </option>
+                            );
+                        })}
                     </select>
                     <Button
                         onClick={() => void model.start(batch)}

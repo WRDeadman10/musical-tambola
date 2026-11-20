@@ -37,7 +37,15 @@ export function GameScreen({
                             language,
                             useGujaratiNumerals,
                         )}{" "}
-                        / {formatNumber(90, language, useGujaratiNumerals)}
+                        /{" "}
+                        {formatNumber(
+                            state.game.totalNumbers ??
+                                (state.game.format === "SONG_GRID"
+                                    ? (state.game.songCount ?? 45)
+                                    : 90),
+                            language,
+                            useGujaratiNumerals,
+                        )}
                     </p>
                 </div>
                 <Button variant="outline" onClick={() => void setFullscreen(true)}>

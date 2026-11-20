@@ -25,6 +25,8 @@ import { ValidationReportPanel } from "./ValidationReportPanel";
 import { MediaFolderImportDialog } from "./MediaFolderImportDialog";
 import { MediaPosterDialog } from "./MediaPosterDialog";
 import { generateMissingPosters } from "./posterGeneration";
+import { getGameFormat } from "../../lib/api/formats";
+import { GameFormat } from "../../types/game";
 
 export { mediaFormSchema } from "./MediaEditDialog";
 
@@ -65,6 +67,8 @@ export const MediaLibraryPage: React.FC = () => {
     const t = useAppStore((state) => state.t);
     const language = useAppStore((state) => state.language);
     const { slots, isLoading, progress, refreshSlots, setSlots } = useMediaLibrary();
+    const [gameFormat, setGameFormat] = useState<GameFormat>("CLASSIC_90");
+    const [songCount, setSongCount] = useState<number>(45);
     const [filter, setFilter] = useState<MediaFilter>("ALL");
     const [query, setQuery] = useState<string>("");
     const [editingSlot, setEditingSlot] = useState<MediaSlot | null>(null);
@@ -83,12 +87,22 @@ export const MediaLibraryPage: React.FC = () => {
         new Map<number, HTMLTableRowElement>(),
     );
     useEffect(() => {
+        void getGameFormat()
+            .then((info) => {
+                setGameFormat(info.format);
+                setSongCount(info.songCount);
+            })
+            .catch(() => undefined);
+    }, []);
+    useEffect(() => {
         if (toast === null) return;
         const timeoutId: number = window.setTimeout(() => setToast(null), 3500);
         return () => window.clearTimeout(timeoutId);
     }, [toast]);
     const visibleSlots: MediaSlot[] = useMemo(() => {
-        const filtered: MediaSlot[] = filterMediaSlots(slots, filter);
+        const formatSlots: MediaSlot[] =
+            gameFormat === "SONG_GRID" ? slots.slice(0, songCount) : slots;
+        const filtered: MediaSlot[] = filterMediaSlots(formatSlots, filter);
         const normalizedQuery: string = query.trim().toLocaleLowerCase();
         return normalizedQuery.length === 0
             ? filtered
@@ -97,7 +111,7 @@ export const MediaLibraryPage: React.FC = () => {
                       value.toLocaleLowerCase().includes(normalizedQuery),
                   ),
               );
-    }, [filter, query, slots]);
+    }, [filter, gameFormat, query, slots, songCount]);
     const configuredCount: number = slots.filter((slot: MediaSlot) => slot.configured).length;
     const validCount: number = slots.filter(
         (slot: MediaSlot) => slot.validationStatus === "VALID",
@@ -181,6 +195,11 @@ export const MediaLibraryPage: React.FC = () => {
                         {t("media.title")}
                     </h2>
                     <p className="mt-1 text-sm text-zinc-400">{t("media.subtitle")}</p>
+                    {gameFormat === "SONG_GRID" && (
+                        <p className="mt-1 text-sm text-amber-300">
+                            {t("media.songGridHidden").replace("{{count}}", String(90 - songCount))}
+                        </p>
+                    )}
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setFolderImportOpen(true)}>

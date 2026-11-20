@@ -20,18 +20,20 @@ export function TicketGrid({
     showNumbers = false,
     onClick,
 }: TicketGridProps): React.JSX.Element {
+    const songGrid: boolean = ticket.format === "SONG_GRID";
+    const columns: number = songGrid ? 5 : 9;
     const cells: Map<string, number> = new Map<string, number>(
         ticket.cells.map((cell) => [`${cell.row}-${cell.col}`, cell.number]),
     );
     return (
         <button
             type="button"
-            className="grid aspect-[9/3] w-full grid-cols-9 gap-1 rounded-lg border border-zinc-700 bg-zinc-950 p-1 text-left"
+            className={`grid w-full gap-1 rounded-lg border border-zinc-700 bg-zinc-950 p-1 text-left ${songGrid ? "aspect-[5/3] grid-cols-5" : "aspect-[9/3] grid-cols-9"}`}
             onClick={onClick}
         >
-            {Array.from({ length: 27 }, (_value: undefined, index: number) => {
-                const row: number = Math.floor(index / 9);
-                const col: number = index % 9;
+            {Array.from({ length: 3 * columns }, (_value: undefined, index: number) => {
+                const row: number = Math.floor(index / columns);
+                const col: number = index % columns;
                 const number: number | undefined = cells.get(`${row}-${col}`);
                 const media: MediaSlot | undefined =
                     number === undefined ? undefined : mediaByNumber.get(number);

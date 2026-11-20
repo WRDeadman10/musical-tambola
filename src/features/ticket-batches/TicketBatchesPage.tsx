@@ -13,6 +13,8 @@ import { listMedia } from "../../lib/api/media";
 import { MediaSlot } from "../../types/media";
 import { Ticket, TicketBatch } from "../../types/ticket";
 import { useAppStore } from "../../stores/appStore";
+import { getGameFormat } from "../../lib/api/formats";
+import { GameFormat } from "../../types/game";
 
 const PAGE_SIZE: number = 24;
 
@@ -29,6 +31,7 @@ export function TicketBatchesPage(): React.JSX.Element {
     const [page, setPage] = useState<number>(0);
     const [error, setError] = useState<string | null>(null);
     const [pendingDelete, setPendingDelete] = useState<TicketBatch | null>(null);
+    const [activeFormat, setActiveFormat] = useState<GameFormat>("CLASSIC_90");
     const requestId = useRef<number>(0);
 
     const load = async (): Promise<void> => {
@@ -40,6 +43,9 @@ export function TicketBatchesPage(): React.JSX.Element {
 
     useEffect(() => {
         void load();
+        void getGameFormat()
+            .then((info) => setActiveFormat(info.format))
+            .catch(() => undefined);
     }, [t]);
     useEffect(() => {
         if (selected === null) {
@@ -113,6 +119,10 @@ export function TicketBatchesPage(): React.JSX.Element {
                             <h3 className="font-semibold">{batch.name}</h3>
                             <p className="text-sm text-zinc-400">
                                 {batch.generatedCount}/{batch.requestedCount}
+                            </p>
+                            <p className="text-xs text-indigo-300">
+                                {batch.format ?? activeFormat}
+                                {batch.songCount ? ` · ${batch.songCount}` : ""}
                             </p>
                             <div className="flex gap-2">
                                 <Button

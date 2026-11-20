@@ -1,6 +1,11 @@
 import { MediaType, SourceType, MediaValidationReport, MediaValidationProgress } from "./media";
 
 export type GameStatus = "READY" | "ACTIVE" | "PAUSED" | "COMPLETED" | "ENDED";
+export type GameFormat = "CLASSIC_90" | "SONG_GRID";
+export interface GameFormatInfo {
+    format: GameFormat;
+    songCount: number;
+}
 export interface GameSummary {
     id: number;
     code: string;
@@ -12,6 +17,9 @@ export interface GameSummary {
     createdAt: string;
     startedAt: string | null;
     endedAt: string | null;
+    format?: GameFormat;
+    songCount?: number;
+    totalNumbers?: number;
 }
 export interface CalledItem {
     position: number;

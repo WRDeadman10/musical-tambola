@@ -5,6 +5,8 @@ import { toErrorMessage } from "../../lib/api/errors";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
+import { getGameFormat, setGameFormat } from "../../lib/api/formats";
+import { GameFormat } from "../../types/game";
 
 type Theme = "dark" | "light" | "system";
 
@@ -15,6 +17,8 @@ export const SettingsPage: React.FC = () => {
     const [autoplay, setAutoplay] = useState<boolean>(true);
     const [showNumbers, setShowNumbers] = useState<boolean>(false);
     const [useGujaratiNumerals, setUseGujaratiNumerals] = useState<boolean>(false);
+    const [gameFormat, setGameFormatState] = useState<GameFormat>("CLASSIC_90");
+    const [songCount, setSongCount] = useState<number>(45);
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +43,14 @@ export const SettingsPage: React.FC = () => {
             .catch((caught: unknown) => {
                 if (mounted) setError(toErrorMessage(caught, t));
             });
+        getGameFormat()
+            .then((info) => {
+                if (mounted) {
+                    setGameFormatState(info.format);
+                    setSongCount(info.songCount);
+                }
+            })
+            .catch(() => undefined);
         return () => {
             mounted = false;
         };
@@ -88,6 +100,21 @@ export const SettingsPage: React.FC = () => {
         }
         await persist(key, String(next));
     };
+    const changeFormat = async (format: GameFormat): Promise<void> => {
+        try {
+            const info = await setGameFormat(format, format === "SONG_GRID" ? songCount : 90);
+            setGameFormatState(info.format);
+            setSongCount(info.songCount);
+            setMessage(t("settings.savedSuccess"));
+        } catch (caught: unknown) {
+            setError(toErrorMessage(caught, t));
+        }
+    };
+    const changeSongCount = async (value: number): Promise<void> => {
+        const next: number = Math.max(15, Math.min(90, Math.round(value)));
+        setSongCount(next);
+        if (gameFormat === "SONG_GRID") await changeFormat("SONG_GRID");
+    };
 
     return (
         <div className="p-8 max-w-4xl mx-auto space-y-8">
@@ -118,6 +145,46 @@ export const SettingsPage: React.FC = () => {
                     {message}
                 </div>
             )}
+            <Card>
+                <CardHeader>
+                    <CardTitle>{t("settings.gameFormat")}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    <div className="grid gap-3 md:grid-cols-2">
+                        <Button
+                            type="button"
+                            variant={gameFormat === "CLASSIC_90" ? "default" : "outline"}
+                            onClick={() => void changeFormat("CLASSIC_90")}
+                        >
+                            {t("settings.classic90")}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant={gameFormat === "SONG_GRID" ? "default" : "outline"}
+                            onClick={() => void changeFormat("SONG_GRID")}
+                        >
+                            {t("settings.songGrid")}
+                        </Button>
+                    </div>
+                    {gameFormat === "SONG_GRID" && (
+                        <label className="block">
+                            {t("settings.songCount")}
+                            <input
+                                aria-label={t("settings.songCount")}
+                                className="ml-3 w-24"
+                                type="number"
+                                min={15}
+                                max={90}
+                                value={songCount}
+                                onChange={(event) =>
+                                    void changeSongCount(Number(event.target.value))
+                                }
+                            />
+                        </label>
+                    )}
+                    <p className="text-sm text-zinc-400">{t("settings.formatWarning")}</p>
+                </CardContent>
+            </Card>
             <Card>
                 <CardHeader>
                     <CardTitle>{t("settings.language")}</CardTitle>

@@ -4,6 +4,8 @@ export interface TicketBatch {
     requestedCount: number;
     generatedCount: number;
     createdAt: string;
+    format?: "CLASSIC_90" | "SONG_GRID";
+    songCount?: number;
 }
 
 export interface TicketCell {
@@ -18,6 +20,7 @@ export interface Ticket {
     batchId: number;
     cells: TicketCell[];
     createdAt: string;
+    format?: "CLASSIC_90" | "SONG_GRID";
 }
 
 export interface TicketPage {

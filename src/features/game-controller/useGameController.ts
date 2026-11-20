@@ -6,8 +6,11 @@ import { GameState } from "../../types/game";
 import { MediaValidationReport } from "../../types/media";
 import { TicketBatch } from "../../types/ticket";
 import { useAppStore } from "../../stores/appStore";
+import { getGameFormat } from "../../lib/api/formats";
+import { GameFormat } from "../../types/game";
 export interface GameControllerModel {
     state: GameState | null;
+    format: GameFormat;
     batches: TicketBatch[];
     report: MediaValidationReport | null;
     busy: boolean;
@@ -23,6 +26,7 @@ export interface GameControllerModel {
 export function useGameController(): GameControllerModel {
     const translate = useAppStore((state) => state.t);
     const [state, setState] = useState<GameState | null>(null);
+    const [format, setFormat] = useState<GameFormat>("CLASSIC_90");
     const [batches, setBatches] = useState<TicketBatch[]>([]);
     const [report, setReport] = useState<MediaValidationReport | null>(null);
     const [busy, setBusy] = useState<boolean>(false);
@@ -44,6 +48,11 @@ export function useGameController(): GameControllerModel {
         return () => {
             active = false;
         };
+    }, []);
+    useEffect(() => {
+        void getGameFormat()
+            .then((info) => setFormat(info.format))
+            .catch(() => undefined);
     }, []);
     const validate = async (): Promise<void> => {
         setBusy(true);
@@ -96,6 +105,7 @@ export function useGameController(): GameControllerModel {
     };
     return {
         state,
+        format,
         batches,
         report,
         busy,
