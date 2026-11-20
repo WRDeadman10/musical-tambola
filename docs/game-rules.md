@@ -16,8 +16,14 @@ A standard 90-ball Tambola ticket conforms to the following strict mathematical 
   - Column 7: 70–79
   - Column 8: 80–90
 - **Column Ordering**: Within any column, numbers must appear in strictly ascending order from top to bottom.
-- **Column Occupancy**: Every column must have at least 1 number across a full sheet/batch.
+- **Column Occupancy**: Every column must have between 1 and 3 numbers, summing to exactly 15 across the 9 columns.
 - **Uniqueness**: Every ticket must have a globally unique canonical layout hash (a deterministic SHA-256 representation of cell positions and numbers).
+
+### 1.1 Generation Algorithm & Layout Hashing
+- **Constrained Layout Selection**: Randomized backtracking creates a 3x9 grid ensuring 5 numbers per row and 1–3 numbers per column. Columns with 0 assigned cells are prioritized in successive rows.
+- **Number Allocation**: For each column $c$, $k \in \{1, 2, 3\}$ numbers are drawn without replacement from the column range $min_c..=max_c$ using `RandomSource`. Numbers are sorted ascending and mapped top-to-bottom to the occupied rows.
+- **Canonical Representation**: String representation formatted row-major with `|` column delimiters and newline row delimiters (e.g., `10|_|25|_|42|_|61|_|88\n...`).
+- **Layout Hash**: Lowercase 64-character SHA-256 hex digest of the canonical string, enforced via SQLite `UNIQUE(layout_hash)`.
 
 ## 2. Winning Schemes
 Media Tambola provides 6 standard data-driven schemes:

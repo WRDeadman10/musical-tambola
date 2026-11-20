@@ -42,3 +42,29 @@
 | T2-F03 | Media Preview Dialog & Thumbnails | DONE | Codex | Implemented in `MediaPreviewDialog.tsx` with native controls |
 | T2-F04 | Validation Report Panel & Progress Event | DONE | Codex | Implemented in `MediaValidationReportModal.tsx` |
 | T2-F05 | Frontend Vitest Suite | DONE | Codex | 13/13 Vitest tests pass across 5 test suites |
+
+
+---
+
+## Phase 3: Ticket Generator & Batches
+
+### Track 1: Backend / Rust (Assignee: AG — Implementer #1 & Git Owner)
+
+| Task ID | Description | Status | Assignee | Notes |
+|---------|-------------|--------|----------|-------|
+| T3-B01 | Carry-over fix: `RangeSpec::Empty` for 0-byte files | DONE | AG (A) | Commit 398013d |
+| T3-B02 | Re-add `rand` and `sha2`, implement `RandomSource` trait | DONE | AG (A) | OsRngSource, DeterministicRandomSource, ConstantRandomSource |
+| T3-B03 | Constrained ticket generator & validation engine | DONE | AG (A) | `domain/tambola/ticket_generator.rs`, canonical layout, SHA-256 hash |
+| T3-B04 | Ticket repository with monotonic codes and retry budget | DONE | AG (A) | `db/repositories/ticket.rs`, single transaction, delete guard |
+| T3-B05 | Tauri commands & progress events | DONE | AG (A) | `commands/ticket.rs`, async `ticket-generation-progress` event |
+| T3-B06 | Comprehensive test suite (10,000 tickets, seeds, collision, rollback, delete) | DONE | AG (A) | 20/20 Cargo tests pass, clean clippy & formatting |
+
+### Track 2: Frontend (Assignee: Codex — Implementer #2)
+
+| Task ID | Description | Status | Assignee | Notes |
+|---------|-------------|--------|----------|-------|
+| T3-F01 | MediaLibraryPage refactoring into focused components | IN_PROGRESS | Codex | Carry-over item |
+| T3-F02 | Ticket Generator modal & progress bar | IN_PROGRESS | Codex | `src/features/ticket-generator/**` |
+| T3-F03 | Ticket Batches page & pagination | IN_PROGRESS | Codex | `src/features/ticket-batches/**` |
+| T3-F04 | Reusable `TicketGrid` component | IN_PROGRESS | Codex | `src/components/ticket/TicketGrid.tsx` |
+| T3-F05 | Ticket API wrappers & Vitest suite | IN_PROGRESS | Codex | `src/lib/api/tickets.ts`, `src/test/ticket*.test.ts(x)` |

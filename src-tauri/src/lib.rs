@@ -8,6 +8,10 @@ use commands::media::{
     clear_media, get_media, list_media, pick_media_file, save_media, validate_all_media,
     validate_media,
 };
+use commands::ticket::{
+    delete_ticket_batch, generate_ticket_batch, get_ticket, list_batch_tickets,
+    list_ticket_batches, search_tickets,
+};
 use db::connection::{get_app_data_dir, initialize_database, DbState};
 use services::media_protocol::handle_media_protocol;
 use std::path::PathBuf;
@@ -54,6 +58,12 @@ pub fn run() {
             validate_media,
             validate_all_media,
             pick_media_file,
+            generate_ticket_batch,
+            list_ticket_batches,
+            list_batch_tickets,
+            get_ticket,
+            search_tickets,
+            delete_ticket_batch,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");

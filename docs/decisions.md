@@ -98,3 +98,24 @@ During Phase 2 implementation, `0001_init.sql` was amended in place to support `
   - Aligns with standard migration lifecycle best practices.
 - **Cons**:
   - Schema changes require creating new migration files rather than editing initial schema definitions.
+
+---
+
+## ADR-006: Constrained Randomized Ticket Generation and Layout Hashing
+
+### Context
+Tambola tickets require a valid 3x9 grid (15 numbers, 5 per row, 1–3 per column, column ranges, and ascending sorted column values). Randomly placing numbers without constraints leads to invalid configurations, high rejection rates, or biased distributions. Duplicate ticket layouts must be prevented globally across all batches.
+
+### Decision
+1. **Constrained Layout Synthesis**: Use randomized backtracking to generate a 3x9 binary presence mask where each row has exactly 5 occupied cells and each column has 1–3 occupied cells.
+2. **Column Number Selection**: Draw $k$ distinct numbers uniformly at random from each column's strict range using `RandomSource` (`OsRng` in production, `DeterministicRandomSource` in tests), sort them ascending, and assign them to occupied row cells top-to-bottom.
+3. **Canonical Layout Hashing**: Compute a deterministic row-major string representation and SHA-256 hash (`layout_hash`). Uniqueness is enforced atomically in SQLite (`UNIQUE(layout_hash)`).
+4. **Collision Handling**: Maintain a retry budget (50 per ticket, $10 \times count$ overall). If budget is exhausted, the transaction is rolled back completely.
+
+### Consequences
+- **Pros**:
+  - 100% of generated tickets pass full Tambola validation before insertion.
+  - Zero duplicate tickets across games and batches.
+  - Testable and reproducible with deterministic RNG seeds.
+- **Cons**:
+  - Generating very large batches (e.g. 10,000 tickets) requires retry budget monitoring.
