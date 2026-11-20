@@ -129,6 +129,7 @@ pub fn set_app_setting_internal(
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AppInfo {
     pub version: String,
     pub data_dir: String,
@@ -136,6 +137,9 @@ pub struct AppInfo {
     pub schema_version: i32,
     pub language: String,
     pub theme: String,
+    pub default_video_volume: String,
+    pub video_autoplay: String,
+    pub show_internal_numbers: String,
 }
 
 #[tauri::command]
@@ -163,6 +167,30 @@ pub fn get_app_info(state: State<'_, DbState>) -> Result<AppInfo, String> {
         )
         .unwrap_or_else(|_| "dark".to_string());
 
+    let default_video_volume: String = conn
+        .query_row(
+            "SELECT value FROM app_settings WHERE key = 'default_video_volume';",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| "80".to_string());
+
+    let video_autoplay: String = conn
+        .query_row(
+            "SELECT value FROM app_settings WHERE key = 'video_autoplay';",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| "false".to_string());
+
+    let show_internal_numbers: String = conn
+        .query_row(
+            "SELECT value FROM app_settings WHERE key = 'show_internal_numbers';",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| "false".to_string());
+
     let info: AppInfo = AppInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
         data_dir: state
@@ -174,6 +202,9 @@ pub fn get_app_info(state: State<'_, DbState>) -> Result<AppInfo, String> {
         schema_version,
         language,
         theme,
+        default_video_volume,
+        video_autoplay,
+        show_internal_numbers,
     };
 
     Ok(info)

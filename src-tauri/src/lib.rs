@@ -2,6 +2,7 @@ pub mod commands;
 pub mod db;
 pub mod domain;
 pub mod services;
+pub mod smoke;
 
 use commands::app_info::{get_app_info, set_app_setting};
 use commands::claim::{list_game_claims, submit_claim};
