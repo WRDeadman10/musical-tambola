@@ -1,31 +1,13 @@
-import React, { useEffect } from "react";
-import { useAppStore } from "../../stores/appStore";
+import React from "react";
 import { useGameController } from "./useGameController";
 import { NewGameWizard } from "./NewGameWizard";
-import { GameScreen } from "./GameScreen";
+import { HostPanel } from "./HostPanel";
+import { useAppStore } from "../../stores/appStore";
 export function GameControllerPage(): React.JSX.Element {
-    const translate = useAppStore((state) => state.t);
     const model = useGameController();
-    useEffect(() => {
-        const handler = (event: KeyboardEvent): void => {
-            const target = event.target as HTMLElement | null;
-            if (
-                event.code === "Space" &&
-                target &&
-                !["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(target.tagName) &&
-                !target.isContentEditable &&
-                !document.querySelector('[role="dialog"]') &&
-                model.state?.game.status === "ACTIVE"
-            ) {
-                event.preventDefault();
-                void model.next();
-            }
-        };
-        window.addEventListener("keydown", handler);
-        return () => window.removeEventListener("keydown", handler);
-    }, [model]);
+    const translate = useAppStore((state) => state.t);
     return model.state ? (
-        <GameScreen model={model} translate={translate} />
+        <HostPanel model={model} />
     ) : (
         <NewGameWizard model={model} translate={translate} />
     );
