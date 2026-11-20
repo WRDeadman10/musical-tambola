@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-gujarati: "Noto Sans Gujarati", "Nirmala UI", "Shruti", sans-serif;
+  }
+
+  body {
+    font-family: var(--font-gujarati);
+    background-color: #09090b;
+    color: #f4f4f5;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}

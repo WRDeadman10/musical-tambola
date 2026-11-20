@@ -1,0 +1,51 @@
+{
+  "app": {
+    "title": "મીડિયા તંબોલા",
+    "subtitle": "ઓડિયો-વિઝ્યુઅલ ૯૦-બોલ તંબોલા પ્રણાલી"
+  },
+  "nav": {
+    "dashboard": "ડેશબોર્ડ",
+    "mediaLibrary": "મીડિયા લાયબ્રેરી",
+    "tickets": "ટિકિટ્સ",
+    "schemes": "વિનિંગ સ્કીમ્સ",
+    "gameController": "ગેમ સ્ક્રીન",
+    "claimDesk": "ક્લેમ ડેસ્ક",
+    "winnerHistory": "વિજેતા ઇતિહાસ",
+    "settings": "સેટિંગ્સ"
+  },
+  "dashboard": {
+    "title": "ડેશબોર્ડ",
+    "welcome": "મીડિયા તંબોલામાં સ્વાગત છે",
+    "quickStatus": "સિસ્ટમ સ્થિતિ",
+    "mediaConfigured": "ગોઠવાયેલ મીડિયા એસેટ્સ",
+    "ticketsGenerated": "જનરેટ થયેલ ટિકિટ્સ",
+    "activeGame": "ચાલુ રમત સત્ર",
+    "noActiveGame": "કોઈ ચાલુ રમત નથી",
+    "startGame": "રમત શરૂ કરો",
+    "manageMedia": "મીડિયા ગોઠવો",
+    "generateTickets": "ટિકિટ્સ બનાવો"
+  },
+  "settings": {
+    "title": "એપ્લિકેશન સેટિંગ્સ",
+    "systemInfo": "સિસ્ટમ અને ડેટાબેઝ માહિતી",
+    "version": "એપ વર્ઝન",
+    "schemaVersion": "ડેટાબેઝ સ્કીમા વર્ઝન",
+    "dataDir": "ડેટા ડિરેક્ટરી",
+    "dbPath": "ડેટાબેઝ પાથ",
+    "language": "ભાષા (Language)",
+    "theme": "થીમ",
+    "soundVolume": "અવાજ વોલ્યુમ",
+    "autoplay": "ઓટોપ્લે ડ્રો",
+    "showNumbersAdmin": "નંબર્સ દર્શાવો (એડમિન ડાયગ્નોસ્ટિક)",
+    "save": "ફેરફારો સાચવો",
+    "savedSuccess": "સેટિંગ્સ સફળતાપૂર્વક સાચવવામાં આવી"
+  },
+  "common": {
+    "loading": "લોડ થઈ રહ્યું છે...",
+    "error": "ભૂલ આવી છે",
+    "retry": "ફરી પ્રયાસ કરો",
+    "active": "સક્રિય",
+    "inactive": "નિષ્ક્રિય",
+    "ready": "તૈયાર"
+  }
+}

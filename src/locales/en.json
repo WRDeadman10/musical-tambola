@@ -1,0 +1,51 @@
+{
+  "app": {
+    "title": "Media Tambola",
+    "subtitle": "Audio-Visual 90-Ball Tambola System"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "mediaLibrary": "Media Library",
+    "tickets": "Tickets",
+    "schemes": "Winning Schemes",
+    "gameController": "Game Screen",
+    "claimDesk": "Claim Desk",
+    "winnerHistory": "Winner History",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome to Media Tambola",
+    "quickStatus": "System Status",
+    "mediaConfigured": "Media Assets Configured",
+    "ticketsGenerated": "Tickets Generated",
+    "activeGame": "Active Game Session",
+    "noActiveGame": "No active game in progress",
+    "startGame": "Start Game",
+    "manageMedia": "Configure Media",
+    "generateTickets": "Generate Tickets"
+  },
+  "settings": {
+    "title": "Application Settings",
+    "systemInfo": "System & Environment Info",
+    "version": "App Version",
+    "schemaVersion": "Database Schema Version",
+    "dataDir": "Data Directory",
+    "dbPath": "Database Path",
+    "language": "Language",
+    "theme": "Theme",
+    "soundVolume": "Sound Volume",
+    "autoplay": "Autoplay Draw",
+    "showNumbersAdmin": "Show Numbers (Admin Diagnostic)",
+    "save": "Save Changes",
+    "savedSuccess": "Settings saved successfully"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "active": "Active",
+    "inactive": "Inactive",
+    "ready": "Ready"
+  }
+}
