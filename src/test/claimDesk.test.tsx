@@ -115,7 +115,7 @@ describe("Claim Desk", () => {
         fireEvent.change(await screen.findByLabelText("Ticket ID"), {
             target: { value: "T-000021" },
         });
-        fireEvent.click(screen.getByRole("button", { name: "VALIDATE CLAIM" }));
+        fireEvent.click(screen.getByRole("button", { name: /VALIDATE CLAIM/i }));
         expect(await screen.findByText("Winner 1 of 2")).toBeTruthy();
     });
 
@@ -132,7 +132,7 @@ describe("Claim Desk", () => {
         fireEvent.change(await screen.findByLabelText("Ticket ID"), {
             target: { value: "T-000021" },
         });
-        fireEvent.click(screen.getByRole("button", { name: "VALIDATE CLAIM" }));
+        fireEvent.click(screen.getByRole("button", { name: /VALIDATE CLAIM/i }));
         expect(await screen.findByText(/Qualification position: 3/)).toBeTruthy();
         expect(screen.getByText(/Current draw position: 5/)).toBeTruthy();
     });
@@ -176,7 +176,7 @@ describe("Claim Desk", () => {
         fireEvent.change(await screen.findByLabelText("Ticket ID"), {
             target: { value: "T-000021" },
         });
-        fireEvent.click(screen.getByRole("button", { name: "VALIDATE CLAIM" }));
+        fireEvent.click(screen.getByRole("button", { name: /VALIDATE CLAIM/i }));
         await waitFor(() => expect(getActiveGame).toHaveBeenCalledTimes(2));
     });
 
@@ -184,7 +184,7 @@ describe("Claim Desk", () => {
         render(<ClaimDeskPage />);
         const input = await screen.findByLabelText("Ticket ID");
         fireEvent.change(input, { target: { value: "T-000021" } });
-        fireEvent.click(screen.getByRole("button", { name: "VALIDATE CLAIM" }));
+        fireEvent.click(screen.getByRole("button", { name: /VALIDATE CLAIM/i }));
         await screen.findByText("Winner 1 of 2");
         expect((screen.getByLabelText("Ticket ID") as HTMLInputElement).value).toBe("");
         expect((screen.getByLabelText("Scheme") as HTMLSelectElement).value).toBe("3");

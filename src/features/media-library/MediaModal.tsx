@@ -1,6 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { Button } from "../../components/ui/button";
+import { useAppStore } from "../../stores/appStore";
 
 interface MediaModalProps {
     title: string;
@@ -9,6 +10,7 @@ interface MediaModalProps {
 }
 
 export function MediaModal({ title, onClose, children }: MediaModalProps): React.JSX.Element {
+    const t = useAppStore((state) => state.t);
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
@@ -24,7 +26,12 @@ export function MediaModal({ title, onClose, children }: MediaModalProps): React
             >
                 <div className="mb-5 flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-white">{title}</h2>
-                    <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onClose}
+                        aria-label={t("common.close")}
+                    >
                         <X className="h-4 w-4" />
                     </Button>
                 </div>

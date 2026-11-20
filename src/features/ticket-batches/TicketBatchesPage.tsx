@@ -40,7 +40,7 @@ export function TicketBatchesPage(): React.JSX.Element {
 
     useEffect(() => {
         void load();
-    }, []);
+    }, [t]);
     useEffect(() => {
         if (selected === null) {
             return;
@@ -74,11 +74,11 @@ export function TicketBatchesPage(): React.JSX.Element {
                     }
                 }
             } catch (caught: unknown) {
-                setError(toErrorMessage(caught));
+                setError(toErrorMessage(caught, t));
             }
         };
         void loadTickets();
-    }, [page, query, selected]);
+    }, [page, query, selected, t]);
 
     const remove = async (): Promise<void> => {
         if (pendingDelete === null) {
@@ -90,7 +90,7 @@ export function TicketBatchesPage(): React.JSX.Element {
             setSelected(null);
             await load();
         } catch (caught: unknown) {
-            setError(toErrorMessage(caught));
+            setError(toErrorMessage(caught, t));
         }
     };
 

@@ -41,28 +41,28 @@ export const mediaFormSchema = z
                     context.addIssue({
                         code: "custom",
                         path: ["source"],
-                        message: "Use an HTTP or HTTPS URL.",
+                        message: "media.errors.invalidHttp",
                     });
                 }
             } catch {
                 context.addIssue({
                     code: "custom",
                     path: ["source"],
-                    message: "Enter a valid HTTP or HTTPS URL.",
+                    message: "media.errors.invalidUrl",
                 });
             }
             if (isKnownMediaPageUrl(value.source)) {
                 context.addIssue({
                     code: "custom",
                     path: ["source"],
-                    message: "Use a direct media file URL, not a YouTube or Vimeo page URL.",
+                    message: "media.errors.directMediaUrl",
                 });
             }
         } else if (!windowsPathPattern.test(value.source)) {
             context.addIssue({
                 code: "custom",
                 path: ["source"],
-                message: "Use an absolute Windows path.",
+                message: "media.errors.absolutePath",
             });
         }
         if (
@@ -74,7 +74,7 @@ export const mediaFormSchema = z
             context.addIssue({
                 code: "custom",
                 path: ["thumbnailSource"],
-                message: "Use an absolute Windows path.",
+                message: "media.errors.absolutePath",
             });
         }
     });
@@ -201,7 +201,7 @@ export function MediaEditDialog({
                     </div>
                     {form.formState.errors.source && (
                         <span className="text-xs text-red-400">
-                            {form.formState.errors.source.message}
+                            {t(form.formState.errors.source.message ?? "common.error")}
                         </span>
                     )}
                     {sourceType === "REMOTE" && (

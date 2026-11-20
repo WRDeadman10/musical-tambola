@@ -46,7 +46,7 @@ export function TicketGeneratorPage(): React.JSX.Element {
             setOpen(false);
             form.reset();
         } catch (caught: unknown) {
-            setError(toErrorMessage(caught));
+            setError(toErrorMessage(caught, t));
         } finally {
             setGenerating(false);
         }

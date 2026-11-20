@@ -2,6 +2,7 @@ import React from "react";
 import { getMediaDisplaySource, getMediaThumbnailSource } from "./mediaFilters";
 import { MediaSlot } from "../../types/media";
 import { MediaModal } from "./MediaModal";
+import { useAppStore } from "../../stores/appStore";
 
 interface MediaPreviewDialogProps {
     slot: MediaSlot;
@@ -9,13 +10,14 @@ interface MediaPreviewDialogProps {
 }
 
 export function MediaPreviewDialog({ slot, onClose }: MediaPreviewDialogProps): React.JSX.Element {
+    const t = useAppStore((state) => state.t);
     const displaySource: string | null = getMediaDisplaySource(slot);
     const thumbnailSource: string | null = getMediaThumbnailSource(slot);
     return (
         <MediaModal onClose={onClose} title={`${slot.number} — ${slot.title ?? ""}`}>
             <div className="flex min-h-72 items-center justify-center overflow-hidden rounded-lg bg-zinc-950">
                 {!slot.configured || displaySource === null ? (
-                    <div className="text-sm text-zinc-500">No media configured</div>
+                    <div className="text-sm text-zinc-500">{t("media.notConfigured")}</div>
                 ) : slot.mediaType === "VIDEO" ? (
                     <video
                         className="max-h-[60vh] max-w-full"
@@ -31,7 +33,7 @@ export function MediaPreviewDialog({ slot, onClose }: MediaPreviewDialogProps): 
                     <img
                         className="max-h-[60vh] max-w-full object-contain"
                         src={displaySource}
-                        alt={slot.title ?? `Media ${slot.number}`}
+                        alt={slot.title ?? `${t("media.title")} ${slot.number}`}
                     />
                 )}
             </div>

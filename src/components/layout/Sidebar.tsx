@@ -81,7 +81,7 @@ export const Sidebar: React.FC = () => {
             </nav>
 
             <div className="p-4 border-t border-zinc-800 text-xs text-zinc-500 text-center">
-                v0.1.0 • Desktop Edition
+                {t("app.edition")}
             </div>
         </aside>
     );

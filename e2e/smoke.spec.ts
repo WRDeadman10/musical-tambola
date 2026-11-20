@@ -146,8 +146,9 @@ function installTauriStub(page: Page): Promise<void> {
             transformCallback: (): number => 1,
             unregisterListener: async (): Promise<void> => undefined,
         };
-        (window as unknown as { __TAURI_EVENT_PLUGIN_INTERNALS__: unknown })
-            .__TAURI_EVENT_PLUGIN_INTERNALS__ = {
+        (
+            window as unknown as { __TAURI_EVENT_PLUGIN_INTERNALS__: unknown }
+        ).__TAURI_EVENT_PLUGIN_INTERNALS__ = {
             unregisterListener: (): void => undefined,
         };
     });
@@ -181,6 +182,6 @@ test("navigates every sidebar route and completes the mocked game flow", async (
 
     await page.goto("/claims");
     await page.getByLabel(/Ticket ID|ટિકિટ ID/).fill("T-000001");
-    await page.getByRole("button", { name: /VALIDATE CLAIM|ક્લેમ ચકાસો/ }).click();
+    await page.getByRole("button", { name: /validate claim|ક્લેમ ચકાસો/i }).click();
     await expect(page.getByText(/CLAIM ACCEPTED|Accepted|સ્વીકૃત/)).toBeVisible();
 });

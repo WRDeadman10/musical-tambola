@@ -13,25 +13,20 @@ import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { MediaSlot, ValidationStatus } from "../../types/media";
 import { getMediaThumbnailSource } from "./mediaFilters";
+import { Language } from "../../stores/appStore";
+import { formatDate } from "../../lib/i18n";
 
 interface MediaTableProps {
     slots: MediaSlot[];
     highlightedNumber: number | null;
     isLoading: boolean;
     translate: (key: string) => string;
+    language: Language;
     onEdit: (slot: MediaSlot) => void;
     onPreview: (slot: MediaSlot) => void;
     onValidate: (slot: MediaSlot) => void;
     onRemove: (slot: MediaSlot) => void;
     setRowRef: (number: number, row: HTMLTableRowElement | null) => void;
-}
-
-function formatValidationDate(value: string | null): string {
-    if (value === null) {
-        return "—";
-    }
-    const date: Date = new Date(value);
-    return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }
 
 function getStatusVariant(
@@ -73,6 +68,7 @@ export function MediaTable({
     highlightedNumber,
     isLoading,
     translate,
+    language,
     onEdit,
     onPreview,
     onValidate,
@@ -158,12 +154,22 @@ export function MediaTable({
                                         className="mt-1 max-w-40 truncate text-xs text-red-400"
                                         title={slot.validationMessage}
                                     >
-                                        {slot.validationMessage}
+                                        {slot.validationCode !== null &&
+                                        slot.validationCode !== undefined
+                                            ? translate(`errors.${slot.validationCode}`).replace(
+                                                  /\{\{(\w+)\}\}/g,
+                                                  (_match: string, key: string) =>
+                                                      String(
+                                                          slot.validationParams?.[key] ??
+                                                              `{{${key}}}`,
+                                                      ),
+                                              )
+                                            : slot.validationMessage}
                                     </div>
                                 )}
                             </td>
                             <td className="whitespace-nowrap px-4 py-3 text-xs text-zinc-500">
-                                {formatValidationDate(slot.lastValidatedAt)}
+                                {formatDate(slot.lastValidatedAt, language)}
                             </td>
                             <td className="px-4 py-3">
                                 <div className="flex justify-end gap-1">

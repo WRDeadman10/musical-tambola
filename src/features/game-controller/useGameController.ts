@@ -5,6 +5,7 @@ import { createGame, drawNext, endGame, getActiveGame, preflightMedia } from "..
 import { GameState } from "../../types/game";
 import { MediaValidationReport } from "../../types/media";
 import { TicketBatch } from "../../types/ticket";
+import { useAppStore } from "../../stores/appStore";
 export interface GameControllerModel {
     state: GameState | null;
     batches: TicketBatch[];
@@ -20,6 +21,7 @@ export interface GameControllerModel {
     end: () => Promise<void>;
 }
 export function useGameController(): GameControllerModel {
+    const translate = useAppStore((state) => state.t);
     const [state, setState] = useState<GameState | null>(null);
     const [batches, setBatches] = useState<TicketBatch[]>([]);
     const [report, setReport] = useState<MediaValidationReport | null>(null);
@@ -48,7 +50,7 @@ export function useGameController(): GameControllerModel {
         try {
             setReport(await preflightMedia());
         } catch (err: unknown) {
-            setError(toErrorMessage(err));
+            setError(toErrorMessage(err, translate));
         } finally {
             setBusy(false);
         }
@@ -59,7 +61,7 @@ export function useGameController(): GameControllerModel {
         try {
             setState(await createGame(batchId));
         } catch (err: unknown) {
-            setError(toErrorMessage(err));
+            setError(toErrorMessage(err, translate));
         } finally {
             setBusy(false);
         }
@@ -71,7 +73,7 @@ export function useGameController(): GameControllerModel {
         try {
             setState(await drawNext(state.game.id, state.game.currentDrawPosition));
         } catch (err: unknown) {
-            setError(toErrorMessage(err));
+            setError(toErrorMessage(err, translate));
         } finally {
             nextInFlight.current = false;
             setBusy(false);
@@ -83,7 +85,7 @@ export function useGameController(): GameControllerModel {
         try {
             setState(await action(state.game.id));
         } catch (err: unknown) {
-            setError(toErrorMessage(err));
+            setError(toErrorMessage(err, translate));
         } finally {
             setBusy(false);
         }

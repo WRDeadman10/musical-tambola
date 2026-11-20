@@ -14,6 +14,7 @@ export const SettingsPage: React.FC = () => {
     const [volume, setVolume] = useState<number>(50);
     const [autoplay, setAutoplay] = useState<boolean>(true);
     const [showNumbers, setShowNumbers] = useState<boolean>(false);
+    const [useGujaratiNumerals, setUseGujaratiNumerals] = useState<boolean>(false);
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -31,14 +32,17 @@ export const SettingsPage: React.FC = () => {
                         info.settings?.show_internal_numbers ?? info.settings?.showInternalNumbers,
                     ),
                 );
+                setUseGujaratiNumerals(
+                    Boolean(info.useGujaratiNumerals ?? info.settings?.use_gujarati_numerals),
+                );
             })
             .catch((caught: unknown) => {
-                if (mounted) setError(toErrorMessage(caught));
+                if (mounted) setError(toErrorMessage(caught, t));
             });
         return () => {
             mounted = false;
         };
-    }, [setAppInfo]);
+    }, [setAppInfo, t]);
 
     useEffect(() => {
         document.documentElement.classList.toggle("dark", theme === "dark");
@@ -52,7 +56,7 @@ export const SettingsPage: React.FC = () => {
             await setAppSetting(key, value);
             setMessage(t("settings.savedSuccess"));
         } catch (caught: unknown) {
-            setError(toErrorMessage(caught));
+            setError(toErrorMessage(caught, t));
         }
     };
 
@@ -75,6 +79,13 @@ export const SettingsPage: React.FC = () => {
         update: (value: boolean) => void,
     ): Promise<void> => {
         update(next);
+        if (appInfo !== null) {
+            setAppInfo({
+                ...appInfo,
+                settings: { ...appInfo.settings, [key]: next },
+                ...(key === "use_gujarati_numerals" ? { useGujaratiNumerals: next } : {}),
+            });
+        }
         await persist(key, String(next));
     };
 
@@ -117,14 +128,14 @@ export const SettingsPage: React.FC = () => {
                         variant={language === "gu" ? "default" : "outline"}
                         onClick={() => void changeLanguage("gu")}
                     >
-                        ગુજરાતી (Gujarati)
+                        {t("settings.languageGujarati")}
                     </Button>
                     <Button
                         type="button"
                         variant={language === "en" ? "default" : "outline"}
                         onClick={() => void changeLanguage("en")}
                     >
-                        English
+                        {t("settings.languageEnglish")}
                     </Button>
                 </CardContent>
             </Card>
@@ -188,6 +199,20 @@ export const SettingsPage: React.FC = () => {
                             }
                         />
                         {t("settings.showNumbersAdmin")}
+                    </label>
+                    <label className="flex gap-3">
+                        <input
+                            type="checkbox"
+                            checked={useGujaratiNumerals}
+                            onChange={(event) =>
+                                void changeToggle(
+                                    "use_gujarati_numerals",
+                                    event.target.checked,
+                                    setUseGujaratiNumerals,
+                                )
+                            }
+                        />
+                        {t("settings.useGujaratiNumerals")}
                     </label>
                 </CardContent>
             </Card>

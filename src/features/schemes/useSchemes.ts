@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { listSchemes, listSchemeTypes, saveScheme, setSchemeActive } from "../../lib/api/schemes";
 import { PrizeScheme, SaveSchemeInput, SchemeTypeInfo } from "../../types/scheme";
 import { toErrorMessage } from "../../lib/api/errors";
+import { useAppStore } from "../../stores/appStore";
 
 const emptyInput: SaveSchemeInput = {
     id: null,
@@ -27,6 +28,7 @@ export interface SchemesState {
 }
 
 export function useSchemes(): SchemesState {
+    const translate = useAppStore((state) => state.t);
     const [schemes, setSchemes] = useState<PrizeScheme[]>([]);
     const [types, setTypes] = useState<SchemeTypeInfo[]>([]);
     const [input, setInput] = useState<SaveSchemeInput>(emptyInput);
@@ -41,9 +43,9 @@ export function useSchemes(): SchemesState {
             setSchemes(loadedSchemes);
             setTypes(loadedTypes);
         } catch (caught: unknown) {
-            setError(toErrorMessage(caught));
+            setError(toErrorMessage(caught, translate));
         }
-    }, []);
+    }, [translate]);
     useEffect(() => {
         void load();
     }, [load]);
@@ -82,7 +84,7 @@ export function useSchemes(): SchemesState {
             await load();
             return true;
         } catch (caught: unknown) {
-            setError(toErrorMessage(caught));
+            setError(toErrorMessage(caught, translate));
             return false;
         }
     };
@@ -93,7 +95,7 @@ export function useSchemes(): SchemesState {
                 current.map((item) => (item.id === updated.id ? updated : item)),
             );
         } catch (caught: unknown) {
-            setError(toErrorMessage(caught));
+            setError(toErrorMessage(caught, translate));
         }
     };
     return {

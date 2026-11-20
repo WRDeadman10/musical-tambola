@@ -10,6 +10,8 @@ export interface AppInfo {
     settings?: Record<string, unknown>;
     videoAutoplay?: boolean;
     defaultVideoVolume?: number;
+    showInternalNumbers?: boolean;
+    useGujaratiNumerals?: boolean;
 }
 
 export async function getAppInfo(): Promise<AppInfo> {

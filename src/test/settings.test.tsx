@@ -42,7 +42,7 @@ describe("SettingsPage", () => {
     it("changing language persists via set_app_setting", async () => {
         render(<SettingsPage />);
         await waitFor(() => expect(screen.getByText("1.0.0")).toBeTruthy());
-        fireEvent.click(screen.getByRole("button", { name: "ગુજરાતી (Gujarati)" }));
+        fireEvent.click(screen.getByRole("button", { name: /Gujarati/ }));
         await waitFor(() => expect(mockedApi.setAppSetting).toHaveBeenCalledWith("language", "gu"));
     });
 

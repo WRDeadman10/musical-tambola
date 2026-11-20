@@ -5,12 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { ClaimHistoryEntry, WinnerHistoryEntry } from "../../types/history";
 import { HistoryFilters } from "./HistoryFilters";
 import { useHistory } from "./useHistory";
+import { formatDate } from "../../lib/i18n";
+import { Language } from "../../stores/appStore";
 
 const WinnerTable: React.FC<{
     items: WinnerHistoryEntry[];
     onSelect: (code: string) => void;
     t: (key: string) => string;
-}> = ({ items, onSelect, t }) => (
+    language: Language;
+}> = ({ items, onSelect, t, language }) => (
     <table className="w-full text-left text-sm">
         <tbody>
             {items.map((item) => (
@@ -22,9 +25,11 @@ const WinnerTable: React.FC<{
                     </td>
                     <td>{item.schemeName}</td>
                     <td>
-                        Winner {item.winnerPosition} {t("history.of")} {item.maxWinners}
+                        {t("claims.winnerPosition")
+                            .replace("{{position}}", String(item.winnerPosition))
+                            .replace("{{max}}", String(item.maxWinners))}
                     </td>
-                    <td>{item.awardedAt}</td>
+                    <td>{formatDate(item.awardedAt, language)}</td>
                 </tr>
             ))}
         </tbody>
@@ -34,7 +39,8 @@ const ClaimTable: React.FC<{
     items: ClaimHistoryEntry[];
     onSelect: (code: string) => void;
     t: (key: string) => string;
-}> = ({ items, onSelect, t }) => (
+    language: Language;
+}> = ({ items, onSelect, t, language }) => (
     <table className="w-full text-left text-sm">
         <tbody>
             {items.map((item) => (
@@ -54,7 +60,7 @@ const ClaimTable: React.FC<{
                             ? t(`claims.rejections.${item.rejectionCode}`)
                             : (item.rejectionReason ?? item.schemeName ?? "—")}
                     </td>
-                    <td>{item.submittedAt}</td>
+                    <td>{formatDate(item.submittedAt, language)}</td>
                 </tr>
             ))}
         </tbody>
@@ -63,6 +69,7 @@ const ClaimTable: React.FC<{
 
 export const HistoryPage: React.FC = () => {
     const t = useAppStore((state) => state.t);
+    const language = useAppStore((state) => state.language);
     const state = useHistory();
     const pageCount: number = Math.max(1, Math.ceil(state.total / 50));
     const change = (field: string, value: string): void => {
@@ -124,9 +131,15 @@ export const HistoryPage: React.FC = () => {
                             items={state.winners}
                             onSelect={state.setSelectedTicket}
                             t={t}
+                            language={language}
                         />
                     ) : (
-                        <ClaimTable items={state.claims} onSelect={state.setSelectedTicket} t={t} />
+                        <ClaimTable
+                            items={state.claims}
+                            onSelect={state.setSelectedTicket}
+                            t={t}
+                            language={language}
+                        />
                     )}
                     {((state.tab === "winners" && state.winners.length === 0) ||
                         (state.tab === "claims" && state.claims.length === 0)) &&
@@ -193,7 +206,7 @@ export const HistoryPage: React.FC = () => {
                                     <div className="flex items-center justify-between">
                                         <span>{claim.status}</span>
                                         <span className="text-sm text-zinc-400">
-                                            {claim.submittedAt}
+                                            {formatDate(claim.submittedAt, language)}
                                         </span>
                                     </div>
                                     <p className="mt-1 text-sm text-zinc-300">

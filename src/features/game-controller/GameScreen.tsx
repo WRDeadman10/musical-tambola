@@ -9,6 +9,7 @@ import { GameControllerModel } from "./useGameController";
 import { GameControls } from "./GameControls";
 import { DrawHistory } from "./DrawHistory";
 import { SchemeWinnersPanel } from "./SchemeWinnersPanel";
+import { formatNumber } from "../../lib/i18n";
 export function GameScreen({
     model,
     translate,
@@ -18,13 +19,25 @@ export function GameScreen({
 }): React.JSX.Element {
     const navigate = useNavigate();
     const state = model.state!;
+    const language = useAppStore((store) => store.language);
+    const useGujaratiNumerals = useAppStore(
+        (store) =>
+            store.appInfo?.useGujaratiNumerals ??
+            store.appInfo?.settings?.use_gujarati_numerals === true,
+    );
     return (
         <div className="space-y-6 p-8">
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-semibold">{state.game.batchName}</h2>
                     <p className="text-zinc-400">
-                        {state.game.status} · {state.game.currentDrawPosition} / 90
+                        {state.game.status} ·{" "}
+                        {formatNumber(
+                            state.game.currentDrawPosition,
+                            language,
+                            useGujaratiNumerals,
+                        )}{" "}
+                        / {formatNumber(90, language, useGujaratiNumerals)}
                     </p>
                 </div>
                 <Button variant="outline" onClick={() => void setFullscreen(true)}>
@@ -55,7 +68,7 @@ export function GameScreen({
                 onTickets={() => navigate("/tickets")}
             />
             <Button variant="outline" onClick={() => navigate("/claims")}>
-                Claim Desk
+                {translate("game.claimDesk")}
             </Button>
             {model.endRequested ? (
                 <Card>

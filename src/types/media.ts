@@ -14,6 +14,8 @@ export interface MediaSlot {
     thumbnailSource: string | null;
     validationStatus: ValidationStatus;
     validationMessage: string | null;
+    validationCode?: string | null;
+    validationParams?: Record<string, unknown> | null;
     lastValidatedAt: string | null;
 }
 

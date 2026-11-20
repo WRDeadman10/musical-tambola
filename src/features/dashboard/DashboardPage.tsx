@@ -13,9 +13,17 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { getDashboardStats } from "../../lib/api/history";
 import { DashboardStats } from "../../types/history";
+import { formatNumber } from "../../lib/i18n";
+import { translateError } from "../../lib/i18n";
 
 export const DashboardPage: React.FC = () => {
     const t = useAppStore((state) => state.t);
+    const language = useAppStore((state) => state.language);
+    const useGujaratiNumerals = useAppStore(
+        (state) =>
+            state.appInfo?.useGujaratiNumerals ??
+            state.appInfo?.settings?.use_gujarati_numerals === true,
+    );
     const navigate = useNavigate();
     const [stats, setStats] = React.useState<DashboardStats | null>(null);
     const [error, setError] = React.useState<string | null>(null);
@@ -30,7 +38,7 @@ export const DashboardPage: React.FC = () => {
                 }
             } catch (loadError: unknown) {
                 if (!cancelled) {
-                    setError(loadError instanceof Error ? loadError.message : String(loadError));
+                    setError(translateError(t, loadError));
                 }
             }
         };
@@ -38,7 +46,7 @@ export const DashboardPage: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [t]);
 
     return (
         <div className="p-8 max-w-6xl mx-auto space-y-8">
@@ -49,7 +57,7 @@ export const DashboardPage: React.FC = () => {
                     </h2>
                     <p className="text-zinc-400 mt-1">{t("dashboard.welcome")}</p>
                 </div>
-                <Badge variant="success">Phase 1 Foundation</Badge>
+                <Badge variant="success">{t("dashboard.phaseStatus")}</Badge>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -62,10 +70,12 @@ export const DashboardPage: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-extrabold text-white">
-                            {stats === null ? "—" : `${stats.mediaValid} / ${stats.mediaTotal}`}
+                            {stats === null
+                                ? "—"
+                                : `${formatNumber(stats.mediaValid, language, useGujaratiNumerals)} / ${formatNumber(stats.mediaTotal, language, useGujaratiNumerals)}`}
                         </div>
                         <CardDescription className="mt-2">
-                            Required before starting game
+                            {t("dashboard.mediaRequired")}
                         </CardDescription>
                     </CardContent>
                 </Card>
@@ -79,9 +89,13 @@ export const DashboardPage: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-extrabold text-white">
-                            {stats === null ? "—" : stats.totalTickets}
+                            {stats === null
+                                ? "—"
+                                : formatNumber(stats.totalTickets, language, useGujaratiNumerals)}
                         </div>
-                        <CardDescription className="mt-2">No batches generated yet</CardDescription>
+                        <CardDescription className="mt-2">
+                            {t("dashboard.noBatches")}
+                        </CardDescription>
                     </CardContent>
                 </Card>
 
@@ -121,7 +135,7 @@ export const DashboardPage: React.FC = () => {
                             {t("dashboard.quickStatus")}
                         </h3>
                         <p className="text-sm text-zinc-400 mt-1">
-                            Foundation setup complete. Ready for Media Manager phase.
+                            {t("dashboard.foundationReady")}
                         </p>
                     </div>
                     <Button

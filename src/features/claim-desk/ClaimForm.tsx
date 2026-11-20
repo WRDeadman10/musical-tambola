@@ -3,6 +3,7 @@ import { Button } from "../../components/ui/button";
 import { GameSchemeState } from "../../types/game";
 
 interface ClaimFormProps {
+    translate: (key: string) => string;
     schemes: GameSchemeState[];
     selectedScheme: number;
     ticketCode: string;
@@ -21,7 +22,7 @@ export function ClaimForm(props: ClaimFormProps): React.JSX.Element {
             }}
         >
             <label className="block text-sm text-zinc-300">
-                Scheme
+                {props.translate("claims.schemeLabel")}
                 <select
                     className="mt-1 w-full rounded border border-zinc-700 bg-zinc-950 p-3"
                     value={props.selectedScheme}
@@ -31,13 +32,15 @@ export function ClaimForm(props: ClaimFormProps): React.JSX.Element {
                     {props.schemes.map((scheme) => (
                         <option key={scheme.schemeId} value={scheme.schemeId}>
                             {scheme.name} ({scheme.winnersCount} / {scheme.maxWinners})
-                            {scheme.winnersCount >= scheme.maxWinners ? " — Full" : ""}
+                            {scheme.winnersCount >= scheme.maxWinners
+                                ? ` — ${props.translate("claims.full")}`
+                                : ""}
                         </option>
                     ))}
                 </select>
             </label>
             <label className="block text-sm text-zinc-300">
-                Ticket ID
+                {props.translate("claims.ticketId")}
                 <input
                     autoFocus
                     className="mt-1 w-full rounded border border-zinc-700 bg-zinc-950 p-3 uppercase"
@@ -46,8 +49,12 @@ export function ClaimForm(props: ClaimFormProps): React.JSX.Element {
                     disabled={props.disabled}
                 />
             </label>
-            <Button type="submit" disabled={props.disabled || props.ticketCode.trim().length === 0}>
-                VALIDATE CLAIM
+            <Button
+                type="submit"
+                aria-label={props.translate("claims.validateClaimAria")}
+                disabled={props.disabled || props.ticketCode.trim().length === 0}
+            >
+                {props.translate("claims.validateClaim")}
             </Button>
         </form>
     );

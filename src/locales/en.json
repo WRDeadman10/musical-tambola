@@ -1,7 +1,8 @@
 {
     "app": {
         "title": "Media Tambola",
-        "subtitle": "Audio-Visual 90-Ball Tambola System"
+        "subtitle": "Audio-Visual 90-Ball Tambola System",
+        "edition": "v0.1.0 • Desktop Edition"
     },
     "nav": {
         "dashboard": "Dashboard",
@@ -34,7 +35,11 @@
         "manageSchemes": "Manage Winning Schemes",
         "newGame": "New Game",
         "winnerHistory": "Winner History",
-        "emptyGames": "No games have been played yet."
+        "emptyGames": "No games have been played yet.",
+        "phaseStatus": "Phase 1 Foundation",
+        "mediaRequired": "Required before starting game",
+        "noBatches": "No batches generated yet",
+        "foundationReady": "Foundation setup complete. Ready for the Media Manager phase."
     },
     "settings": {
         "title": "Application Settings",
@@ -44,11 +49,15 @@
         "dataDir": "Data Directory",
         "dbPath": "Database Path",
         "language": "Language",
+        "languageGujarati": "Gujarati",
+        "languageEnglish": "English",
         "theme": "Theme",
         "soundVolume": "Sound Volume",
         "autoplay": "Autoplay Draw",
         "showNumbersAdmin": "Show Numbers (Admin Diagnostic)",
         "showNumbersDescription": "Reveal numbers in ticket grids for admin diagnostics only.",
+        "useGujaratiNumerals": "Use Gujarati numerals",
+        "useGujaratiNumeralsDescription": "Display draw positions and counts with Gujarati digits.",
         "autoplayDescription": "Start video playback automatically when media is revealed.",
         "playback": "Playback",
         "about": "About & Gujarati rendering",
@@ -83,7 +92,8 @@
         "ready": "Ready",
         "previous": "Previous",
         "next": "Next",
-        "close": "Close"
+        "close": "Close",
+        "unknownError": "Unknown error"
     },
     "tickets": {
         "generatorTitle": "Ticket Generator",
@@ -196,7 +206,11 @@
             "saveFailed": "Could not save media configuration.",
             "removeFailed": "Could not remove media configuration.",
             "validateFailed": "Could not validate media.",
-            "browseFailed": "Could not open the media picker."
+            "browseFailed": "Could not open the media picker.",
+            "invalidHttp": "Use an HTTP or HTTPS URL.",
+            "invalidUrl": "Enter a valid HTTP or HTTPS URL.",
+            "directMediaUrl": "Use a direct media file URL, not a YouTube or Vimeo page URL.",
+            "absolutePath": "Use an absolute Windows path."
         },
         "noResults": "No media slots match the current filters."
     },
@@ -212,7 +226,54 @@
         "type": "Rule type",
         "maxWinners": "Maximum winners",
         "active": "Status",
-        "validation": "Enter a name, a description up to 500 characters, and 1–100 winners."
+        "validation": "Enter a name, a description up to 500 characters, and 1–100 winners.",
+        "types": {
+            "EARLY_FIVE": "Early Five",
+            "FOUR_CORNERS": "Four Corners",
+            "FULL_HOUSE": "Full House"
+        }
+    },
+    "errors": {
+        "UNKNOWN_ERROR": "Unknown error",
+        "NO_ACTIVE_GAME": "No active game.",
+        "GAME_NOT_ACCEPTING_CLAIMS": "This game is not accepting claims.",
+        "TICKET_NOT_FOUND": "Ticket was not found.",
+        "TICKET_NOT_IN_GAME": "Ticket is not part of this game.",
+        "SCHEME_NOT_IN_GAME": "Scheme is not part of this game.",
+        "NOT_COMPLETED": "The scheme is not completed.",
+        "LATE_CLAIM": "This claim was submitted too late.",
+        "ALREADY_WON_SCHEME": "This ticket already won this scheme.",
+        "ALREADY_WON_FULL_HOUSE": "This ticket already won Full House.",
+        "ONLY_FULL_HOUSE_ELIGIBLE": "Only Full House claims are eligible now.",
+        "WINNER_LIMIT_REACHED": "The winner limit has been reached.",
+        "MEDIA_FILE_NOT_FOUND": "Local media file was not found on disk.",
+        "MEDIA_EXTENSION_NOT_ALLOWED": "File extension {{extension}} is not permitted for the selected media type.",
+        "MEDIA_TYPE_MISMATCH": "File contents do not match the expected media type ({{expected}} vs {{actual}}).",
+        "MEDIA_REMOTE_HTML": "URL points to an HTML web page instead of a direct media file.",
+        "MEDIA_REMOTE_TIMEOUT": "Remote media request timed out after 10 seconds.",
+        "MEDIA_REMOTE_HTTP_STATUS": "Remote server returned HTTP status {{status}}.",
+        "MEDIA_REMOTE_CONNECTION_FAILED": "Failed to connect to the remote media host.",
+        "MEDIA_UNSUPPORTED_FORMAT": "Unsupported media file format.",
+        "MEDIA_SLOT_OUT_OF_RANGE": "Media slot number must be between 1 and 90.",
+        "MEDIA_EMPTY_TITLE": "Media title cannot be empty.",
+        "MEDIA_EMPTY_SOURCE": "Media source path or URL cannot be empty.",
+        "GAME_ALREADY_ACTIVE": "Another game session is already active or paused.",
+        "GAME_NOT_FOUND": "Game session {{gameId}} was not found.",
+        "GAME_NOT_ACTIVE": "There is no active game session to perform this action.",
+        "GAME_MEDIA_INVALID": "Cannot start game: only {{validCount}} media items are valid.",
+        "GAME_NO_ACTIVE_SCHEMES": "Cannot start game: no active prize schemes configured.",
+        "GAME_ALREADY_COMPLETED": "All 90 numbers have already been drawn.",
+        "BATCH_IN_USE": "Cannot delete ticket batch {{batchId}} because it is in use.",
+        "BATCH_NOT_FOUND": "Ticket batch {{batchId}} was not found.",
+        "BATCH_COUNT_INVALID": "Ticket batch count must be between 1 and 10,000.",
+        "SCHEME_NAME_DUPLICATE": "A prize scheme named {{name}} already exists.",
+        "SCHEME_NOT_FOUND": "Prize scheme {{schemeId}} was not found.",
+        "SCHEME_INVALID_CAPACITY": "Max winners must be between 1 and 100.",
+        "SETTING_NOT_ALLOWLISTED": "Setting key {{key}} is not recognized.",
+        "SETTING_INVALID_VALUE": "Setting value for {{key}} is invalid.",
+        "LOCK_ERROR": "Failed to acquire the database lock.",
+        "DATABASE_ERROR": "A database error occurred while executing the transaction.",
+        "UNKNOWN_ERROR": "An unexpected error occurred."
     },
     "game": {
         "title": "Game Controller",
@@ -232,7 +293,8 @@
         "end": "End game",
         "endConfirm": "End this game? This cannot be undone.",
         "history": "Draw history",
-        "tickets": "View tickets"
+        "tickets": "View tickets",
+        "claimDesk": "Claim Desk"
     },
     "claims": {
         "title": "Claim Desk",
@@ -253,7 +315,19 @@
             "ALREADY_WON_FULL_HOUSE": "This ticket already won Full House.",
             "ONLY_FULL_HOUSE_ELIGIBLE": "Only Full House claims are eligible now.",
             "WINNER_LIMIT_REACHED": "The winner limit has been reached."
-        }
+        },
+        "historyTitle": "Claim history",
+        "claimAccepted": "Claim accepted",
+        "claimRejected": "Claim rejected",
+        "winnerPosition": "Winner {{position}} of {{max}}",
+        "ticketLabel": "Ticket",
+        "schemeLabel": "Scheme",
+        "qualificationPosition": "Qualification position",
+        "currentDrawPosition": "Current draw position",
+        "ticketId": "Ticket ID",
+        "full": "Full",
+        "validateClaim": "VALIDATE CLAIM",
+        "validateClaimAria": "Validate claim"
     },
     "history": {
         "title": "Winner History",

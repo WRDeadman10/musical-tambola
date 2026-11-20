@@ -1,9 +1,11 @@
 import React from "react";
 import { ClaimResult } from "../../types/claim";
+import { useAppStore } from "../../stores/appStore";
 export function ClaimHistory({ claims }: { claims: ClaimResult[] }): React.JSX.Element {
+    const t = useAppStore((state) => state.t);
     return (
         <div className="space-y-2">
-            <h2 className="text-lg font-semibold">Claim history</h2>
+            <h2 className="text-lg font-semibold">{t("claims.historyTitle")}</h2>
             {claims.map((claim) => (
                 <div
                     key={claim.claimId}

@@ -34,9 +34,9 @@ export const HistoryFilters: React.FC<Props> = ({
             onChange={(event) => onChange("schemeType", event.target.value)}
         >
             <option value="">{t("history.allSchemes")}</option>
-            <option value="EARLY_FIVE">Early Five</option>
-            <option value="FOUR_CORNERS">Four Corners</option>
-            <option value="FULL_HOUSE">Full House</option>
+            <option value="EARLY_FIVE">{t("schemes.types.EARLY_FIVE")}</option>
+            <option value="FOUR_CORNERS">{t("schemes.types.FOUR_CORNERS")}</option>
+            <option value="FULL_HOUSE">{t("schemes.types.FULL_HOUSE")}</option>
         </select>
         {tab === "claims" && (
             <select

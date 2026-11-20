@@ -59,6 +59,7 @@ function emptySlot(number: number): MediaSlot {
 
 export const MediaLibraryPage: React.FC = () => {
     const t = useAppStore((state) => state.t);
+    const language = useAppStore((state) => state.language);
     const { slots, isLoading, progress, refreshSlots, setSlots } = useMediaLibrary();
     const [filter, setFilter] = useState<MediaFilter>("ALL");
     const [query, setQuery] = useState<string>("");
@@ -105,7 +106,7 @@ export const MediaLibraryPage: React.FC = () => {
             setReport(null);
             setRemovingSlot(null);
         } catch (caught: unknown) {
-            setToast(toErrorMessage(caught));
+            setToast(toErrorMessage(caught, t));
         }
     };
     const handleValidate = async (slot: MediaSlot): Promise<void> => {
@@ -113,7 +114,7 @@ export const MediaLibraryPage: React.FC = () => {
             await updateSlot(await validateMedia(slot.number));
             setToast(t("media.messages.validated"));
         } catch (caught: unknown) {
-            setToast(toErrorMessage(caught));
+            setToast(toErrorMessage(caught, t));
         }
     };
     const handleValidateAll = async (): Promise<void> => {
@@ -123,7 +124,7 @@ export const MediaLibraryPage: React.FC = () => {
             await refreshSlots();
             setToast(t("media.messages.reportReady"));
         } catch (caught: unknown) {
-            setToast(toErrorMessage(caught));
+            setToast(toErrorMessage(caught, t));
         } finally {
             setIsValidating(false);
         }
@@ -254,6 +255,7 @@ export const MediaLibraryPage: React.FC = () => {
                     highlightedNumber={highlightedNumber}
                     isLoading={isLoading}
                     translate={t}
+                    language={language}
                     onEdit={setEditingSlot}
                     onPreview={setPreviewSlot}
                     onValidate={(slot: MediaSlot) => void handleValidate(slot)}

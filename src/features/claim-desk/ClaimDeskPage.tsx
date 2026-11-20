@@ -50,6 +50,7 @@ export function ClaimDeskPage(): React.JSX.Element {
                         <CardContent>
                             <ClaimForm
                                 schemes={model.game!.schemes}
+                                translate={t}
                                 selectedScheme={model.selectedScheme}
                                 ticketCode={model.ticketCode}
                                 disabled={model.busy}

@@ -1,7 +1,8 @@
 {
     "app": {
         "title": "મીડિયા તંબોલા",
-        "subtitle": "ઓડિયો-વિઝ્યુઅલ ૯૦-બોલ તંબોલા પ્રણાલી"
+        "subtitle": "ઓડિયો-વિઝ્યુઅલ ૯૦-બોલ તંબોલા પ્રણાલી",
+        "edition": "v0.1.0 • ડેસ્કટોપ આવૃત્તિ"
     },
     "nav": {
         "dashboard": "ડેશબોર્ડ",
@@ -34,7 +35,11 @@
         "manageSchemes": "વિજેતા યોજનાઓ સંચાલિત કરો",
         "newGame": "નવી રમત",
         "winnerHistory": "વિજેતા ઇતિહાસ",
-        "emptyGames": "હજી સુધી કોઈ રમત રમાઈ નથી."
+        "emptyGames": "હજી સુધી કોઈ રમત રમાઈ નથી.",
+        "phaseStatus": "ફેઝ ૧ ફાઉન્ડેશન",
+        "mediaRequired": "રમત શરૂ કરતા પહેલાં જરૂરી",
+        "noBatches": "હજી કોઈ બેચ બનાવાયા નથી",
+        "foundationReady": "ફાઉન્ડેશન સેટઅપ પૂર્ણ. મીડિયા મેનેજર ફેઝ માટે તૈયાર."
     },
     "settings": {
         "title": "એપ્લિકેશન સેટિંગ્સ",
@@ -44,11 +49,15 @@
         "dataDir": "ડેટા ડિરેક્ટરી",
         "dbPath": "ડેટાબેઝ પાથ",
         "language": "ભાષા (Language)",
+        "languageGujarati": "ગુજરાતી",
+        "languageEnglish": "અંગ્રેજી",
         "theme": "થીમ",
         "soundVolume": "અવાજ વોલ્યુમ",
         "autoplay": "ઓટોપ્લે ડ્રો",
         "showNumbersAdmin": "નંબર્સ દર્શાવો (એડમિન ડાયગ્નોસ્ટિક)",
         "showNumbersDescription": "ફક્ત એડમિન ડાયગ્નોસ્ટિક માટે ટિકિટમાં નંબર્સ બતાવો.",
+        "useGujaratiNumerals": "ગુજરાતી અંકો વાપરો",
+        "useGujaratiNumeralsDescription": "ડ્રો સ્થાન અને સંખ્યાઓ ગુજરાતી અંકોમાં દર્શાવો.",
         "autoplayDescription": "મીડિયા દેખાય ત્યારે વિડિયો આપમેળે ચલાવો.",
         "playback": "પ્લેબેક",
         "about": "વિશે અને ગુજરાતી રેન્ડરિંગ",
@@ -83,7 +92,8 @@
         "ready": "તૈયાર",
         "previous": "પાછળ",
         "next": "આગળ",
-        "close": "બંધ કરો"
+        "close": "બંધ કરો",
+        "unknownError": "અજ્ઞાત ભૂલ"
     },
     "tickets": {
         "generatorTitle": "ટિકિટ જનરેટર",
@@ -196,7 +206,11 @@
             "saveFailed": "મીડિયા ગોઠવણી સાચવી શકાઈ નથી.",
             "removeFailed": "મીડિયા ગોઠવણી દૂર થઈ શકી નથી.",
             "validateFailed": "મીડિયા ચકાસી શકાયું નથી.",
-            "browseFailed": "મીડિયા પિકર ખોલી શકાયું નથી."
+            "browseFailed": "મીડિયા પિકર ખોલી શકાયું નથી.",
+            "invalidHttp": "HTTP અથવા HTTPS URL વાપરો.",
+            "invalidUrl": "માન્ય HTTP અથવા HTTPS URL દાખલ કરો.",
+            "directMediaUrl": "YouTube અથવા Vimeo પેજ URL નહીં, સીધી મીડિયા ફાઇલ URL વાપરો.",
+            "absolutePath": "સંપૂર્ણ Windows પાથ વાપરો."
         },
         "noResults": "વર્તમાન ફિલ્ટર સાથે કોઈ મીડિયા સ્લોટ મળ્યા નથી."
     },
@@ -212,7 +226,54 @@
         "type": "નિયમ પ્રકાર",
         "maxWinners": "મહત્તમ વિજેતાઓ",
         "active": "સ્થિતિ",
-        "validation": "નામ, 500 અક્ષર સુધીનું વર્ણન અને 1–100 વિજેતાઓ દાખલ કરો."
+        "validation": "નામ, 500 અક્ષર સુધીનું વર્ણન અને 1–100 વિજેતાઓ દાખલ કરો.",
+        "types": {
+            "EARLY_FIVE": "અર્લી ફાઇવ",
+            "FOUR_CORNERS": "ચાર ખૂણા",
+            "FULL_HOUSE": "ફુલ હાઉસ"
+        }
+    },
+    "errors": {
+        "UNKNOWN_ERROR": "અજ્ઞાત ભૂલ",
+        "NO_ACTIVE_GAME": "ચાલુ ગેમ નથી.",
+        "GAME_NOT_ACCEPTING_CLAIMS": "આ ગેમ ક્લેમ સ્વીકારતી નથી.",
+        "TICKET_NOT_FOUND": "ટિકિટ મળી નથી.",
+        "TICKET_NOT_IN_GAME": "ટિકિટ આ ગેમમાં નથી.",
+        "SCHEME_NOT_IN_GAME": "સ્કીમ આ ગેમમાં નથી.",
+        "NOT_COMPLETED": "સ્કીમ પૂર્ણ થઈ નથી.",
+        "LATE_CLAIM": "ક્લેમ મોડો મોકલાયો.",
+        "ALREADY_WON_SCHEME": "આ ટિકિટ આ સ્કીમ જીતી ચૂકી છે.",
+        "ALREADY_WON_FULL_HOUSE": "આ ટિકિટ ફુલ હાઉસ જીતી ચૂકી છે.",
+        "ONLY_FULL_HOUSE_ELIGIBLE": "હવે માત્ર ફુલ હાઉસ ક્લેમ માન્ય છે.",
+        "WINNER_LIMIT_REACHED": "વિજેતાઓની મર્યાદા પહોંચી ગઈ છે.",
+        "MEDIA_FILE_NOT_FOUND": "સ્થાનિક મીડિયા ફાઇલ ડિસ્ક પર મળી નથી.",
+        "MEDIA_EXTENSION_NOT_ALLOWED": "{{extension}} એક્સ્ટેન્શન પસંદ કરેલા મીડિયા પ્રકાર માટે માન્ય નથી.",
+        "MEDIA_TYPE_MISMATCH": "ફાઇલનો પ્રકાર અપેક્ષિત પ્રકાર સાથે મેળ ખાતો નથી ({{expected}} અને {{actual}}).",
+        "MEDIA_REMOTE_HTML": "URL સીધી મીડિયા ફાઇલને બદલે HTML વેબ પેજ તરફ દોરી જાય છે.",
+        "MEDIA_REMOTE_TIMEOUT": "રિમોટ મીડિયા વિનંતી ૧૦ સેકન્ડ પછી સમયબાહ્ય થઈ.",
+        "MEDIA_REMOTE_HTTP_STATUS": "રિમોટ સર્વરે HTTP સ્થિતિ {{status}} પરત કરી.",
+        "MEDIA_REMOTE_CONNECTION_FAILED": "રિમોટ મીડિયા હોસ્ટ સાથે જોડાઈ શકાયું નથી.",
+        "MEDIA_UNSUPPORTED_FORMAT": "અસમર્થિત મીડિયા ફાઇલ ફોર્મેટ.",
+        "MEDIA_SLOT_OUT_OF_RANGE": "મીડિયા સ્લોટ નંબર ૧ થી ૯૦ વચ્ચે હોવો જોઈએ.",
+        "MEDIA_EMPTY_TITLE": "મીડિયા શીર્ષક ખાલી ન હોઈ શકે.",
+        "MEDIA_EMPTY_SOURCE": "મીડિયા સ્રોત પાથ અથવા URL ખાલી ન હોઈ શકે.",
+        "GAME_ALREADY_ACTIVE": "બીજી ગેમ પહેલેથી સક્રિય અથવા વિરામમાં છે.",
+        "GAME_NOT_FOUND": "ગેમ સત્ર {{gameId}} મળ્યું નથી.",
+        "GAME_NOT_ACTIVE": "આ ક્રિયા માટે કોઈ સક્રિય ગેમ નથી.",
+        "GAME_MEDIA_INVALID": "ગેમ શરૂ કરી શકાતી નથી: માત્ર {{validCount}} મીડિયા માન્ય છે.",
+        "GAME_NO_ACTIVE_SCHEMES": "કોઈ સક્રિય ઇનામ સ્કીમ ગોઠવેલ નથી.",
+        "GAME_ALREADY_COMPLETED": "આ ગેમ માટે બધા ૯૦ નંબર ડ્રો થઈ ગયા છે.",
+        "BATCH_IN_USE": "ટિકિટ બેચ {{batchId}} ઉપયોગમાં હોવાથી કાઢી શકાતો નથી.",
+        "BATCH_NOT_FOUND": "ટિકિટ બેચ {{batchId}} મળ્યો નથી.",
+        "BATCH_COUNT_INVALID": "ટિકિટ બેચની સંખ્યા ૧ થી ૧૦,૦૦૦ વચ્ચે હોવી જોઈએ.",
+        "SCHEME_NAME_DUPLICATE": "આ નામની ઇનામ સ્કીમ પહેલેથી છે: {{name}}.",
+        "SCHEME_NOT_FOUND": "ઇનામ સ્કીમ {{schemeId}} મળી નથી.",
+        "SCHEME_INVALID_CAPACITY": "મહત્તમ વિજેતાઓ ૧ થી ૧૦૦ વચ્ચે હોવા જોઈએ.",
+        "SETTING_NOT_ALLOWLISTED": "સેટિંગ કી {{key}} માન્ય નથી.",
+        "SETTING_INVALID_VALUE": "{{key}} માટે સેટિંગ મૂલ્ય અમાન્ય છે.",
+        "LOCK_ERROR": "ડેટાબેઝ લોક મેળવી શકાયો નથી.",
+        "DATABASE_ERROR": "ટ્રાન્ઝેક્શન દરમિયાન ડેટાબેઝ ભૂલ આવી.",
+        "UNKNOWN_ERROR": "અપેક્ષિત ન હોય તેવી ભૂલ આવી."
     },
     "game": {
         "title": "ગેમ કંટ્રોલર",
@@ -232,7 +293,8 @@
         "end": "ગેમ સમાપ્ત કરો",
         "endConfirm": "આ રમત સમાપ્ત કરવી છે? આ પાછું ફેરવી શકાશે નહીં.",
         "history": "ડ્રો ઇતિહાસ",
-        "tickets": "ટિકિટ જુઓ"
+        "tickets": "ટિકિટ જુઓ",
+        "claimDesk": "ક્લેમ ડેસ્ક"
     },
     "claims": {
         "title": "ક્લેમ ડેસ્ક",
@@ -253,7 +315,19 @@
             "ALREADY_WON_FULL_HOUSE": "આ ટિકિટ ફુલ હાઉસ જીતી ચૂકી છે.",
             "ONLY_FULL_HOUSE_ELIGIBLE": "હવે માત્ર ફુલ હાઉસ ક્લેમ માન્ય છે.",
             "WINNER_LIMIT_REACHED": "વિજેતાઓની મર્યાદા પહોંચી ગઈ છે."
-        }
+        },
+        "historyTitle": "ક્લેમ ઇતિહાસ",
+        "claimAccepted": "ક્લેમ સ્વીકૃત",
+        "claimRejected": "ક્લેમ નામંજૂર",
+        "winnerPosition": "{{max}}માંથી વિજેતા {{position}}",
+        "ticketLabel": "ટિકિટ",
+        "schemeLabel": "સ્કીમ",
+        "qualificationPosition": "લાયકાત સ્થાન",
+        "currentDrawPosition": "વર્તમાન ડ્રો સ્થાન",
+        "ticketId": "ટિકિટ ID",
+        "full": "પૂર્ણ",
+        "validateClaim": "ક્લેમ ચકાસો",
+        "validateClaimAria": "ક્લેમ ચકાસો"
     },
     "history": {
         "title": "વિજેતા ઇતિહાસ",

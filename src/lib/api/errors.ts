@@ -1,4 +1,16 @@
-export function toErrorMessage(caught: unknown): string {
+export function toErrorMessage(caught: unknown, translate?: (key: string) => string): string {
+    if (
+        translate !== undefined &&
+        caught !== null &&
+        typeof caught === "object" &&
+        "code" in caught
+    ) {
+        const code: unknown = (caught as { code?: unknown }).code;
+        if (typeof code === "string") {
+            const translated: string = translate(`errors.${code}`);
+            if (translated !== `errors.${code}`) return translated;
+        }
+    }
     if (typeof caught === "string") {
         return caught;
     }
@@ -11,5 +23,5 @@ export function toErrorMessage(caught: unknown): string {
             return message;
         }
     }
-    return "Unknown error";
+    return "UNKNOWN_ERROR";
 }
