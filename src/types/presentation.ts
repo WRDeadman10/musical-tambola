@@ -45,7 +45,8 @@ export type PresentationCommandName =
     | "PLAY"
     | "LUCKY_DRAW"
     | "SETTINGS_CHANGED"
-    | "CLAIM_RESULT";
+    | "CLAIM_RESULT"
+    | "ADMIN_PIN_REQUIRED";
 
 export interface PresentationCommand {
     command: PresentationCommandName;

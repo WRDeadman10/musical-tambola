@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { GameControllerModel } from "./useGameController";
+import { getAdminPinStatus } from "../../lib/api/adminPin";
+import { PinLockOverlay } from "./PinLockOverlay";
 export function NewGameWizard({
     model,
     translate,
@@ -11,7 +13,14 @@ export function NewGameWizard({
     translate: (key: string) => string;
 }): React.JSX.Element {
     const [batch, setBatch] = useState<number>(0);
+    const [locked, setLocked] = useState<boolean>(false);
     const navigate = useNavigate();
+    useEffect(() => {
+        void getAdminPinStatus()
+            .then((status) => setLocked(status.pinSet && !status.isUnlocked))
+            .catch(() => undefined);
+    }, []);
+    if (locked) return <PinLockOverlay translate={translate} onUnlock={() => setLocked(false)} />;
     return (
         <div className="space-y-6 p-8">
             <h2 className="text-2xl font-semibold">{translate("game.title")}</h2>

@@ -12,6 +12,7 @@ import { ClaimDeskPage } from "./features/claim-desk/ClaimDeskPage";
 import { HistoryPage } from "./features/history/HistoryPage";
 import { PresentationPage } from "./features/presentation/PresentationPage";
 import { PrintTicketsPage } from "./features/ticket-printing/PrintTicketsPage";
+import { SetupGuard } from "./components/layout/SetupGuard";
 
 function AppRoutes(): React.JSX.Element {
     const location = useLocation();
@@ -22,12 +23,54 @@ function AppRoutes(): React.JSX.Element {
             <main className="flex-1 overflow-y-auto">
                 <Routes>
                     <Route path="/" element={<DashboardPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/media" element={<MediaLibraryPage />} />
-                    <Route path="/tickets/generate" element={<TicketGeneratorPage />} />
-                    <Route path="/tickets" element={<TicketBatchesPage />} />
-                    <Route path="/tickets/print" element={<PrintTicketsPage />} />
-                    <Route path="/schemes" element={<SchemesPage />} />
+                    <Route
+                        path="/settings"
+                        element={
+                            <SetupGuard>
+                                <SettingsPage />
+                            </SetupGuard>
+                        }
+                    />
+                    <Route
+                        path="/media"
+                        element={
+                            <SetupGuard>
+                                <MediaLibraryPage />
+                            </SetupGuard>
+                        }
+                    />
+                    <Route
+                        path="/tickets/generate"
+                        element={
+                            <SetupGuard>
+                                <TicketGeneratorPage />
+                            </SetupGuard>
+                        }
+                    />
+                    <Route
+                        path="/tickets"
+                        element={
+                            <SetupGuard>
+                                <TicketBatchesPage />
+                            </SetupGuard>
+                        }
+                    />
+                    <Route
+                        path="/tickets/print"
+                        element={
+                            <SetupGuard>
+                                <PrintTicketsPage />
+                            </SetupGuard>
+                        }
+                    />
+                    <Route
+                        path="/schemes"
+                        element={
+                            <SetupGuard>
+                                <SchemesPage />
+                            </SetupGuard>
+                        }
+                    />
                     <Route path="/game" element={<GameControllerPage />} />
                     <Route path="/claims" element={<ClaimDeskPage />} />
                     <Route path="/history" element={<HistoryPage />} />
