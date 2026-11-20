@@ -3,6 +3,7 @@ import { TicketGrid } from "../../components/ticket/TicketGrid";
 import { ClaimResult } from "../../types/claim";
 import { MediaSlot } from "../../types/media";
 import { useAppStore } from "../../stores/appStore";
+import { MiniPatternGrid } from "../../components/scheme/MiniPatternGrid";
 export function ClaimResultPanel({
     result,
     mediaByNumber,
@@ -30,6 +31,7 @@ export function ClaimResultPanel({
                           .replace("{{max}}", String(result.maxWinners))
                     : reason}
             </p>
+            {result.patternMask ? <MiniPatternGrid mask={result.patternMask} /> : null}
             <p>
                 {t("claims.ticketLabel")}: {result.ticketCode} · {t("claims.schemeLabel")}:{" "}
                 {result.schemeName}

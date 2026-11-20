@@ -14,6 +14,14 @@ describe("scheme API", () => {
             schemeType: "EARLY_FIVE",
             maxWinners: 1,
             isActive: true,
+            patternKind: "MASK",
+            mask: [
+                [false, false, false, false, false],
+                [false, false, false, false, false],
+                [false, false, false, false, false],
+            ],
+            earlyN: null,
+            isFullHouse: false,
         });
         expect(invoke).toHaveBeenLastCalledWith("save_scheme", {
             input: expect.objectContaining({ id: null }),
@@ -25,6 +33,14 @@ describe("scheme API", () => {
             schemeType: "EARLY_FIVE",
             maxWinners: 1,
             isActive: true,
+            patternKind: "MASK",
+            mask: [
+                [false, false, false, false, false],
+                [false, false, false, false, false],
+                [false, false, false, false, false],
+            ],
+            earlyN: null,
+            isFullHouse: false,
         });
         expect(invoke).toHaveBeenLastCalledWith("save_scheme", {
             input: expect.objectContaining({ id: 4 }),

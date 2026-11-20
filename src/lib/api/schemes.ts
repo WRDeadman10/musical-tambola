@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { PrizeScheme, SaveSchemeInput, SchemeTypeInfo } from "../../types/scheme";
+import { PatternPreset, PrizeScheme, SaveSchemeInput, SchemeTypeInfo } from "../../types/scheme";
 export { toErrorMessage } from "./errors";
 
 export async function listSchemes(): Promise<PrizeScheme[]> {
@@ -8,6 +8,10 @@ export async function listSchemes(): Promise<PrizeScheme[]> {
 
 export async function listSchemeTypes(): Promise<SchemeTypeInfo[]> {
     return await invoke<SchemeTypeInfo[]>("list_scheme_types");
+}
+
+export async function listPatternPresets(): Promise<PatternPreset[]> {
+    return await invoke<PatternPreset[]>("list_pattern_presets");
 }
 
 export async function saveScheme(input: SaveSchemeInput): Promise<PrizeScheme> {

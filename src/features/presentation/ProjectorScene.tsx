@@ -2,6 +2,7 @@ import React from "react";
 import { emitPresentationAutoplayBlocked } from "../../lib/api/presentation";
 import { useAppStore } from "../../stores/appStore";
 import { PresentationState } from "../../types/presentation";
+import { MiniPatternGrid } from "../../components/scheme/MiniPatternGrid";
 
 export function ProjectorScene({ state }: { state: PresentationState }): React.JSX.Element {
     const t = useAppStore((value) => value.t);
@@ -24,6 +25,9 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
             <div className="flex h-full flex-col items-center justify-center gap-8 text-center">
                 <div className="text-[min(8vw,6rem)] font-black">
                     {state.announcement.schemeName}
+                </div>
+                <div className="w-64">
+                    <MiniPatternGrid mask={state.announcement.mask} />
                 </div>
                 <div className="text-[min(6vw,4rem)]">{state.announcement.ticketCode}</div>
             </div>

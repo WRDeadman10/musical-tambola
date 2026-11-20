@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "../../components/ui/button";
 import { SaveSchemeInput, SchemeTypeInfo } from "../../types/scheme";
+import { PatternEditor } from "./PatternEditor";
 interface Props {
     input: SaveSchemeInput;
     editing: boolean;
@@ -75,6 +76,7 @@ export function SchemeEditDialog({
                 }
                 className="w-32 rounded-md border border-zinc-700 bg-zinc-950 p-2"
             />
+            <PatternEditor input={input} onChange={onChange} translate={translate} />
             <div className="flex gap-2">
                 <Button type="submit">{translate("common.save")}</Button>
                 {editing && (

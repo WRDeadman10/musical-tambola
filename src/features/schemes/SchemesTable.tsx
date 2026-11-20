@@ -2,6 +2,7 @@ import React from "react";
 import { Pencil } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { PrizeScheme, SchemeTypeInfo } from "../../types/scheme";
+import { MiniPatternGrid } from "../../components/scheme/MiniPatternGrid";
 
 interface Props {
     schemes: PrizeScheme[];
@@ -23,6 +24,7 @@ export function SchemesTable({
                 <thead className="bg-zinc-900 text-zinc-400">
                     <tr>
                         <th className="p-3">{translate("schemes.name")}</th>
+                        <th className="p-3">{translate("schemes.pattern")}</th>
                         <th className="p-3">{translate("schemes.type")}</th>
                         <th className="p-3">{translate("schemes.maxWinners")}</th>
                         <th className="p-3">{translate("schemes.active")}</th>
@@ -35,6 +37,17 @@ export function SchemesTable({
                             <td className="p-3">
                                 <div>{scheme.name}</div>
                                 <div className="text-xs text-zinc-500">{scheme.description}</div>
+                            </td>
+                            <td className="w-28 p-3">
+                                <MiniPatternGrid
+                                    mask={
+                                        scheme.mask ?? [
+                                            [false, false, false, false, false],
+                                            [false, false, false, false, false],
+                                            [false, false, false, false, false],
+                                        ]
+                                    }
+                                />
                             </td>
                             <td className="p-3">
                                 {types.find((type) => type.schemeType === scheme.schemeType)

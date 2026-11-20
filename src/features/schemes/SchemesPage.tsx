@@ -5,6 +5,7 @@ import { useAppStore } from "../../stores/appStore";
 import { SchemeEditDialog } from "./SchemeEditDialog";
 import { SchemesTable } from "./SchemesTable";
 import { useSchemes } from "./useSchemes";
+import { PresetGallery } from "./PresetGallery";
 
 export const SchemesPage: React.FC = () => {
     const t = useAppStore((state) => state.t);
@@ -24,6 +25,7 @@ export const SchemesPage: React.FC = () => {
             <div className="rounded-lg border border-indigo-900/60 bg-indigo-950/20 p-4 text-sm text-indigo-200">
                 {t("schemes.snapshotNote")}
             </div>
+            <PresetGallery presets={state.presets} translate={t} onSelect={state.applyPreset} />
             {state.error && (
                 <p className="rounded-md bg-red-950/50 p-3 text-sm text-red-300">
                     {state.error === "validation" ? t("schemes.validation") : state.error}

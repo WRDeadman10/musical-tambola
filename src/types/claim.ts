@@ -30,5 +30,6 @@ export interface ClaimResult {
     maxWinners: number;
     ticket: Ticket | null;
     calledNumbersOnTicket: number[];
+    patternMask?: boolean[][];
     submittedAt: string;
 }

@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { listSchemes, listSchemeTypes, saveScheme, setSchemeActive } from "../../lib/api/schemes";
-import { PrizeScheme, SaveSchemeInput, SchemeTypeInfo } from "../../types/scheme";
+import {
+    listPatternPresets,
+    listSchemes,
+    listSchemeTypes,
+    saveScheme,
+    setSchemeActive,
+} from "../../lib/api/schemes";
+import { PatternPreset, PrizeScheme, SaveSchemeInput, SchemeTypeInfo } from "../../types/scheme";
 import { toErrorMessage } from "../../lib/api/errors";
 import { useAppStore } from "../../stores/appStore";
 
@@ -11,11 +17,20 @@ const emptyInput: SaveSchemeInput = {
     schemeType: "EARLY_FIVE",
     maxWinners: 1,
     isActive: true,
+    patternKind: "MASK",
+    mask: [
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+    ],
+    earlyN: null,
+    isFullHouse: false,
 };
 
 export interface SchemesState {
     schemes: PrizeScheme[];
     types: SchemeTypeInfo[];
+    presets: PatternPreset[];
     input: SaveSchemeInput;
     editing: boolean;
     error: string;
@@ -25,23 +40,27 @@ export interface SchemesState {
     submit: () => Promise<boolean>;
     toggle: (scheme: PrizeScheme) => Promise<void>;
     getTypeInfo: (type: SaveSchemeInput["schemeType"]) => SchemeTypeInfo | undefined;
+    applyPreset: (preset: PatternPreset) => void;
 }
 
 export function useSchemes(): SchemesState {
     const translate = useAppStore((state) => state.t);
     const [schemes, setSchemes] = useState<PrizeScheme[]>([]);
     const [types, setTypes] = useState<SchemeTypeInfo[]>([]);
+    const [presets, setPresets] = useState<PatternPreset[]>([]);
     const [input, setInput] = useState<SaveSchemeInput>(emptyInput);
     const [editing, setEditing] = useState<boolean>(false);
     const [error, setError] = useState<string>("");
     const load = useCallback(async (): Promise<void> => {
         try {
-            const [loadedSchemes, loadedTypes] = await Promise.all([
+            const [loadedSchemes, loadedTypes, loadedPresets] = await Promise.all([
                 listSchemes(),
                 listSchemeTypes(),
+                listPatternPresets(),
             ]);
             setSchemes(loadedSchemes);
             setTypes(loadedTypes);
+            setPresets(loadedPresets);
         } catch (caught: unknown) {
             setError(toErrorMessage(caught, translate));
         }
@@ -62,6 +81,10 @@ export function useSchemes(): SchemesState {
             schemeType: scheme.schemeType,
             maxWinners: scheme.maxWinners,
             isActive: scheme.isActive,
+            patternKind: scheme.patternKind ?? "MASK",
+            mask: scheme.mask ?? emptyInput.mask,
+            earlyN: scheme.earlyN ?? null,
+            isFullHouse: scheme.isFullHouse ?? scheme.schemeType === "FULL_HOUSE",
         });
         setEditing(true);
         setError("");
@@ -98,9 +121,20 @@ export function useSchemes(): SchemesState {
             setError(toErrorMessage(caught, translate));
         }
     };
+    const applyPreset = (preset: PatternPreset): void => {
+        setInput((current) => ({
+            ...current,
+            name: preset.nameEn,
+            patternKind: preset.patternKind,
+            mask: preset.mask,
+            earlyN: preset.earlyN,
+            isFullHouse: preset.isFullHouse,
+        }));
+    };
     return {
         schemes,
         types,
+        presets,
         input,
         editing,
         error,
@@ -110,5 +144,6 @@ export function useSchemes(): SchemesState {
         submit,
         toggle,
         getTypeInfo: (type) => types.find((item) => item.schemeType === type),
+        applyPreset,
     };
 }
