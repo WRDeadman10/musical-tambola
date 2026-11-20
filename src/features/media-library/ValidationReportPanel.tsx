@@ -2,12 +2,7 @@ import React from "react";
 import { Check, RefreshCw } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from "../../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { MediaValidationReport } from "../../types/media";
 
 interface ValidationReportPanelProps {
@@ -31,9 +26,9 @@ export function ValidationReportPanel({
                 <div>
                     <CardTitle>{translate("media.report.title")}</CardTitle>
                     <p className="mt-1 text-xs text-zinc-400">
-                        {report.valid} {translate("media.report.valid")} ·{" "}
-                        {report.invalid} {translate("media.report.invalid")} ·{" "}
-                        {report.total} {translate("media.report.total")}
+                        {report.valid} {translate("media.report.valid")} · {report.invalid}{" "}
+                        {translate("media.report.invalid")} · {report.total}{" "}
+                        {translate("media.report.total")}
                     </p>
                 </div>
                 <Button
@@ -60,9 +55,7 @@ export function ValidationReportPanel({
                                 key={issue.number}
                                 onClick={() => onIssueSelected(issue.number)}
                             >
-                                <Badge variant="destructive">
-                                    {issue.number}
-                                </Badge>
+                                <Badge variant="destructive">{issue.number}</Badge>
                                 <span>{issue.message}</span>
                             </button>
                         ))}

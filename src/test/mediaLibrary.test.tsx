@@ -34,9 +34,30 @@ function createSlot(number: number, overrides: Partial<MediaSlot> = {}): MediaSl
 
 describe("MediaLibraryPage", () => {
     it("validates remote URLs and absolute Windows paths", () => {
-        const invalidRemote = mediaFormSchema.safeParse({ number: 1, title: "Test", mediaType: "IMAGE", sourceType: "REMOTE", source: "youtube.com/watch?v=1", thumbnailSource: null });
-        const invalidLocal = mediaFormSchema.safeParse({ number: 1, title: "Test", mediaType: "IMAGE", sourceType: "LOCAL", source: "relative/file.jpg", thumbnailSource: null });
-        const validLocal = mediaFormSchema.safeParse({ number: 1, title: "Test", mediaType: "IMAGE", sourceType: "LOCAL", source: "C:\\Media\\file.jpg", thumbnailSource: null });
+        const invalidRemote = mediaFormSchema.safeParse({
+            number: 1,
+            title: "Test",
+            mediaType: "IMAGE",
+            sourceType: "REMOTE",
+            source: "youtube.com/watch?v=1",
+            thumbnailSource: null,
+        });
+        const invalidLocal = mediaFormSchema.safeParse({
+            number: 1,
+            title: "Test",
+            mediaType: "IMAGE",
+            sourceType: "LOCAL",
+            source: "relative/file.jpg",
+            thumbnailSource: null,
+        });
+        const validLocal = mediaFormSchema.safeParse({
+            number: 1,
+            title: "Test",
+            mediaType: "IMAGE",
+            sourceType: "LOCAL",
+            source: "C:\\Media\\file.jpg",
+            thumbnailSource: null,
+        });
 
         expect(invalidRemote.success).toBe(false);
         expect(invalidLocal.success).toBe(false);
@@ -44,8 +65,22 @@ describe("MediaLibraryPage", () => {
     });
 
     it("rejects YouTube and Vimeo page URLs", () => {
-        const youtubePage = mediaFormSchema.safeParse({ number: 1, title: "Test", mediaType: "VIDEO", sourceType: "REMOTE", source: "https://www.youtube.com/watch?v=1", thumbnailSource: null });
-        const vimeoPage = mediaFormSchema.safeParse({ number: 1, title: "Test", mediaType: "VIDEO", sourceType: "REMOTE", source: "https://vimeo.com/123", thumbnailSource: null });
+        const youtubePage = mediaFormSchema.safeParse({
+            number: 1,
+            title: "Test",
+            mediaType: "VIDEO",
+            sourceType: "REMOTE",
+            source: "https://www.youtube.com/watch?v=1",
+            thumbnailSource: null,
+        });
+        const vimeoPage = mediaFormSchema.safeParse({
+            number: 1,
+            title: "Test",
+            mediaType: "VIDEO",
+            sourceType: "REMOTE",
+            source: "https://vimeo.com/123",
+            thumbnailSource: null,
+        });
 
         expect(youtubePage.success).toBe(false);
         expect(vimeoPage.success).toBe(false);
@@ -53,7 +88,15 @@ describe("MediaLibraryPage", () => {
 
     it("clears media only after remove confirmation", async () => {
         useAppStore.setState({ language: "en" });
-        mockedMediaApi.listMedia.mockResolvedValueOnce([createSlot(1, { configured: true, title: "One", mediaType: "IMAGE", sourceType: "LOCAL", source: "C:\\Media\\one.jpg" })]);
+        mockedMediaApi.listMedia.mockResolvedValueOnce([
+            createSlot(1, {
+                configured: true,
+                title: "One",
+                mediaType: "IMAGE",
+                sourceType: "LOCAL",
+                source: "C:\\Media\\one.jpg",
+            }),
+        ]);
         mockedMediaApi.listenToMediaValidationProgress.mockResolvedValue(() => undefined);
         mockedMediaApi.clearMedia.mockResolvedValue(createSlot(1));
 
@@ -67,10 +110,17 @@ describe("MediaLibraryPage", () => {
 
     it("jumps to and highlights a report issue row", async () => {
         useAppStore.setState({ language: "en" });
-        const slots: MediaSlot[] = Array.from({ length: 90 }, (_value: undefined, index: number) => createSlot(index + 1));
+        const slots: MediaSlot[] = Array.from({ length: 90 }, (_value: undefined, index: number) =>
+            createSlot(index + 1),
+        );
         mockedMediaApi.listMedia.mockResolvedValueOnce(slots);
         mockedMediaApi.listenToMediaValidationProgress.mockResolvedValue(() => undefined);
-        mockedMediaApi.validateAllMedia.mockResolvedValueOnce({ total: 90, valid: 89, invalid: 1, issues: [{ number: 42, message: "HTML content is not media." }] });
+        mockedMediaApi.validateAllMedia.mockResolvedValueOnce({
+            total: 90,
+            valid: 89,
+            invalid: 1,
+            issues: [{ number: 42, message: "HTML content is not media." }],
+        });
 
         render(<MediaLibraryPage />);
         await waitFor(() => expect(mockedMediaApi.listMedia).toHaveBeenCalled());
@@ -79,7 +129,9 @@ describe("MediaLibraryPage", () => {
         const issueText: HTMLElement = screen.getByText("HTML content is not media.");
         fireEvent.click(issueText.closest("button") as HTMLButtonElement);
         await waitFor(() => {
-            const row: HTMLElement = screen.getByText("42", { selector: "td" }).closest("tr") as HTMLElement;
+            const row: HTMLElement = screen
+                .getByText("42", { selector: "td" })
+                .closest("tr") as HTMLElement;
             expect(row.className).toContain("bg-amber-500/20");
         });
     });

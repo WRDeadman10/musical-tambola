@@ -8,11 +8,7 @@ interface MediaModalProps {
     children: React.ReactNode;
 }
 
-export function MediaModal({
-    title,
-    onClose,
-    children,
-}: MediaModalProps): React.JSX.Element {
+export function MediaModal({ title, onClose, children }: MediaModalProps): React.JSX.Element {
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
@@ -24,20 +20,11 @@ export function MediaModal({
                 role="dialog"
                 aria-modal="true"
                 aria-label={title}
-                onMouseDown={(event: React.MouseEvent<HTMLDivElement>) =>
-                    event.stopPropagation()
-                }
+                onMouseDown={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
             >
                 <div className="mb-5 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-white">
-                        {title}
-                    </h2>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onClose}
-                        aria-label="Close"
-                    >
+                    <h2 className="text-lg font-semibold text-white">{title}</h2>
+                    <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
                         <X className="h-4 w-4" />
                     </Button>
                 </div>

@@ -4,10 +4,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
-import {
-    generateTicketBatch,
-    listenToTicketGenerationProgress,
-} from "../../lib/api/tickets";
+import { generateTicketBatch, listenToTicketGenerationProgress } from "../../lib/api/tickets";
 import { toErrorMessage } from "../../lib/api/errors";
 import { TicketGenerationProgress } from "../../types/ticket";
 import { useAppStore } from "../../stores/appStore";
@@ -57,21 +54,13 @@ export function TicketGeneratorPage(): React.JSX.Element {
     return (
         <div className="space-y-6 p-6 xl:p-8">
             <header>
-                <h2 className="text-3xl font-bold text-white">
-                    {t("tickets.generatorTitle")}
-                </h2>
-                <p className="text-sm text-zinc-400">
-                    {t("tickets.generatorSubtitle")}
-                </p>
+                <h2 className="text-3xl font-bold text-white">{t("tickets.generatorTitle")}</h2>
+                <p className="text-sm text-zinc-400">{t("tickets.generatorSubtitle")}</p>
             </header>
             <Card>
                 <CardContent className="flex items-center justify-between p-6">
-                    <span className="text-zinc-300">
-                        {t("tickets.generatorReady")}
-                    </span>
-                    <Button onClick={() => setOpen(true)}>
-                        {t("tickets.generate")}
-                    </Button>
+                    <span className="text-zinc-300">{t("tickets.generatorReady")}</span>
+                    <Button onClick={() => setOpen(true)}>{t("tickets.generate")}</Button>
                 </CardContent>
             </Card>
             {progress.total > 0 && (
@@ -103,9 +92,7 @@ export function TicketGeneratorPage(): React.JSX.Element {
                         className="w-full max-w-md space-y-4 rounded-xl border border-zinc-700 bg-zinc-900 p-6"
                         onSubmit={form.handleSubmit(submit)}
                     >
-                        <h3 className="text-lg font-semibold">
-                            {t("tickets.generate")}
-                        </h3>
+                        <h3 className="text-lg font-semibold">{t("tickets.generate")}</h3>
                         <label className="block text-sm">
                             {t("tickets.batchName")}
                             <input
@@ -135,9 +122,7 @@ export function TicketGeneratorPage(): React.JSX.Element {
                                 </span>
                             )}
                         </label>
-                        {error !== null && (
-                            <p className="text-sm text-red-400">{error}</p>
-                        )}
+                        {error !== null && <p className="text-sm text-red-400">{error}</p>}
                         <div className="flex justify-end gap-2">
                             <Button
                                 disabled={generating}

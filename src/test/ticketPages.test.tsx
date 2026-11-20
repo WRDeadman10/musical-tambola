@@ -42,11 +42,15 @@ describe("ticket pages", () => {
         fireEvent.change(screen.getAllByRole("spinbutton")[0], { target: { value: "2" } });
         const validSubmitButtons = screen.getAllByRole("button");
         fireEvent.click(validSubmitButtons[validSubmitButtons.length - 1]);
-        await waitFor(() => expect(ticketApi.generateTicketBatch).toHaveBeenCalledWith("Evening", 2));
+        await waitFor(() =>
+            expect(ticketApi.generateTicketBatch).toHaveBeenCalledWith("Evening", 2),
+        );
     });
 
     it("filters batch tickets and invokes ticket search", async () => {
-        vi.mocked(ticketApi.listTicketBatches).mockResolvedValue([{ id: 1, name: "Evening", requestedCount: 2, generatedCount: 2, createdAt: "now" }]);
+        vi.mocked(ticketApi.listTicketBatches).mockResolvedValue([
+            { id: 1, name: "Evening", requestedCount: 2, generatedCount: 2, createdAt: "now" },
+        ]);
         vi.mocked(ticketApi.listBatchTickets).mockResolvedValue({
             total: 2,
             items: [
@@ -74,18 +78,40 @@ describe("ticket pages", () => {
 
     it("renders generation progress and locks the modal while running", async () => {
         let progressCallback: ((value: { done: number; total: number }) => void) | null = null;
-        vi.mocked(ticketApi.listenToTicketGenerationProgress).mockImplementation(async (callback) => { progressCallback = callback; return () => undefined; });
+        vi.mocked(ticketApi.listenToTicketGenerationProgress).mockImplementation(
+            async (callback) => {
+                progressCallback = callback;
+                return () => undefined;
+            },
+        );
         let resolveGeneration: ((value: TicketBatch) => void) | null = null;
-        vi.mocked(ticketApi.generateTicketBatch).mockReturnValue(new Promise((resolve) => { resolveGeneration = resolve; }));
+        vi.mocked(ticketApi.generateTicketBatch).mockReturnValue(
+            new Promise((resolve) => {
+                resolveGeneration = resolve;
+            }),
+        );
         render(<TicketGeneratorPage />);
         fireEvent.click(screen.getAllByRole("button")[screen.getAllByRole("button").length - 1]);
         fireEvent.change(screen.getAllByRole("textbox")[0], { target: { value: "Evening" } });
         fireEvent.change(screen.getAllByRole("spinbutton")[0], { target: { value: "2" } });
         fireEvent.click(screen.getAllByRole("button")[screen.getAllByRole("button").length - 1]);
         await waitFor(() => expect(ticketApi.generateTicketBatch).toHaveBeenCalled());
-        (progressCallback as unknown as ((value: { done: number; total: number }) => void))({ done: 1, total: 2 });
-        await waitFor(() => expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("1"));
-        expect(screen.getAllByRole("button").some((button) => (button as HTMLButtonElement).disabled)).toBe(true);
-        (resolveGeneration as unknown as ((value: TicketBatch) => void))({ id: 1, name: "Evening", requestedCount: 2, generatedCount: 2, createdAt: "now" });
+        (progressCallback as unknown as (value: { done: number; total: number }) => void)({
+            done: 1,
+            total: 2,
+        });
+        await waitFor(() =>
+            expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("1"),
+        );
+        expect(
+            screen.getAllByRole("button").some((button) => (button as HTMLButtonElement).disabled),
+        ).toBe(true);
+        (resolveGeneration as unknown as (value: TicketBatch) => void)({
+            id: 1,
+            name: "Evening",
+            requestedCount: 2,
+            generatedCount: 2,
+            createdAt: "now",
+        });
     });
 });

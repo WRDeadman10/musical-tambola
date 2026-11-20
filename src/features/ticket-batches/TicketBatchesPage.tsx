@@ -24,26 +24,18 @@ export function TicketBatchesPage(): React.JSX.Element {
     const [batches, setBatches] = useState<TicketBatch[]>([]);
     const [selected, setSelected] = useState<TicketBatch | null>(null);
     const [tickets, setTickets] = useState<Ticket[]>([]);
-    const [media, setMedia] = useState<Map<number, MediaSlot>>(
-        new Map<number, MediaSlot>(),
-    );
+    const [media, setMedia] = useState<Map<number, MediaSlot>>(new Map<number, MediaSlot>());
     const [query, setQuery] = useState<string>("");
     const [page, setPage] = useState<number>(0);
     const [error, setError] = useState<string | null>(null);
-    const [pendingDelete, setPendingDelete] = useState<TicketBatch | null>(
-        null,
-    );
+    const [pendingDelete, setPendingDelete] = useState<TicketBatch | null>(null);
     const requestId = useRef<number>(0);
 
     const load = async (): Promise<void> => {
         const loaded: TicketBatch[] = await listTicketBatches();
         setBatches(loaded);
         const slots: MediaSlot[] = await listMedia();
-        setMedia(
-            new Map<number, MediaSlot>(
-                slots.map((slot) => [slot.number, slot]),
-            ),
-        );
+        setMedia(new Map<number, MediaSlot>(slots.map((slot) => [slot.number, slot])));
     };
 
     useEffect(() => {
@@ -59,23 +51,12 @@ export function TicketBatchesPage(): React.JSX.Element {
             try {
                 if (query.trim().length > 0) {
                     if (typeof searchTickets === "function") {
-                        const results: Ticket[] = await searchTickets(
-                            query.trim(),
-                            100,
-                        );
+                        const results: Ticket[] = await searchTickets(query.trim(), 100);
                         if (requestId.current === currentRequest) {
-                            setTickets(
-                                results.filter(
-                                    (ticket) => ticket.batchId === selected.id,
-                                ),
-                            );
+                            setTickets(results.filter((ticket) => ticket.batchId === selected.id));
                         }
                     } else {
-                        const result = await listBatchTickets(
-                            selected.id,
-                            0,
-                            PAGE_SIZE,
-                        );
+                        const result = await listBatchTickets(selected.id, 0, PAGE_SIZE);
                         if (requestId.current === currentRequest) {
                             setTickets(
                                 result.items.filter((ticket) =>
@@ -87,11 +68,7 @@ export function TicketBatchesPage(): React.JSX.Element {
                         }
                     }
                 } else {
-                    const result = await listBatchTickets(
-                        selected.id,
-                        page * PAGE_SIZE,
-                        PAGE_SIZE,
-                    );
+                    const result = await listBatchTickets(selected.id, page * PAGE_SIZE, PAGE_SIZE);
                     if (requestId.current === currentRequest) {
                         setTickets(result.items);
                     }
@@ -126,9 +103,7 @@ export function TicketBatchesPage(): React.JSX.Element {
     return (
         <div className="space-y-6 p-6 xl:p-8">
             <header>
-                <h2 className="text-3xl font-bold text-white">
-                    {t("tickets.batchesTitle")}
-                </h2>
+                <h2 className="text-3xl font-bold text-white">{t("tickets.batchesTitle")}</h2>
             </header>
             {error !== null && <p className="text-sm text-red-400">{error}</p>}
             <div className="grid gap-4 lg:grid-cols-3">
@@ -163,9 +138,7 @@ export function TicketBatchesPage(): React.JSX.Element {
             {selected !== null && (
                 <section className="space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                        <h3 className="text-xl font-semibold">
-                            {selected.name}
-                        </h3>
+                        <h3 className="text-xl font-semibold">{selected.name}</h3>
                         <input
                             className="h-9 rounded border border-zinc-700 bg-zinc-950 px-3"
                             placeholder={t("tickets.search")}
@@ -197,10 +170,7 @@ export function TicketBatchesPage(): React.JSX.Element {
                         </Button>
                         <Button
                             variant="outline"
-                            disabled={
-                                tickets.length < PAGE_SIZE ||
-                                query.trim().length > 0
-                            }
+                            disabled={tickets.length < PAGE_SIZE || query.trim().length > 0}
                             onClick={() => setPage(page + 1)}
                         >
                             {t("tickets.next")}
@@ -214,23 +184,13 @@ export function TicketBatchesPage(): React.JSX.Element {
                         className="w-full max-w-md space-y-4 rounded-xl border border-zinc-700 bg-zinc-900 p-6"
                         role="alertdialog"
                     >
-                        <h3 className="text-lg font-semibold">
-                            {t("tickets.delete")}
-                        </h3>
-                        <p className="text-sm text-zinc-300">
-                            {t("tickets.confirmDelete")}
-                        </p>
+                        <h3 className="text-lg font-semibold">{t("tickets.delete")}</h3>
+                        <p className="text-sm text-zinc-300">{t("tickets.confirmDelete")}</p>
                         <div className="flex justify-end gap-2">
-                            <Button
-                                variant="ghost"
-                                onClick={() => setPendingDelete(null)}
-                            >
+                            <Button variant="ghost" onClick={() => setPendingDelete(null)}>
                                 {t("common.cancel")}
                             </Button>
-                            <Button
-                                variant="destructive"
-                                onClick={() => void remove()}
-                            >
+                            <Button variant="destructive" onClick={() => void remove()}>
                                 {t("tickets.delete")}
                             </Button>
                         </div>

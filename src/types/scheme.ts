@@ -1,10 +1,5 @@
 export type SchemeType =
-    | "EARLY_FIVE"
-    | "FOUR_CORNERS"
-    | "TOP_LINE"
-    | "MIDDLE_LINE"
-    | "BOTTOM_LINE"
-    | "FULL_HOUSE";
+    "EARLY_FIVE" | "FOUR_CORNERS" | "TOP_LINE" | "MIDDLE_LINE" | "BOTTOM_LINE" | "FULL_HOUSE";
 
 export interface PrizeScheme {
     id: number;

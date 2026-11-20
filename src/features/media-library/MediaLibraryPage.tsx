@@ -10,11 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
-import {
-    clearMedia,
-    validateAllMedia,
-    validateMedia,
-} from "../../lib/api/media";
+import { clearMedia, validateAllMedia, validateMedia } from "../../lib/api/media";
 import { MediaSlot, MediaValidationReport } from "../../types/media";
 import { useAppStore } from "../../stores/appStore";
 import { filterMediaSlots, MediaFilter } from "./mediaFilters";
@@ -39,13 +35,9 @@ function StatCard({ label, value, icon }: StatCardProps): React.JSX.Element {
             <CardContent className="flex items-center justify-between p-4">
                 <div>
                     <div className="text-xs text-zinc-500">{label}</div>
-                    <div className="mt-1 text-2xl font-bold text-white">
-                        {value}
-                    </div>
+                    <div className="mt-1 text-2xl font-bold text-white">{value}</div>
                 </div>
-                <div className="rounded-md bg-indigo-500/10 p-2 text-indigo-400">
-                    {icon}
-                </div>
+                <div className="rounded-md bg-indigo-500/10 p-2 text-indigo-400">{icon}</div>
             </CardContent>
         </Card>
     );
@@ -67,8 +59,7 @@ function emptySlot(number: number): MediaSlot {
 
 export const MediaLibraryPage: React.FC = () => {
     const t = useAppStore((state) => state.t);
-    const { slots, isLoading, progress, refreshSlots, setSlots } =
-        useMediaLibrary();
+    const { slots, isLoading, progress, refreshSlots, setSlots } = useMediaLibrary();
     const [filter, setFilter] = useState<MediaFilter>("ALL");
     const [query, setQuery] = useState<string>("");
     const [editingSlot, setEditingSlot] = useState<MediaSlot | null>(null);
@@ -76,9 +67,7 @@ export const MediaLibraryPage: React.FC = () => {
     const [removingSlot, setRemovingSlot] = useState<MediaSlot | null>(null);
     const [report, setReport] = useState<MediaValidationReport | null>(null);
     const [isValidating, setIsValidating] = useState<boolean>(false);
-    const [highlightedNumber, setHighlightedNumber] = useState<number | null>(
-        null,
-    );
+    const [highlightedNumber, setHighlightedNumber] = useState<number | null>(null);
     const [toast, setToast] = useState<string | null>(null);
     const rowRefs = useRef<Map<number, HTMLTableRowElement>>(
         new Map<number, HTMLTableRowElement>(),
@@ -94,26 +83,18 @@ export const MediaLibraryPage: React.FC = () => {
         return normalizedQuery.length === 0
             ? filtered
             : filtered.filter((slot: MediaSlot) =>
-                  [
-                      String(slot.number),
-                      slot.title ?? "",
-                      slot.source ?? "",
-                  ].some((value: string) =>
+                  [String(slot.number), slot.title ?? "", slot.source ?? ""].some((value: string) =>
                       value.toLocaleLowerCase().includes(normalizedQuery),
                   ),
               );
     }, [filter, query, slots]);
-    const configuredCount: number = slots.filter(
-        (slot: MediaSlot) => slot.configured,
-    ).length;
+    const configuredCount: number = slots.filter((slot: MediaSlot) => slot.configured).length;
     const validCount: number = slots.filter(
         (slot: MediaSlot) => slot.validationStatus === "VALID",
     ).length;
     const updateSlot = async (slot: MediaSlot): Promise<void> => {
         setSlots((current: MediaSlot[]) =>
-            current.map((value: MediaSlot) =>
-                value.number === slot.number ? slot : value,
-            ),
+            current.map((value: MediaSlot) => (value.number === slot.number ? slot : value)),
         );
         setToast(t("media.messages.saved"));
     };
@@ -148,8 +129,7 @@ export const MediaLibraryPage: React.FC = () => {
         }
     };
     const jumpToIssue = (number: number): void => {
-        const row: HTMLTableRowElement | undefined =
-            rowRefs.current.get(number);
+        const row: HTMLTableRowElement | undefined = rowRefs.current.get(number);
         if (row !== undefined) {
             row.scrollIntoView?.({ behavior: "smooth", block: "center" });
             setHighlightedNumber(number);
@@ -163,9 +143,7 @@ export const MediaLibraryPage: React.FC = () => {
                     <h2 className="text-3xl font-bold tracking-tight text-white">
                         {t("media.title")}
                     </h2>
-                    <p className="mt-1 text-sm text-zinc-400">
-                        {t("media.subtitle")}
-                    </p>
+                    <p className="mt-1 text-sm text-zinc-400">{t("media.subtitle")}</p>
                 </div>
                 <div className="flex gap-2">
                     <Button
@@ -173,9 +151,7 @@ export const MediaLibraryPage: React.FC = () => {
                         onClick={() => void handleValidateAll()}
                         disabled={isValidating}
                     >
-                        <RefreshCw
-                            className={`h-4 w-4 ${isValidating ? "animate-spin" : ""}`}
-                        />
+                        <RefreshCw className={`h-4 w-4 ${isValidating ? "animate-spin" : ""}`} />
                         {t("media.actions.validateAll")}
                     </Button>
                     <Button onClick={() => setEditingSlot(emptySlot(1))}>
@@ -198,10 +174,8 @@ export const MediaLibraryPage: React.FC = () => {
                 <StatCard
                     label={t("media.stats.invalid")}
                     value={String(
-                        slots.filter(
-                            (slot: MediaSlot) =>
-                                slot.validationStatus === "INVALID",
-                        ).length,
+                        slots.filter((slot: MediaSlot) => slot.validationStatus === "INVALID")
+                            .length,
                     )}
                     icon={<AlertCircle className="h-4 w-4" />}
                 />
@@ -246,9 +220,9 @@ export const MediaLibraryPage: React.FC = () => {
                             <input
                                 className="h-9 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 pl-9 text-sm text-zinc-100"
                                 value={query}
-                                onChange={(
-                                    event: React.ChangeEvent<HTMLInputElement>,
-                                ) => setQuery(event.target.value)}
+                                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                                    setQuery(event.target.value)
+                                }
                                 placeholder={t("media.search")}
                             />
                         </div>
@@ -284,10 +258,7 @@ export const MediaLibraryPage: React.FC = () => {
                     onPreview={setPreviewSlot}
                     onValidate={(slot: MediaSlot) => void handleValidate(slot)}
                     onRemove={setRemovingSlot}
-                    setRowRef={(
-                        number: number,
-                        row: HTMLTableRowElement | null,
-                    ) => {
+                    setRowRef={(number: number, row: HTMLTableRowElement | null) => {
                         if (row !== null) rowRefs.current.set(number, row);
                     }}
                 />
@@ -305,10 +276,7 @@ export const MediaLibraryPage: React.FC = () => {
                 />
             )}
             {previewSlot !== null && (
-                <MediaPreviewDialog
-                    slot={previewSlot}
-                    onClose={() => setPreviewSlot(null)}
-                />
+                <MediaPreviewDialog slot={previewSlot} onClose={() => setPreviewSlot(null)} />
             )}
             {removingSlot !== null && (
                 <RemoveMediaDialog

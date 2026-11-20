@@ -1,16 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import {
-    Ticket,
-    TicketBatch,
-    TicketGenerationProgress,
-    TicketPage,
-} from "../../types/ticket";
+import { Ticket, TicketBatch, TicketGenerationProgress, TicketPage } from "../../types/ticket";
 
-export async function generateTicketBatch(
-    name: string,
-    count: number,
-): Promise<TicketBatch> {
+export async function generateTicketBatch(name: string, count: number): Promise<TicketBatch> {
     return await invoke<TicketBatch>("generate_ticket_batch", { name, count });
 }
 export async function listTicketBatches(): Promise<TicketBatch[]> {
@@ -30,10 +22,7 @@ export async function listBatchTickets(
 export async function getTicket(code: string): Promise<Ticket> {
     return await invoke<Ticket>("get_ticket", { code });
 }
-export async function searchTickets(
-    query: string,
-    limit: number,
-): Promise<Ticket[]> {
+export async function searchTickets(query: string, limit: number): Promise<Ticket[]> {
     return await invoke<Ticket[]>("search_tickets", { query, limit });
 }
 export async function deleteTicketBatch(batchId: number): Promise<void> {
@@ -42,8 +31,7 @@ export async function deleteTicketBatch(batchId: number): Promise<void> {
 export async function listenToTicketGenerationProgress(
     callback: (progress: TicketGenerationProgress) => void,
 ): Promise<UnlistenFn> {
-    return await listen<TicketGenerationProgress>(
-        "ticket-generation-progress",
-        (event) => callback(event.payload),
+    return await listen<TicketGenerationProgress>("ticket-generation-progress", (event) =>
+        callback(event.payload),
     );
 }

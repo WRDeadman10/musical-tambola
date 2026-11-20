@@ -64,11 +64,7 @@ function Thumbnail({ slot }: { slot: MediaSlot }): React.JSX.Element {
             <Video className="absolute bottom-1 right-1 h-4 w-4 rounded bg-black/70 p-0.5 text-white" />
         </div>
     ) : (
-        <img
-            className="h-12 w-16 rounded bg-zinc-800 object-cover"
-            src={source}
-            alt=""
-        />
+        <img className="h-12 w-16 rounded bg-zinc-800 object-cover" src={source} alt="" />
     );
 }
 
@@ -109,9 +105,7 @@ export function MediaTable({
                         <tr
                             className={`border-t border-zinc-800/80 ${highlightedNumber === slot.number ? "bg-amber-500/20 ring-1 ring-inset ring-amber-400" : "hover:bg-zinc-800/40"}`}
                             key={slot.number}
-                            ref={(row: HTMLTableRowElement | null) =>
-                                setRowRef(slot.number, row)
-                            }
+                            ref={(row: HTMLTableRowElement | null) => setRowRef(slot.number, row)}
                         >
                             <td className="px-4 py-3 font-mono font-semibold text-zinc-200">
                                 {slot.number}
@@ -154,11 +148,7 @@ export function MediaTable({
                                       : "—"}
                             </td>
                             <td className="px-4 py-3">
-                                <Badge
-                                    variant={getStatusVariant(
-                                        slot.validationStatus,
-                                    )}
-                                >
+                                <Badge variant={getStatusVariant(slot.validationStatus)}>
                                     {translate(
                                         `media.status.${slot.validationStatus.toLowerCase()}`,
                                     )}
@@ -180,9 +170,7 @@ export function MediaTable({
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        aria-label={translate(
-                                            "media.actions.edit",
-                                        )}
+                                        aria-label={translate("media.actions.edit")}
                                         onClick={() => onEdit(slot)}
                                     >
                                         <Pencil className="h-4 w-4" />
@@ -192,9 +180,7 @@ export function MediaTable({
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                aria-label={translate(
-                                                    "media.actions.preview",
-                                                )}
+                                                aria-label={translate("media.actions.preview")}
                                                 onClick={() => onPreview(slot)}
                                             >
                                                 <ImageIcon className="h-4 w-4" />
@@ -202,9 +188,7 @@ export function MediaTable({
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                aria-label={translate(
-                                                    "media.actions.validate",
-                                                )}
+                                                aria-label={translate("media.actions.validate")}
                                                 onClick={() => onValidate(slot)}
                                             >
                                                 <CheckCircle2 className="h-4 w-4" />
@@ -212,9 +196,7 @@ export function MediaTable({
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                aria-label={translate(
-                                                    "media.actions.remove",
-                                                )}
+                                                aria-label={translate("media.actions.remove")}
                                                 onClick={() => onRemove(slot)}
                                             >
                                                 <Trash2 className="h-4 w-4 text-red-400" />

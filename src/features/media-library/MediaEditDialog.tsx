@@ -4,12 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { CircleHelp, FolderOpen } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import {
-    MediaSlot,
-    MediaType,
-    SaveMediaInput,
-    SourceType,
-} from "../../types/media";
+import { MediaSlot, MediaType, SaveMediaInput, SourceType } from "../../types/media";
 import { pickMediaFile, saveMedia } from "../../lib/api/media";
 import { useAppStore } from "../../stores/appStore";
 import { MediaModal } from "./MediaModal";
@@ -60,8 +55,7 @@ export const mediaFormSchema = z
                 context.addIssue({
                     code: "custom",
                     path: ["source"],
-                    message:
-                        "Use a direct media file URL, not a YouTube or Vimeo page URL.",
+                    message: "Use a direct media file URL, not a YouTube or Vimeo page URL.",
                 });
             }
         } else if (!windowsPathPattern.test(value.source)) {
@@ -128,10 +122,7 @@ export function MediaEditDialog({
             await onSaved(
                 await saveMedia({
                     ...values,
-                    thumbnailSource:
-                        values.thumbnailSource === ""
-                            ? null
-                            : values.thumbnailSource,
+                    thumbnailSource: values.thumbnailSource === "" ? null : values.thumbnailSource,
                 }),
             );
             onClose();
@@ -154,11 +145,7 @@ export function MediaEditDialog({
     return (
         <MediaModal
             onClose={onClose}
-            title={
-                slot?.configured
-                    ? t("media.dialog.editTitle")
-                    : t("media.dialog.addTitle")
-            }
+            title={slot?.configured ? t("media.dialog.editTitle") : t("media.dialog.addTitle")}
         >
             <form className="space-y-4" onSubmit={form.handleSubmit(submit)}>
                 <div className="grid grid-cols-2 gap-4">
@@ -185,30 +172,16 @@ export function MediaEditDialog({
                 <div className="grid grid-cols-2 gap-4">
                     <label>
                         {t("media.fields.mediaType")}
-                        <select
-                            className="h-9 w-full bg-zinc-950"
-                            {...form.register("mediaType")}
-                        >
-                            <option value="IMAGE">
-                                {t("media.types.image")}
-                            </option>
-                            <option value="VIDEO">
-                                {t("media.types.video")}
-                            </option>
+                        <select className="h-9 w-full bg-zinc-950" {...form.register("mediaType")}>
+                            <option value="IMAGE">{t("media.types.image")}</option>
+                            <option value="VIDEO">{t("media.types.video")}</option>
                         </select>
                     </label>
                     <label>
                         {t("media.fields.sourceType")}
-                        <select
-                            className="h-9 w-full bg-zinc-950"
-                            {...form.register("sourceType")}
-                        >
-                            <option value="LOCAL">
-                                {t("media.sourceTypes.local")}
-                            </option>
-                            <option value="REMOTE">
-                                {t("media.sourceTypes.remote")}
-                            </option>
+                        <select className="h-9 w-full bg-zinc-950" {...form.register("sourceType")}>
+                            <option value="LOCAL">{t("media.sourceTypes.local")}</option>
+                            <option value="REMOTE">{t("media.sourceTypes.remote")}</option>
                         </select>
                     </label>
                 </div>
@@ -220,11 +193,7 @@ export function MediaEditDialog({
                             {...form.register("source")}
                         />
                         {sourceType === "LOCAL" && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => void browse()}
-                            >
+                            <Button type="button" variant="outline" onClick={() => void browse()}>
                                 <FolderOpen className="h-4 w-4" />
                                 {t("media.actions.browse")}
                             </Button>
@@ -254,9 +223,7 @@ export function MediaEditDialog({
                         {...form.register("thumbnailSource")}
                     />
                 </label>
-                {error !== null && (
-                    <div className="text-xs text-red-400">{error}</div>
-                )}
+                {error !== null && <div className="text-xs text-red-400">{error}</div>}
                 <div className="flex justify-end gap-2">
                     <Button type="button" variant="ghost" onClick={onClose}>
                         {t("common.cancel")}

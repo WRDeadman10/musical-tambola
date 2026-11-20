@@ -11,7 +11,8 @@ function Badge({ className, variant = "default", ...props }: BadgeProps): React.
         secondary: "border-transparent bg-zinc-800 text-zinc-300 hover:bg-zinc-700",
         destructive: "border-transparent bg-red-600 text-white shadow hover:bg-red-500",
         outline: "border-zinc-700 text-zinc-300",
-        success: "border-transparent bg-emerald-600/20 text-emerald-400 border border-emerald-500/30",
+        success:
+            "border-transparent bg-emerald-600/20 text-emerald-400 border border-emerald-500/30",
     };
 
     return (
@@ -19,7 +20,7 @@ function Badge({ className, variant = "default", ...props }: BadgeProps): React.
             className={cn(
                 "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-400",
                 variantStyles[variant],
-                className
+                className,
             )}
             {...props}
         />

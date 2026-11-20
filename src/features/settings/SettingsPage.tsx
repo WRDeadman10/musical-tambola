@@ -19,7 +19,10 @@ export const SettingsPage: React.FC = () => {
                 }
             })
             .catch((err: unknown) => {
-                console.warn("Could not fetch app info from Tauri backend (likely running in browser dev):", err);
+                console.warn(
+                    "Could not fetch app info from Tauri backend (likely running in browser dev):",
+                    err,
+                );
             });
 
         return () => {
@@ -39,7 +42,9 @@ export const SettingsPage: React.FC = () => {
         <div className="p-8 max-w-4xl mx-auto space-y-8">
             <header className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-white">{t("settings.title")}</h2>
+                    <h2 className="text-3xl font-bold tracking-tight text-white">
+                        {t("settings.title")}
+                    </h2>
                     <p className="text-zinc-400 mt-1">{t("settings.systemInfo")}</p>
                 </div>
                 <Badge variant="outline">IPC Connected</Badge>
@@ -93,11 +98,15 @@ export const SettingsPage: React.FC = () => {
                 <CardContent className="space-y-3 text-sm">
                     <div className="flex justify-between py-2 border-b border-zinc-800">
                         <span className="text-zinc-400">{t("settings.version")}</span>
-                        <span className="font-mono text-zinc-200">{appInfo?.version ?? "0.1.0"}</span>
+                        <span className="font-mono text-zinc-200">
+                            {appInfo?.version ?? "0.1.0"}
+                        </span>
                     </div>
                     <div className="flex justify-between py-2 border-b border-zinc-800">
                         <span className="text-zinc-400">{t("settings.schemaVersion")}</span>
-                        <span className="font-mono text-zinc-200">{appInfo?.schema_version ?? 1}</span>
+                        <span className="font-mono text-zinc-200">
+                            {appInfo?.schema_version ?? 1}
+                        </span>
                     </div>
                     <div className="flex justify-between py-2 border-b border-zinc-800">
                         <span className="text-zinc-400">{t("settings.dataDir")}</span>
@@ -117,7 +126,8 @@ export const SettingsPage: React.FC = () => {
             <div className="p-4 bg-zinc-950/80 border border-zinc-800/80 rounded-xl flex items-start gap-3 text-xs text-zinc-400">
                 <Info className="w-4 h-4 text-zinc-500 mt-0.5 shrink-0" />
                 <span>
-                    Database is persisted in SQLite with WAL mode enabled. All game rules and validations are enforced authoritatively by the Rust backend engine.
+                    Database is persisted in SQLite with WAL mode enabled. All game rules and
+                    validations are enforced authoritatively by the Rust backend engine.
                 </span>
             </div>
         </div>

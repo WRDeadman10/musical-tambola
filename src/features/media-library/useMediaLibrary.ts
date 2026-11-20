@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-    listMedia,
-    listenToMediaValidationProgress,
-} from "../../lib/api/media";
+import { listMedia, listenToMediaValidationProgress } from "../../lib/api/media";
 import { MediaSlot, MediaValidationProgress } from "../../types/media";
 
 function emptySlot(number: number): MediaSlot {
@@ -25,8 +22,7 @@ function normalizeSlots(slots: MediaSlot[]): MediaSlot[] {
     slots.forEach((slot: MediaSlot) => byNumber.set(slot.number, slot));
     return Array.from(
         { length: 90 },
-        (_value: undefined, index: number) =>
-            byNumber.get(index + 1) ?? emptySlot(index + 1),
+        (_value: undefined, index: number) => byNumber.get(index + 1) ?? emptySlot(index + 1),
     );
 }
 
@@ -40,9 +36,7 @@ export interface MediaLibraryState {
 
 export function useMediaLibrary(): MediaLibraryState {
     const [slots, setSlots] = useState<MediaSlot[]>(() =>
-        Array.from({ length: 90 }, (_value: undefined, index: number) =>
-            emptySlot(index + 1),
-        ),
+        Array.from({ length: 90 }, (_value: undefined, index: number) => emptySlot(index + 1)),
     );
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [progress, setProgress] = useState<MediaValidationProgress>({
@@ -66,13 +60,11 @@ export function useMediaLibrary(): MediaLibraryState {
     useEffect(() => {
         let unlisten: (() => void) | null = null;
         let mounted: boolean = true;
-        void listenToMediaValidationProgress(
-            (value: MediaValidationProgress) => {
-                if (mounted) {
-                    setProgress(value);
-                }
-            },
-        )
+        void listenToMediaValidationProgress((value: MediaValidationProgress) => {
+            if (mounted) {
+                setProgress(value);
+            }
+        })
             .then((cleanup: () => void) => {
                 if (mounted) {
                     unlisten = cleanup;
