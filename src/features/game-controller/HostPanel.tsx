@@ -6,6 +6,8 @@ import { AudiencePreview } from "./AudiencePreview";
 import { CountdownCard } from "./CountdownCard";
 import { DrawControls } from "./DrawControls";
 import { GameControllerModel } from "./useGameController";
+import { HostProjectorCard } from "./HostProjectorCard";
+import { presentationCommand } from "../../lib/api/presentation";
 import { SongList } from "./SongList";
 import { QuickClaim } from "./QuickClaim";
 import { ShortcutHelp } from "./ShortcutHelp";
@@ -27,6 +29,11 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
     const [showAnswer, setShowAnswer] = useState<boolean>(true);
     const [showNumber, setShowNumber] = useState<boolean>(true);
     const [presentMode, setPresentMode] = useState<boolean>(false);
+    const [acceptedClaim, setAcceptedClaim] = useState<{
+        schemeId: number;
+        schemeName: string;
+        ticketCode: string;
+    } | null>(null);
     const toggleAnswer = useCallback(() => setShowAnswer((value) => !value), []);
     const toggleNumber = useCallback(() => setShowNumber((value) => !value), []);
     const togglePause = useCallback(
@@ -43,6 +50,7 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
         onNumber: toggleNumber,
         onClaim: focusClaim,
         onHelp: () => setHelpOpen(true),
+        dialogOpen: helpOpen,
     });
     if (model.state === null) return <div className="p-8">{translate("claims.noActiveGame")}</div>;
     return (
@@ -84,10 +92,28 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                         onCancelEnd={() => model.setEndRequested(false)}
                         onConfirmEnd={() => void model.end()}
                     />
-                    <CountdownCard translate={translate} />
+                    <CountdownCard
+                        translate={translate}
+                        onChange={(seconds, running) =>
+                            void presentationCommand("COUNTDOWN", {
+                                seconds,
+                                state: running ? "RUNNING" : "STOPPED",
+                            })
+                        }
+                    />
                 </div>
                 <div className="space-y-4">
-                    <QuickClaim onFocusRef={claimInput} />
+                    <QuickClaim
+                        onFocusRef={claimInput}
+                        onAccepted={(result) =>
+                            setAcceptedClaim({
+                                schemeId: result.schemeId,
+                                schemeName: result.schemeName,
+                                ticketCode: result.ticketCode,
+                            })
+                        }
+                    />
+                    <HostProjectorCard state={model.state} acceptedClaim={acceptedClaim} />
                     <WinnersList schemes={model.state.schemes} translate={translate} />
                     <button
                         className="text-sm text-indigo-300 underline"

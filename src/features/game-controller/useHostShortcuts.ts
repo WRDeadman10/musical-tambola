@@ -8,6 +8,7 @@ export function useHostShortcuts({
     onClaim,
     onHelp,
     enabled = true,
+    dialogOpen = false,
 }: {
     onNext: () => void;
     onPause: () => void;
@@ -16,18 +17,20 @@ export function useHostShortcuts({
     onClaim: () => void;
     onHelp: () => void;
     enabled?: boolean;
+    dialogOpen?: boolean;
 }): void {
     useEffect(() => {
         const handler = (event: KeyboardEvent): void => {
             const target = event.target as HTMLElement | null;
             if (
                 !enabled ||
+                dialogOpen ||
                 (target &&
                     (["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(target.tagName) ||
                         target.isContentEditable))
             )
                 return;
-            if (document.querySelector('[role="dialog"]')) return;
+            if (target?.closest('[role="dialog"]')) return;
             if (event.key === "Escape") {
                 const activeElement: Element | null = document.activeElement;
                 if (activeElement instanceof HTMLElement) activeElement.blur();
@@ -42,5 +45,5 @@ export function useHostShortcuts({
         };
         window.addEventListener("keydown", handler);
         return () => window.removeEventListener("keydown", handler);
-    }, [enabled, onAnswer, onClaim, onHelp, onNext, onNumber, onPause]);
+    }, [dialogOpen, enabled, onAnswer, onClaim, onHelp, onNext, onNumber, onPause]);
 }
