@@ -1,36 +1,25 @@
 # AI Handoff & Session State — Media Tambola
 
-## Current Phase: Phase 1 — Application Foundation (Complete & Pushed)
+## Current Phase: Phase 2 — Media Manager
 - **Date**: 2026-11-20
-- **Lead Agent**: Claude (C)
-- **Implementer Agent**: Antigravity (AG / A)
-- **Auditor Agent**: Codex (X)
+- **Lead / Reviewer**: Claude (C)
+- **Implementer #1 (Backend / Rust & Git Owner)**: Antigravity (AG / A)
+- **Implementer #2 (Frontend)**: Codex (X)
 
-## Completed Milestones & Git Commits
-All commits have been pushed to remote `origin/main`:
-1. `757ab9b`: `docs: initialize technical specifications and project baseline`
-2. `fc0c48c`: `chore: scaffold Tauri 2.x and React Vite TypeScript project`
-3. `c4d6c1a`: `feat(backend): implement SQLite migration runner and IPC commands`
-4. `0b593d3`: `feat(ui): implement dark theme UI shell, navigation, and settings`
-5. `a6b364c`: `docs: update task tracker and handoff for Phase 1 milestone`
-6. `7bbeaae`: `feat(build): compile native desktop binary and configure full test script`
-7. `81d605f`: `docs: finalize tasks and handoff for Phase 1 review`
-8. `2eb8caa`: `feat(ui): bundle Noto Sans Gujarati fonts and configure shadcn/ui components`
-9. `8800c8f`: `feat(backend): strengthen CSP, index constraints, and add persistence tests`
-10. `2a9f8e2`: `docs: record MSG-004 and MSG-005 resolutions in tasks and handoff`
-11. `d63cebe`: `fix(security): validate IPC setting inputs, bundle full OFL, and add API tests`
+## Team & File Ownership Rules
+- **AG owns**: `src-tauri/**`, `docs/**`, `package.json`, `Cargo.toml`, `Cargo.lock`, and all git commit/push operations.
+- **Codex owns**: `src/features/media-library/**`, `src/components/media/**`, `src/lib/api/media.ts`, `src/types/media.ts`, `src/test/media*.test.ts(x)`, media locale keys, and Sidebar/Router entry for Media Library.
+- When Codex completes frontend work, AG commits Codex's files in dedicated commits prefixed `feat(ui): ...` with body `Implemented by Codex`.
 
-## Audit Items Addressed
-- **P1 (Security / Input Validation)**: Added strict validation allowlist and value checks in Rust command `set_app_setting` (`src-tauri/src/commands/app_info.rs`) rejecting unsupported keys or invalid values before database execution.
-- **P2 (API Wrapper Tests)**: Added `src/test/api.test.ts` testing typed IPC wrappers `getAppInfo` and `setAppSetting` against mocked Tauri invoke.
-- **OFL.txt**: Replaced placeholder with complete SIL Open Font License 1.1 in `src/assets/fonts/OFL.txt`.
-- **Tests**:
-  - Vitest: 6/6 tests passing across 2 files (`api.test.ts`, `appStore.test.ts`).
-  - Cargo test: 5/5 tests passing (`validate_app_setting`, `persistence_across_reopen`, `migrations_creates_all_tables`, `migrations_reopen_idempotent`, `partial_unique_index_single_active_or_paused_game`).
-  - `cargo fmt --check`: Clean.
-  - `cargo clippy -- -D warnings`: Clean.
-  - `npm run lint`: 0 errors.
+## Phase 1 Status
+- **ACCEPTED** by Claude.
+- Carry-over fixes completed and pushed in commit `50a54e9`:
+  - Enforced exact spec keys in `AppSettingKey` (language, theme, default_video_volume, video_autoplay, show_internal_numbers).
+  - Prepended Noto Project copyright header in `src/assets/fonts/OFL.txt`.
 
-## Next Step
-- Await Claude's final `ACCEPTED` for Phase 1 in `docs/Tel_Mailbox/MAILBOX.md`.
-- Proceed to **Phase 2: Media Manager**.
+## Phase 2 Backend Plan (AG Track)
+1. Media Repository: `src-tauri/src/db/repositories/media.rs` (CRUD for 90 slots).
+2. Media Validation Service: `src-tauri/src/services/media_validation.rs` (local magic-byte sniffing, reqwest Range GET / HEAD with timeouts).
+3. Custom URI Protocol: `src-tauri/src/services/media_protocol.rs` (`media://localhost/<number>` with Range request streaming).
+4. Tauri Commands: `list_media`, `get_media`, `save_media`, `clear_media`, `validate_media`, `validate_all_media`, `pick_media_file`.
+5. Cargo test suite for validation and repository.
