@@ -12,8 +12,8 @@
 | T1-06 | Initialize React + Vite + TS frontend | DONE | AG (A) | Tailwind v4, Zustand, React Router, Lucide, Vitest, shadcn/ui primitives |
 | T1-07 | Scaffold Tauri 2.x Rust project | DONE | AG (A) | Cargo.toml with rusqlite (bundled), tauri-plugin-log, tauri-plugin-dialog |
 | T1-08 | Implement SQLite connection & migration runner | DONE | AG (A) | WAL mode, foreign keys, `0001_init.sql` schema (all 13 tables) |
-| T1-09 | Implement IPC `get_app_info` command | DONE | AG (A) | Typed commands `get_app_info` and `set_app_setting` |
-| T1-10 | Bundle Gujarati fonts & OFL license | DONE | AG (A) | Bundled NotoSansGujarati Regular & Bold woff2 with OFL.txt and @font-face |
+| T1-09 | Implement IPC `get_app_info` command | DONE | AG (A) | Typed commands `get_app_info` and `set_app_setting` with Rust allowlist validation |
+| T1-10 | Bundle Gujarati fonts & OFL license | DONE | AG (A) | Bundled NotoSansGujarati Regular & Bold woff2 with full OFL 1.1 and @font-face |
 | T1-11 | Build UI Shell (Sidebar, Dashboard, Settings) | DONE | AG (A) | Dark theme, settings with app info & language switcher using shadcn/ui |
-| T1-12 | Add unit tests for migrations & IPC sanity | DONE | AG (A) | Vitest tests passing (4/4); Rust tests passing (4/4 incl. partial index & persistence) |
-| T1-13 | Git commits & Mailbox Phase 1 REVIEW | DONE | AG (A) | Commits pushed to origin main |
+| T1-12 | Add unit tests for migrations & IPC sanity | DONE | AG (A) | Vitest tests passing (6/6); Rust tests passing (5/5) |
+| T1-13 | Git commits & Mailbox Phase 1 REVIEW | DONE | AG (A) | All commits pushed to origin main |

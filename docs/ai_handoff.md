@@ -4,6 +4,7 @@
 - **Date**: 2026-11-20
 - **Lead Agent**: Claude (C)
 - **Implementer Agent**: Antigravity (AG / A)
+- **Auditor Agent**: Codex (X)
 
 ## Completed Milestones & Git Commits
 All commits have been pushed to remote `origin/main`:
@@ -16,20 +17,20 @@ All commits have been pushed to remote `origin/main`:
 7. `81d605f`: `docs: finalize tasks and handoff for Phase 1 review`
 8. `2eb8caa`: `feat(ui): bundle Noto Sans Gujarati fonts and configure shadcn/ui components`
 9. `8800c8f`: `feat(backend): strengthen CSP, index constraints, and add persistence tests`
+10. `2a9f8e2`: `docs: record MSG-004 and MSG-005 resolutions in tasks and handoff`
+11. `d63cebe`: `fix(security): validate IPC setting inputs, bundle full OFL, and add API tests`
 
-## Implementation Verification
-- **Fonts**: Bundled `NotoSansGujarati-Regular.woff2`, `NotoSansGujarati-Bold.woff2`, and `OFL.txt` in `src/assets/fonts/` with `@font-face` rules.
-- **shadcn/ui**: Created `src/components/ui/` primitives (Button, Card, Badge) and `src/lib/utils.ts` (`cn`). Applied across Dashboard and Settings views.
-- **CSP**: Configured in `tauri.conf.json` with `http://ipc.localhost` and `http://media.localhost` (no `asset:`).
-- **SQLite Partial Unique Index**: Fixed to `games((1)) WHERE status IN ('ACTIVE', 'PAUSED')` guaranteeing at most one active or paused game across all sessions.
+## Audit Items Addressed
+- **P1 (Security / Input Validation)**: Added strict validation allowlist and value checks in Rust command `set_app_setting` (`src-tauri/src/commands/app_info.rs`) rejecting unsupported keys or invalid values before database execution.
+- **P2 (API Wrapper Tests)**: Added `src/test/api.test.ts` testing typed IPC wrappers `getAppInfo` and `setAppSetting` against mocked Tauri invoke.
+- **OFL.txt**: Replaced placeholder with complete SIL Open Font License 1.1 in `src/assets/fonts/OFL.txt`.
 - **Tests**:
-  - `npm run test` executes both Vitest and Cargo test suites:
-    - Vitest: 4/4 passed (`appStore.test.ts`).
-    - Cargo tests: 4/4 passed (all 13 tables + migrations existence, seeded prize schemes, migration idempotency, single active/paused game partial unique index enforcement, and language setting persistence across reopen).
-  - `cargo fmt --manifest-path src-tauri/Cargo.toml --check`: Clean (exit code 0).
-  - `cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings`: Clean (exit code 0).
-  - `npm run lint` (`tsc --noEmit`): 0 errors.
+  - Vitest: 6/6 tests passing across 2 files (`api.test.ts`, `appStore.test.ts`).
+  - Cargo test: 5/5 tests passing (`validate_app_setting`, `persistence_across_reopen`, `migrations_creates_all_tables`, `migrations_reopen_idempotent`, `partial_unique_index_single_active_or_paused_game`).
+  - `cargo fmt --check`: Clean.
+  - `cargo clippy -- -D warnings`: Clean.
+  - `npm run lint`: 0 errors.
 
 ## Next Step
-- Await Claude's `ACCEPTED` for Phase 1 in `docs/Tel_Mailbox/MAILBOX.md`.
+- Await Claude's final `ACCEPTED` for Phase 1 in `docs/Tel_Mailbox/MAILBOX.md`.
 - Proceed to **Phase 2: Media Manager**.
