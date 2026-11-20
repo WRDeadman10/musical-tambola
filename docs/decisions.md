@@ -329,3 +329,36 @@ Release v1.0.1 introduces support for alternative game formats alongside the tra
   - Draw engine and media validation scale smoothly to the chosen number pool.
 - **Cons**:
   - Batch generation and game creation must explicitly manage format parameters.
+
+---
+
+## ADR-012: 3×5 Logical Ticket Abstraction and Generic Pattern Engine (BT-21)
+
+### Context
+Tambola winning schemes extend beyond the standard 6 rules (Early Five, Lines, Four Corners, Full House) to include geometric patterns (H, Plus, V, A, Photo Frame), thematic columns (Breakfast, Lunch, Dinner), and multiple Full House tiers (Full House 2). Both `CLASSIC_90` tickets (3 rows × 9 columns with 5 numbers and 4 blanks per row) and `SONG_GRID` tickets (3 rows × 5 columns with all 15 cells filled) must evaluate the same pattern rules consistently and deterministically.
+
+### Decision
+1. **3×5 Logical Ticket Cells (`LogicalTicketCells`)**:
+   - Both formats abstract into `[[u8; 5]; 3]`.
+   - `ticket_to_logical_cells`: compresses each row's 5 numbers left-to-right into columns 0..4.
+   - `song_grid_to_logical_cells`: maps the 3×5 grid directly as `[[u8; 5]; 3]`.
+2. **Generic Pattern Evaluator (`GenericPatternEvaluator`)**:
+   - Evaluates three pattern kinds:
+     - `Mask`: boolean grid `[[bool; 5]; 3]`. Qualifies when all masked cells are called. Qualification position = MAX(call_position_by_number[num]).
+     - `EarlyN`: counts total called numbers across the 15 cells. Qualifies when count >= $N$. Qualification position = $N$-th call position.
+     - `FullHouse`: all 15 cells called. Qualification position = 15th call position.
+3. **Database Schema & Snapshotting (Migration 0007)**:
+   - Added `pattern_kind`, `mask_json`, `early_n`, and `is_full_house` to `prize_schemes` and `game_schemes`.
+   - Seeded 11 inactive preset schemes with display_order 7..17 (`Early 7`, `Early 10`, `Pattern H`, `Pattern Plus`, `Pattern V`, `Pattern A`, `Photo Frame`, `Breakfast`, `Lunch`, `Dinner`, `Full House 2`).
+   - `GameRepository::create_game` takes an immutable snapshot of pattern columns in `game_schemes`.
+4. **Multiple Full House Schemes & Exclusions**:
+   - Database partial unique index `idx_winners_single_full_house_per_ticket` and application guard `ALREADY_WON_FULL_HOUSE` prevent any single ticket from winning more than one Full House prize.
+   - Different tickets can win subsequent Full House tiers (e.g. Ticket 1 wins Full House, Ticket 2 wins Full House 2).
+
+### Consequences
+- **Pros**:
+  - Unified evaluation engine across all ticket layouts and game formats.
+  - Zero duplicate rule code or format-specific branching during claim validation.
+  - User can define arbitrary custom masks via `SaveSchemeInput`.
+- **Cons**:
+  - Expanding `prize_schemes` requires versioned migration 0007.

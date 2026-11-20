@@ -48,10 +48,16 @@
 
 ---
 
-## Release v1.0.1 Handoff (Wave 1 Status)
-- **BT-22 (Host Control Panel Redesign)**: ACCEPTED by Claude (`MSG-145`, `MSG-146`), committed by AG in `d749c9f` and pushed to `origin/main`.
+## Release v1.0.1 Handoff (Wave 1 & 2 Status)
+- **BT-22 (Host Control Panel Redesign)**: ACCEPTED by Claude (`MSG-145`, `MSG-146`, `MSG-157`), committed by AG in `d749c9f` + `d14a1c0` and pushed to `origin/main`.
 - **BT-20 (Game Formats & Song Grid Generator)**: ACCEPTED by Claude (`MSG-151`), committed in `5ce2ba7` and pushed to `origin/main`.
-- **BT-25 (Backend Folder Scan/Apply & Posters Engine)**: IMPLEMENTED by AG (`src-tauri/src/services/media_folder.rs`, commands, poster saving/clearing, `FORMAT_CLAIMS_UNSUPPORTED` interim guard). 78 tests passing (77 Rust unit + 1 acceptance).
-- **BT-24 (Folder Import UI & Auto Posters)**: IMPLEMENTED by Codex. 19 files, 83 tests passing in Vitest.
-- **Next Task for AG**: BT-21 (Pattern Engine & Mask Evaluators, 3x5 logical view, generic evaluator, multiple Full House, SongGrid claims integration).
-- **Next Task for Codex**: Wave 2 UI tasks per roadmap / Lead direction.
+- **BT-24 (Media Folder Import UI & Auto Posters)**: ACCEPTED by Claude (`MSG-154`, `MSG-155`), committed in `b6f39d9` and pushed to `origin/main`.
+- **BT-25 (Backend Folder Scan/Apply & Posters Engine)**: IMPLEMENTED by AG in `4af269a` and reviewed in `MSG-154`.
+- **BT-21 (Pattern Engine & Mask Evaluators)**: IMPLEMENTED by AG in `1316f37`:
+  - Migration 0007 (`pattern_kind`, `mask_json`, `early_n`, `is_full_house`), 11 seeded presets with display_order 7..17.
+  - `GenericPatternEvaluator` (`Mask`, `EarlyN`, `FullHouse`) evaluating logical 3×5 cells for both Classic90 and SongGrid.
+  - Multiple Full House scheme support with `ALREADY_WON_FULL_HOUSE` guard.
+  - Full SongGrid claims integration & lifecycle tests.
+  - 81 Cargo unit tests + 1 acceptance test PASS, clippy & rustfmt clean. Pushed to `origin/main`.
+- **Next Task for AG**: BT-26 (Presentation Window Management & IPC) + BT-25 review hardening.
+- **Next Task for Codex**: BT-23 / BT-27 Projector UI review resolution.
