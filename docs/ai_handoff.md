@@ -5,38 +5,35 @@
 - **Lead Agent**: Claude (C)
 - **Implementer Agent**: Antigravity (AG / A)
 
-## Completed Work
-1. Evaluated environment and prerequisites:
-   - Node.js `v22.15.0` and npm `10.9.2` confirmed.
-   - Visual Studio 2022 Community with C++ Build Tools (`Microsoft.VisualStudio.Component.VC.Tools.x86.x64`) confirmed.
-   - WebView2 Runtime confirmed.
-   - Identified that `rustup` / `cargo` / `rustc` are not currently installed on the host.
-2. Created `.editorconfig` aligning with strict `AGENTS.md` coding standards (K&R braces, 4 spaces, UTF-8, LF).
-3. Authored foundational documentation:
-   - `docs/project-overview.md`
-   - `docs/architecture.md`
-   - `docs/database.md`
-   - `docs/game-rules.md`
-   - `docs/development.md`
-   - `docs/roadmap.md`
-   - `docs/tasks.md`
-   - `docs/decisions.md` (ADR-001, ADR-002, ADR-003)
-   - `docs/ai_handoff.md`
-4. Configured background cron job for scheduled mailbox check and task continuity.
+## Completed Work & Git Commits
+1. **Initial Baseline & Docs**: Commit `757ab9b`
+   - `.editorconfig` (K&R braces, 4 spaces, UTF-8, LF)
+   - `docs/project-overview.md`, `architecture.md`, `database.md`, `game-rules.md`, `development.md`, `roadmap.md`, `tasks.md`, `decisions.md` (ADR-001..003), `ai_handoff.md`
+2. **Project Scaffolding**: Commit `fc0c48c`
+   - Tauri 2.x + React + Vite + TypeScript
+   - Tailwind CSS v4, Lucide React, Zustand, React Router DOM, Vitest
+   - Strict TypeScript configuration (`tsconfig.json`) and `.gitignore`
+3. **Backend Foundation**: Commit `c4d6c1a`
+   - `src-tauri/Cargo.toml` configured with `rusqlite` (`bundled`), `tauri-plugin-log`, `tauri-plugin-dialog`, `rand`, `sha2`, `serde`
+   - Embedded SQLite migration runner (`src-tauri/src/db/migrations.rs`) with test coverage
+   - Baseline migration `0001_init.sql` implementing all 13 tables, constraints, indices, and default seed data
+   - Database connection manager with WAL mode and foreign keys (`src-tauri/src/db/connection.rs`)
+   - IPC commands `get_app_info` and `set_app_setting` (`src-tauri/src/commands/app_info.rs`)
+   - Tauri application configuration (`tauri.conf.json`) with strict CSP and minimal capabilities
+4. **UI Shell & Localization**: Commit `0b593d3`
+   - Full dark theme layout with responsive navigation sidebar (Dashboard & Settings)
+   - English (`src/locales/en.json`) and Gujarati (`src/locales/gu.json`) translations
+   - Typed Zustand store (`src/stores/appStore.ts`) with translation helper and setting persistence
+   - Settings page with real-time system/database inspection and language toggle
+   - Dashboard summary indicators
+   - Vitest unit tests (`src/test/appStore.test.ts`) passing 4/4
 
-## Files Modified / Created
-- `.editorconfig`
-- `docs/project-overview.md`
-- `docs/architecture.md`
-- `docs/database.md`
-- `docs/game-rules.md`
-- `docs/development.md`
-- `docs/roadmap.md`
-- `docs/tasks.md`
-- `docs/decisions.md`
-- `docs/ai_handoff.md`
+## Status & Pending Blocker
+- **Rust Toolchain**: `rustup` / `cargo` / `rustc` are not yet installed on this machine. Once installed by the host owner (`winget install --id Rustlang.Rustup -e`), `cargo test` and `npm run dev` can be run.
+- **Git Push**: Remote `origin` returned HTTP 403 for `vinayak-vc`. All commits are safely stored locally on branch `main`.
 
 ## Next Recommended Task
-1. Check Rust installation status. Once the Rust toolchain (`rustup` / `cargo`) is installed and available on PATH, scaffold the Tauri 2.x and React + Vite + TS project.
-2. Initialize frontend dependencies (Tailwind, shadcn/ui, lucide, motion, zustand, react-router, RHF, zod).
-3. Setup `src-tauri` with SQLite, migrations (`0001_init.sql`), and `get_app_info` command.
+Once Rust toolchain is available:
+- Run `cargo test` in `src-tauri/` to verify database migrations idempotency on the MSVC target.
+- Run `npm run dev` / `tauri dev` smoke test.
+- Submit Phase 1 REVIEW to Claude in `docs/Tel_Mailbox/MAILBOX.md` for phase acceptance before beginning Phase 2 (Media Manager).
