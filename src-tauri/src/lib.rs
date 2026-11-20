@@ -4,6 +4,7 @@ pub mod domain;
 pub mod services;
 
 use commands::app_info::{get_app_info, set_app_setting};
+use commands::claim::{list_game_claims, submit_claim};
 use commands::game::{
     create_game, draw_next, end_game, get_active_game, get_game, list_games, pause_game,
     preflight_media, resume_game, set_fullscreen,
@@ -83,6 +84,8 @@ pub fn run() {
             end_game,
             list_games,
             set_fullscreen,
+            submit_claim,
+            list_game_claims,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");

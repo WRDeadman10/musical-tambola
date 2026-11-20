@@ -34,6 +34,14 @@ impl GameStatus {
     }
 }
 
+impl std::str::FromStr for GameStatus {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_db_str(s)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GameSummary {

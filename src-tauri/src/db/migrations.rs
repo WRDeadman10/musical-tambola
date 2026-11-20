@@ -11,6 +11,11 @@ const MIGRATIONS: &[(i32, &str, &str)] = &[
         "0002_schemes_update",
         include_str!("../../migrations/0002_schemes_update.sql"),
     ),
+    (
+        3,
+        "0003_claims_rebuild",
+        include_str!("../../migrations/0003_claims_rebuild.sql"),
+    ),
 ];
 
 pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
@@ -31,6 +36,12 @@ pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
     let version_result = stmt.query_row([], |row| row.get::<_, i32>(0));
     if let Ok(v) = version_result {
         current_version = v;
+    }
+
+    let any_pending: bool = MIGRATIONS.iter().any(|(v, _, _)| *v > current_version);
+    if any_pending {
+        conn.execute_batch("PRAGMA foreign_keys = OFF;")
+            .map_err(|e: rusqlite::Error| format!("Failed to disable foreign keys: {}", e))?;
     }
 
     for (version, name, sql) in MIGRATIONS {
@@ -57,6 +68,11 @@ pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
         }
     }
 
+    if any_pending {
+        conn.execute_batch("PRAGMA foreign_keys = ON;")
+            .map_err(|e: rusqlite::Error| format!("Failed to enable foreign keys: {}", e))?;
+    }
+
     Ok(current_version)
 }
 
@@ -80,7 +96,7 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let applied_version: i32 = run_migrations(&conn).expect("Migrations failed");
-        assert_eq!(applied_version, 2);
+        assert_eq!(applied_version, 3);
 
         let tables = [
             "app_settings",
@@ -119,10 +135,10 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let v1: i32 = run_migrations(&conn).expect("First migration run failed");
-        assert_eq!(v1, 2);
+        assert_eq!(v1, 3);
 
         let v2: i32 = run_migrations(&conn).expect("Second migration run failed");
-        assert_eq!(v2, 2);
+        assert_eq!(v2, 3);
     }
 
     #[test]
@@ -173,6 +189,133 @@ mod tests {
         assert!(
             ready_result.is_ok(),
             "Inserting a READY game must succeed even when an ACTIVE game exists"
+        );
+    }
+
+    #[test]
+    fn test_migration_0003_constraints_and_claims_columns() {
+        let conn: Connection = Connection::open_in_memory().expect("Failed to open in-memory DB");
+        conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
+        run_migrations(&conn).expect("Migrations failed");
+
+        // Set up base fixtures
+        conn.execute(
+            "INSERT INTO ticket_batches (id, batch_code, name, ticket_count) VALUES (1, 'BATCH-001', 'Test Batch', 6);",
+            [],
+        )
+        .unwrap();
+
+        conn.execute(
+            "INSERT INTO tickets (id, batch_id, ticket_code, layout_hash) VALUES (1, 1, 'T-000001', 'hash1');",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO tickets (id, batch_id, ticket_code, layout_hash) VALUES (2, 1, 'T-000002', 'hash2');",
+            [],
+        )
+        .unwrap();
+
+        conn.execute(
+            "INSERT INTO games (id, game_code, status, ticket_batch_id, draw_sequence_json) VALUES (1, 'G-2026-001', 'ACTIVE', 1, '[]');",
+            [],
+        )
+        .unwrap();
+
+        // 1. Claims table: unknown ticket (ticket_id NULL) succeeds
+        let insert_claim = conn.execute(
+            "INSERT INTO claims (id, game_id, ticket_id, ticket_code_submitted, scheme_id, current_draw_position, qualification_position, status, rejection_code, rejection_reason)
+             VALUES (1, 1, NULL, 'T-UNKNOWN', 1, 5, NULL, 'REJECTED', 'TICKET_NOT_FOUND', 'Ticket not found');",
+            [],
+        );
+        assert!(
+            insert_claim.is_ok(),
+            "Unknown ticket claim with NULL ticket_id must succeed"
+        );
+
+        // Accepted claim
+        conn.execute(
+            "INSERT INTO claims (id, game_id, ticket_id, ticket_code_submitted, scheme_id, current_draw_position, qualification_position, status, rejection_code, rejection_reason)
+             VALUES (2, 1, 1, 'T-000001', 1, 5, 5, 'ACCEPTED', NULL, NULL);",
+            [],
+        )
+        .unwrap();
+
+        // 2. Winners constraints:
+        // Add winner for claim 2 (Early Five, position 1, non-full-house)
+        conn.execute(
+            "INSERT INTO winners (id, game_id, scheme_id, ticket_id, claim_id, is_full_house, winner_position)
+             VALUES (1, 1, 1, 1, 2, 0, 1);",
+            [],
+        )
+        .unwrap();
+
+        // Duplicate winner_position for same game_id and scheme_id must fail
+        conn.execute(
+            "INSERT INTO claims (id, game_id, ticket_id, ticket_code_submitted, scheme_id, current_draw_position, qualification_position, status)
+             VALUES (3, 1, 2, 'T-000002', 1, 5, 5, 'ACCEPTED');",
+            [],
+        )
+        .unwrap();
+        let dup_pos_result = conn.execute(
+            "INSERT INTO winners (id, game_id, scheme_id, ticket_id, claim_id, is_full_house, winner_position)
+             VALUES (2, 1, 1, 2, 3, 0, 1);",
+            [],
+        );
+        assert!(
+            dup_pos_result.is_err(),
+            "Duplicate winner_position for same scheme must violate unique index"
+        );
+
+        // Duplicate non-full-house win for ticket 1 (already won Early Five) must fail
+        conn.execute(
+            "INSERT INTO claims (id, game_id, ticket_id, ticket_code_submitted, scheme_id, current_draw_position, qualification_position, status)
+             VALUES (4, 1, 1, 'T-000001', 3, 6, 6, 'ACCEPTED');",
+            [],
+        )
+        .unwrap();
+        let dup_non_fh_result = conn.execute(
+            "INSERT INTO winners (id, game_id, scheme_id, ticket_id, claim_id, is_full_house, winner_position)
+             VALUES (3, 1, 3, 1, 4, 0, 1);",
+            [],
+        );
+        assert!(
+            dup_non_fh_result.is_err(),
+            "Duplicate non-full-house win for same ticket must violate partial unique index"
+        );
+
+        // But Full House win for ticket 1 must SUCCEED
+        conn.execute(
+            "INSERT INTO claims (id, game_id, ticket_id, ticket_code_submitted, scheme_id, current_draw_position, qualification_position, status)
+             VALUES (5, 1, 1, 'T-000001', 6, 15, 15, 'ACCEPTED');",
+            [],
+        )
+        .unwrap();
+        let fh_result = conn.execute(
+            "INSERT INTO winners (id, game_id, scheme_id, ticket_id, claim_id, is_full_house, winner_position)
+             VALUES (4, 1, 6, 1, 5, 1, 1);",
+            [],
+        );
+        assert!(
+            fh_result.is_ok(),
+            "Full House win after non-full-house win must succeed"
+        );
+
+        // Second Full House win for ticket 1 must FAIL
+        conn.execute(
+            "INSERT INTO claims (id, game_id, ticket_id, ticket_code_submitted, scheme_id, current_draw_position, qualification_position, status)
+             VALUES (6, 1, 1, 'T-000001', 6, 20, 20, 'ACCEPTED');",
+            [],
+        )
+        .unwrap();
+        let second_fh_result = conn.execute(
+            "INSERT INTO winners (id, game_id, scheme_id, ticket_id, claim_id, is_full_house, winner_position)
+             VALUES (5, 1, 6, 1, 6, 1, 2);",
+            [],
+        );
+        assert!(
+            second_fh_result.is_err(),
+            "Second Full House win for same ticket must violate partial unique index"
         );
     }
 }

@@ -123,19 +123,27 @@ Chronological history of drawn numbers for a game.
 - UNIQUE(game_id, number)
 - UNIQUE(game_id, draw_position)
 
-### 12. `claims`
-Audit trail of every submitted claim.
+### 12. `claims` (Updated in Migration 0003)
+Authoritative audit trail of every submitted claim, accepted or rejected.
 - `id` INTEGER PRIMARY KEY AUTOINCREMENT
 - `game_id` INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE
-- `ticket_id` INTEGER NOT NULL REFERENCES tickets(id)
-- `scheme_id` INTEGER NOT NULL REFERENCES prize_schemes(id)
-- `draw_position` INTEGER NOT NULL
-- `is_accepted` BOOLEAN NOT NULL
-- `rejection_reason` TEXT
-- `claimed_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+- `ticket_id` INTEGER REFERENCES tickets(id) (NULL for unknown/unregistered tickets)
+- `ticket_code_submitted` TEXT NOT NULL (raw or normalized code entered by user)
+- `scheme_id` INTEGER (NULL if scheme was deleted or not in master)
+- `current_draw_position` INTEGER NOT NULL
+- `qualification_position` INTEGER
+- `status` TEXT NOT NULL CHECK(status IN ('ACCEPTED', 'REJECTED'))
+- `rejection_code` TEXT (e.g. `LATE_CLAIM`, `ONLY_FULL_HOUSE_ELIGIBLE`, etc.)
+- `rejection_reason` TEXT (canonical English description)
+- `claimed_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 
-### 13. `winners`
-Accepted prize awards.
+Indexes:
+- `idx_claims_game_id` ON `claims(game_id)`
+- `idx_claims_ticket_id` ON `claims(ticket_id)`
+- `idx_claims_scheme_id` ON `claims(scheme_id)`
+
+### 13. `winners` (Updated in Migration 0003)
+Accepted prize allocations.
 - `id` INTEGER PRIMARY KEY AUTOINCREMENT
 - `game_id` INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE
 - `scheme_id` INTEGER NOT NULL REFERENCES prize_schemes(id)
@@ -143,8 +151,17 @@ Accepted prize awards.
 - `claim_id` INTEGER NOT NULL REFERENCES claims(id)
 - `is_full_house` BOOLEAN NOT NULL
 - `winner_position` INTEGER NOT NULL
-- `awarded_at` DATETIME DEFAULT CURRENT_TIMESTAMP
-- UNIQUE(game_id, scheme_id, ticket_id)
+- `awarded_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+
+Constraints & Indexes:
+- `UNIQUE(game_id, scheme_id, ticket_id)`: A ticket can only win a given scheme once.
+- `idx_winners_game_scheme_pos` UNIQUE ON `winners(game_id, scheme_id, winner_position)`: Winner placement ranks cannot collide.
+- `idx_winners_single_full_house_per_ticket` UNIQUE ON `winners(game_id, ticket_id) WHERE is_full_house = 1`: At most one Full House win per ticket per game.
+- `idx_winners_single_non_full_house_per_ticket` UNIQUE ON `winners(game_id, ticket_id) WHERE is_full_house = 0`: At most one non-Full-House win per ticket per game.
+- `idx_winners_game_id` ON `winners(game_id)`
 
 ## Migrations Strategy
-Migrations are managed in Rust using embedded SQL files (`src-tauri/migrations/0001_init.sql`, etc.) tracked in a `schema_migrations` table with version and applied_at timestamps.
+Migrations are managed in Rust using embedded SQL files tracked in a `schema_migrations` table with version and applied_at timestamps:
+1. `0001_init.sql`: Core application tables, seed schemes, and initial settings.
+2. `0002_schemes_update.sql`: Added `description` and `updated_at` to `prize_schemes` with NOCASE unique index.
+3. `0003_claims_rebuild.sql`: Rebuilt `claims` table to record all attempts (including unknown tickets and schemes) with status and rejection codes; added database-level guards on `winners` table to enforce single non-Full-House, single Full House, and winner rank uniqueness.

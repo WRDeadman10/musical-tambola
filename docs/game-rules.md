@@ -95,17 +95,32 @@ A claim is submitted when the game is at `current_draw_position`.
   The claim MUST be rejected with:
   `"Ticket has not completed this winning scheme."`
 
-### 3.4 Eligibility & Exclusion Rules
-1. Game must be in `ACTIVE` or `PAUSED` status.
-2. Ticket must belong to the active game's batch.
-3. Scheme must be active in the game's snapshot.
-4. Scheme cannot exceed its `max_winners` limit.
-5. The same ticket cannot win the same scheme twice.
-6. **Full House Exclusivity**: If a ticket wins Full House, it cannot win any subsequent prizes.
-7. **Single Line/Corner Prize Rule**: A ticket that has already won one non-Full-House scheme cannot win another non-Full-House scheme.
+### 3.4 Authoritative Claim Check Order (Spec §9, §10, §11, §12)
+Claim validation is executed by a pure decision function (`src-tauri/src/domain/claims/claim_validation.rs`) following this strict priority sequence:
 
-All checks and winner insertions run inside an atomic `BEGIN IMMEDIATE` transaction to guarantee zero race conditions.
-Rejected claims are permanently logged in the `claims` table for transparency.
+1. **Game Status Guard**: If no game session exists -> `NO_ACTIVE_GAME`. If game status is not `ACTIVE` or `PAUSED` (e.g. `COMPLETED` or `ENDED`) -> `GAME_NOT_ACCEPTING_CLAIMS`. (A `PAUSED` game still accepts claims).
+2. **Ticket Identification Guard**: If ticket does not exist -> `TICKET_NOT_FOUND`. If ticket is not mapped to this game in `game_tickets` -> `TICKET_NOT_IN_GAME`.
+3. **Scheme Snapshot Guard**: If scheme was not active in this game's snapshot -> `SCHEME_NOT_IN_GAME`.
+4. **Qualification Evaluation**: Evaluated via `SchemeRegistry`. If condition is not met -> `NOT_COMPLETED` ("Ticket has not completed this winning scheme.").
+5. **Late Claim Check**:
+   - If $qualification\_position < current\_draw\_position$ -> `LATE_CLAIM` ("Late claim is not allowed."), returning `qualification_position`.
+   - Accept only when $qualification\_position == current\_draw\_position$. (Future qualification is treated as not completed).
+6. **Duplicate Scheme Win Guard**: If ticket has already won this specific scheme in this game -> `ALREADY_WON_SCHEME`.
+7. **Full House Preclusion Guard**: If ticket has already won `FULL_HOUSE` in this game -> `ALREADY_WON_FULL_HOUSE`.
+8. **Single Non-Full-House Prize Guard**: If the claimed scheme is not Full House and the ticket has already won any non-Full-House scheme -> `ONLY_FULL_HOUSE_ELIGIBLE` ("This ticket has already won a non-Full-House scheme and is only eligible for Full House.").
+9. **Capacity Limit**: If accepted winner count for this scheme $\ge max\_winners$ -> `WINNER_LIMIT_REACHED`.
+10. **Acceptance**: Otherwise `ACCEPTED` with $winner\_position = accepted\_count + 1$ and $qualification\_position$.
+
+### 3.5 Ticket Eligibility Matrix
+| Scenario | Previous Wins on Ticket | Claimed Scheme | Result | Reason Code |
+|---|---|---|---|---|
+| 1 | None | Early Five | ACCEPTED | Valid 1st non-FH win |
+| 2 | Early Five | Top Line | REJECTED | `ONLY_FULL_HOUSE_ELIGIBLE` |
+| 3 | Early Five | Full House | ACCEPTED | Full House is permitted after 1 non-FH win |
+| 4 | Full House | Any Scheme | REJECTED | `ALREADY_WON_FULL_HOUSE` |
+| 5 | Any Win | Same Scheme | REJECTED | `ALREADY_WON_SCHEME` |
+| 6 | Past Draw Position | Any Scheme | REJECTED | `LATE_CLAIM` |
+| 7 | Fresh Game Session | Any Scheme | Fresh Eligibility | Per-game scope; historical winners preserved |
 
 ## 4. Game Controller & Draw Engine Lifecycle
 Game sessions operate as an authoritative finite state machine managed in SQLite transactions:

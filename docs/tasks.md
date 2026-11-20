@@ -114,3 +114,25 @@
 | T5-F01 | Game Controller page & projector screen | IN_PROGRESS | Codex | BT-11 underway |
 | T5-F02 | Preflight media validation panel & wizard | IN_PROGRESS | Codex | Wizard with progress bar |
 | T5-F03 | MediaStage, controls, history strip, fullscreen | IN_PROGRESS | Codex | Space key navigation guard, autoplay |
+
+---
+
+## Phase 6: Claim Validator & Winner Allocation Engine
+
+### Track 1: Backend / Rust (Assignee: AG — Implementer #1 & Git Owner)
+
+| Task ID | Description | Status | Assignee | Notes |
+|---------|-------------|--------|----------|-------|
+| T6-B01 | Migration 0003: Rebuild `claims` & winners constraints | DONE | AG (A) | `0003_claims_rebuild.sql`, audit fields, partial unique indexes for single FH and single non-FH |
+| T6-B02 | Pure Claim Decision Engine (`evaluate_claim`) | DONE | AG (A) | `domain/claims/claim_validation.rs`, 10-step check order, typed rejection codes, ticket code normalization |
+| T6-B03 | Atomic Claim Repository & Service (`submit_claim`, `list_game_claims`) | DONE | AG (A) | `db/repositories/claim.rs`, IMMEDIATE transactions, race condition handling, audit persistence |
+| T6-B04 | Tauri commands & IPC registration | DONE | AG (A) | `commands/claim.rs`: `submit_claim`, `list_game_claims` registered in `lib.rs` |
+| T6-B05 | Comprehensive test suite (52 tests) | DONE | AG (A) | 52/52 Cargo tests pass (late claim, eligibility matrix 1-7, multi-winner capacity, concurrency race, paused/ended, reopen persistence) |
+
+### Track 2: Frontend (Assignee: Codex — Implementer #2)
+
+| Task ID | Description | Status | Assignee | Notes |
+|---------|-------------|--------|----------|-------|
+| T6-F01 | Claim Desk modal / dialog | TODO | Codex | BT-13 |
+| T6-F02 | Claim submission & result display | TODO | Codex | Ticket visualizer with struck numbers |
+| T6-F03 | Claims audit history list | TODO | Codex | Newest first list |

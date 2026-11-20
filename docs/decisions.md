@@ -190,3 +190,48 @@ Phase 5 introduces the Game Controller and Draw Engine. Game execution requires 
   - Zero chance of double draws or sequence desynchronization.
 - **Cons**:
   - Snapshotting 90 media rows adds a minor one-time disk cost per game session (~few kilobytes).
+
+---
+
+## ADR-009: Claim Validation Engine, Rejection Codes, and Winner Allocation Guards
+
+### Context
+Phase 6 introduces the Claim Validator and Winner Allocation engine (spec §9, §10, §11, §12, §18). In high-pressure live Tambola games, claims may be submitted concurrently, out-of-order, late, or for ineligible schemes. The application must enforce:
+1. Pure, testable decision logic decoupled from I/O.
+2. Complete auditability: every claim attempt (accepted or rejected, known or unknown ticket) must be permanently persisted.
+3. Multi-layer guards: application-level evaluation plus database-level UNIQUE constraints to prevent race conditions or double allocations.
+4. User-friendly frontend localization: return typed error codes and canonical English text, avoiding raw database errors.
+
+### Decision
+1. **Pure Decision Engine (`domain/claims/claim_validation.rs`)**:
+   - `evaluate_claim` is a pure function with zero database or network dependencies.
+   - Strictly enforces a 10-step check order:
+     1. Active/Paused game status check (`NO_ACTIVE_GAME`, `GAME_NOT_ACCEPTING_CLAIMS`).
+     2. Ticket existence and game batch mapping (`TICKET_NOT_FOUND`, `TICKET_NOT_IN_GAME`).
+     3. Scheme game snapshot check (`SCHEME_NOT_IN_GAME`).
+     4. Pattern qualification evaluation via `SchemeRegistry` (`NOT_COMPLETED`).
+     5. Strict late-claim enforcement: accept only when $qualification\_position == current\_draw\_position$; if $qualification\_position < current\_draw\_position$, reject as `LATE_CLAIM`.
+     6. Duplicate scheme win prevention (`ALREADY_WON_SCHEME`).
+     7. Post-Full-House preclusion (`ALREADY_WON_FULL_HOUSE`).
+     8. Single non-Full-House rule (`ONLY_FULL_HOUSE_ELIGIBLE`).
+     9. Capacity check ($accepted\_count \ge max\_winners$) -> `WINNER_LIMIT_REACHED`.
+     10. Acceptance ($winner\_position = accepted\_count + 1$).
+2. **Migration 0003 & Table Rebuild**:
+   - `claims` rebuilt to include `status` (`ACCEPTED`/`REJECTED`), `rejection_code`, `rejection_reason`, `ticket_code_submitted`, and `qualification_position`. `ticket_id` and `scheme_id` are nullable so invalid submissions are preserved in the audit trail.
+   - `winners` enforced with SQLite-level partial unique indexes:
+     - `idx_winners_game_scheme_pos` (unique rank per scheme).
+     - `idx_winners_single_full_house_per_ticket` (at most one Full House).
+     - `idx_winners_single_non_full_house_per_ticket` (at most one non-Full-House).
+3. **Atomic Service Transactions & Concurrency**:
+   - `ClaimRepository::submit_claim` executes inside a single `BEGIN IMMEDIATE` transaction.
+   - If an insert into `winners` encounters a race condition or constraint violation, the award is rolled back, the claim is converted to `REJECTED` with code `WINNER_LIMIT_REACHED`, and committed safely without raising raw SQL errors.
+4. **Ticket Code Normalization**:
+   - Accepts shorthand and user variations ("1", "000001", "T-1", "t-000001") and canonicalizes them to 6-digit padded format ("T-000001").
+
+### Consequences
+- **Pros**:
+  - Complete crash and concurrency safety: zero chance of over-allocating winners or double prize payouts.
+  - Transparent audit trail: every submission is recorded.
+  - Portable, decoupled pure logic covered by unit tests.
+- **Cons**:
+  - Rebuilding `claims` table required versioned Migration 0003.
