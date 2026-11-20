@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-draw-lucky-winner"
+description = "Enables the draw_lucky_winner command without any pre-configured scope."
+commands.allow = ["draw_lucky_winner"]
+
+[[permission]]
+identifier = "deny-draw-lucky-winner"
+description = "Denies the draw_lucky_winner command without any pre-configured scope."
+commands.deny = ["draw_lucky_winner"]

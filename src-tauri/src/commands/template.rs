@@ -52,7 +52,7 @@ pub fn validate_template_image_header(bytes: &[u8]) -> Result<(&'static str, u32
         ));
     };
 
-    let reader = image::ImageReader::new(Cursor::new(bytes))
+    let reader: image::ImageReader<Cursor<&[u8]>> = image::ImageReader::new(Cursor::new(bytes))
         .with_guessed_format()
         .map_err(|e| {
             AppError::new(

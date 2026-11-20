@@ -2,6 +2,7 @@ pub mod app_info;
 pub mod claim;
 pub mod game;
 pub mod history;
+pub mod lucky_draw;
 pub mod media;
 pub mod presentation;
 pub mod scheme;

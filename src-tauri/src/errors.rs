@@ -266,6 +266,7 @@ mod tests {
             assert!(!perm_str.contains("close-presentation"));
             assert!(!perm_str.contains("next-item"));
             assert!(!perm_str.contains("template"));
+            assert!(!perm_str.contains("lucky"));
         }
     }
 
@@ -279,5 +280,14 @@ mod tests {
 
         let err2 = AppError::new("TEMPLATE_INVALID_ASPECT_RATIO", "Must be 2:1");
         assert_eq!(err2.code, "TEMPLATE_INVALID_ASPECT_RATIO");
+    }
+
+    #[test]
+    fn test_lucky_draw_error_codes() {
+        let err = AppError::new("LUCKY_DRAW_EXHAUSTED", "All candidates have won");
+        assert_eq!(err.code, "LUCKY_DRAW_EXHAUSTED");
+
+        let err2 = AppError::new("LUCKY_DRAW_EMPTY_ITEMS", "At least one item is required");
+        assert_eq!(err2.code, "LUCKY_DRAW_EMPTY_ITEMS");
     }
 }

@@ -12,6 +12,7 @@ use commands::game::{
     pause_game, preflight_media, resume_game, set_fullscreen, set_game_format,
 };
 use commands::history::{get_dashboard_stats, list_claim_history, list_winners};
+use commands::lucky_draw::{create_lucky_draw, draw_lucky_winner, list_lucky_draws};
 use commands::media::{
     apply_media_assignments, clear_media, clear_media_poster, get_media, list_media,
     pick_media_file, pick_media_folder, save_media, save_media_poster, scan_media_folder,
@@ -124,6 +125,9 @@ pub fn run() {
             upload_template_background,
             set_active_template,
             delete_template,
+            create_lucky_draw,
+            draw_lucky_winner,
+            list_lucky_draws,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");

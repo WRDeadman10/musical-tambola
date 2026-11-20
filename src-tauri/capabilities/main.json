@@ -60,6 +60,9 @@
     "allow-get-active-template",
     "allow-upload-template-background",
     "allow-set-active-template",
-    "allow-delete-template"
+    "allow-delete-template",
+    "allow-create-lucky-draw",
+    "allow-draw-lucky-winner",
+    "allow-list-lucky-draws"
   ]
 }

@@ -202,7 +202,9 @@
 | **BT-29** | Game Format UI & Song Grid Tickets | DONE | Codex (X) | Wave 3 | Format selector card, 3×5 TicketGrid, batch format badge, song count media library slots (committed `919bcc2`) |
 | **BT-30** | Ticket Printing & Templates | DONE | Codex (X) | Wave 3 | Fixed 1800×900 template canvas, regions, print preview/pagination, range filter, guide download (committed `9e3c5fd`) |
 | **BT-32** | Presentation Suggested Prompt & Saved Display | DONE | Codex (X) | Wave 3 | Presentation suggested toast, session suppression, display preference (committed `081d7b3`) |
-| **W3-1** | Ticket Template Storage Backend | DONE | AG (A) | Wave 3 | Migration 0008, template CRUD, aspect 2:1 validation, image header decode, <=5MB limit, SHA-256 hashed storage, media://template/ (99 unit + 1 acceptance tests) |
-| **BT-27** | Lucky Draw UI & Backend | TODO | AG + Codex | Wave 3 | Lucky Draw pools, OsRng winner draw, presentation animation, UI dialog |
+| **W3-1** | Ticket Template Storage Backend | DONE | AG (A) | Wave 3 | Migration 0008, template CRUD, aspect 2:1 validation, image header decode, <=5MB limit, SHA-256 hashed storage, media://template/ (committed `48cc635`) |
+| **W3-2** | Lucky Draw Backend Engine | DONE | AG (A) | Wave 3 | Migration 0009, pools (NAMES/TICKETS), OsRng draw, no repeats, exclude previous winners, presentation LUCKY_DRAW event (104 unit + 1 acceptance tests) |
+| **U2** | Lucky Draw UI | IN_PROGRESS | Codex (X) | Wave 3 | Host Lucky Draw card, batch selector, exclude toggle, history list |
+| **W3-3** | Event Branding & Sound Settings Backend | TODO | AG (A) | Wave 3 | Settings allowlist (event_name, ticker, accent_color, sounds), bundled royalty-free audio |
 
 

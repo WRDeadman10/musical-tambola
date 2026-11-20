@@ -41,6 +41,11 @@ const MIGRATIONS: &[(i32, &str, &str)] = &[
         "0008_ticket_templates",
         include_str!("../../migrations/0008_ticket_templates.sql"),
     ),
+    (
+        9,
+        "0009_lucky_draw",
+        include_str!("../../migrations/0009_lucky_draw.sql"),
+    ),
 ];
 
 pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
@@ -121,7 +126,7 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let applied_version: i32 = run_migrations(&conn).expect("Migrations failed");
-        assert_eq!(applied_version, 8);
+        assert_eq!(applied_version, 9);
 
         let tables = [
             "app_settings",
@@ -139,6 +144,9 @@ mod tests {
             "winners",
             "schema_migrations",
             "ticket_templates",
+            "lucky_draws",
+            "lucky_draw_entries",
+            "lucky_draw_winners",
         ];
 
         for table in tables.iter() {
@@ -164,10 +172,10 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let v1: i32 = run_migrations(&conn).expect("First migration run failed");
-        assert_eq!(v1, 8);
+        assert_eq!(v1, 9);
 
         let v2: i32 = run_migrations(&conn).expect("Second migration run failed");
-        assert_eq!(v2, 8);
+        assert_eq!(v2, 9);
     }
 
     #[test]
@@ -352,7 +360,7 @@ mod tests {
     fn test_migration_0006_game_formats_columns() {
         let conn: Connection = Connection::open_in_memory().unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 8);
+        assert_eq!(applied, 9);
 
         // Verify columns on ticket_batches
         conn.execute(
@@ -403,7 +411,7 @@ mod tests {
         let conn: Connection = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 8);
+        assert_eq!(applied, 9);
 
         // Verify prize_schemes backfilled and presets seeded
         let full_house_row: (String, String, bool) = conn
@@ -443,7 +451,7 @@ mod tests {
         let conn: Connection = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 8);
+        assert_eq!(applied, 9);
 
         let default_template: (i64, String, bool, bool, Option<String>) = conn
             .query_row(
@@ -458,5 +466,34 @@ mod tests {
         assert!(default_template.2);
         assert!(default_template.3);
         assert!(default_template.4.is_none());
+    }
+
+    #[test]
+    fn test_migration_0009_lucky_draw() {
+        let conn: Connection = Connection::open_in_memory().unwrap();
+        conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
+        let applied: i32 = run_migrations(&conn).unwrap();
+        assert_eq!(applied, 9);
+
+        conn.execute(
+            "INSERT INTO lucky_draws (id, name, source, exclude_previous_winners)
+             VALUES (1, 'Test Draw', 'NAMES', 1);",
+            [],
+        )
+        .unwrap();
+
+        conn.execute(
+            "INSERT INTO lucky_draw_entries (id, draw_id, entry_value, is_winner)
+             VALUES (1, 1, 'Alice', 0);",
+            [],
+        )
+        .unwrap();
+
+        conn.execute(
+            "INSERT INTO lucky_draw_winners (id, draw_id, winner, draw_position)
+             VALUES (1, 1, 'Alice', 1);",
+            [],
+        )
+        .unwrap();
     }
 }

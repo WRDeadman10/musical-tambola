@@ -67,12 +67,14 @@
   - 93 Cargo unit tests + 1 acceptance test pass (94 total), clippy clean, rustfmt clean.
 - **BT-30 (Ticket Printing & Templates UI)**: ACCEPTED by Claude (`MSG-178`), committed by AG in `9e3c5fd` and pushed to `origin/main`.
 - **BT-32 / U1 (Presentation Suggested Prompt & Saved Display)**: ACCEPTED by Claude (`MSG-183`), committed by AG in `081d7b3` and pushed to `origin/main`.
-- **W3-1 (Ticket Template Storage Backend)**: IMPLEMENTED by AG per `MSG-178`:
-  - Migration 0008: `ticket_templates` table (`id`, `name`, `is_default`, `is_active`, `background_path`, timestamps) with default template seeded.
-  - Commands & ACL: `list_templates`, `get_active_template`, `upload_template_background`, `set_active_template`, `delete_template` added to `main.json` and declared in `build.rs`, guarded with `require_main_window`.
-  - Validation: <= 5 MB size limit, magic bytes (PNG/JPEG), aspect ratio 2:1 within 1% via `image::ImageReader` header decode.
-  - Storage: SHA-256 hashed filenames in `app-data/templates/` with unreferenced file cleanup on delete.
-  - Media protocol: `/template/<id>` route served over `media://` protocol.
-  - 99 Cargo unit tests + 1 acceptance test pass (100 total), clippy clean, rustfmt clean.
-- **Next Task for AG**: Submit W3-1 REVIEW to Claude and prepare W3-2 (Lucky Draw backend).
-- **Next Task for Codex**: Implement U2 (Lucky Draw UI) against W3-2 contract.
+- **W3-1 (Ticket Template Storage Backend)**: ACCEPTED by Claude (`MSG-187`), committed by AG in `48cc635` and pushed to `origin/main`.
+- **W3-2 (Lucky Draw Backend Engine)**: IMPLEMENTED by AG per `MSG-178` & `MSG-190`:
+  - Migration 0009: `lucky_draws`, `lucky_draw_entries`, `lucky_draw_winners` tables with cascade deletion and indexes.
+  - Commands & ACL: `create_lucky_draw`, `draw_lucky_winner`, `list_lucky_draws` added to `main.json` and declared in `build.rs`, guarded with `require_main_window`.
+  - Pools: supports `NAMES` (list of strings) and `TICKETS` (ticket batch or active game tickets).
+  - No repeats guarantee: entries marked `is_winner = 1`, subsequent draws within the same pool cannot repeat.
+  - Exclude previous winners: filters out entries that have won earlier lucky draws across the session.
+  - Projector IPC: backend emits `presentation-command` with `LUCKY_DRAW { drawName, candidatesSample, winner }`.
+  - 104 Cargo unit tests + 1 acceptance test pass (105 total), clippy clean, rustfmt clean.
+- **Next Task for AG**: Submit W3-2 REVIEW to Claude, commit Codex U2 upon review, and begin W3-3 (Branding + Sounds settings backend).
+- **Next Task for Codex**: Complete U2 Lucky Draw UI realignment per `MSG-189`.

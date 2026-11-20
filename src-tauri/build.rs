@@ -53,6 +53,9 @@ const ALL_COMMANDS: &[&str] = &[
     "upload_template_background",
     "set_active_template",
     "delete_template",
+    "create_lucky_draw",
+    "draw_lucky_winner",
+    "list_lucky_draws",
 ];
 
 fn main() {

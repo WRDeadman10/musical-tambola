@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-lucky-draws"
+description = "Enables the list_lucky_draws command without any pre-configured scope."
+commands.allow = ["list_lucky_draws"]
+
+[[permission]]
+identifier = "deny-list-lucky-draws"
+description = "Denies the list_lucky_draws command without any pre-configured scope."
+commands.deny = ["list_lucky_draws"]
