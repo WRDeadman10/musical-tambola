@@ -208,6 +208,6 @@
 | **W3-3** | Event Branding & Sound Settings Backend | DONE | AG (A) | Wave 3 | Migration 0010, allowlist branding & sound keys, upload_idle_poster / clear_idle_poster, bundled 5 procedural WAVs under src-tauri/resources/sounds and public/sounds, media://idle_poster & media://sound/ streaming |
 | **U3** | Event Branding & Sounds UI | IN_PROGRESS | Codex (X) | Wave 3 | Settings Event Branding card, sound controls, projector ticker strip, sound triggers |
 | **W3-4** | Backup / Restore + Admin PIN | DONE | AG (A) | Wave 3 | SQLite online backup into zip, staging restore with restart marker, Argon2id admin PIN, rate limiter, session auth for active games, zip-bomb/path safety, PRAGMA integrity_check, WAL checkpoint & pre_restore rollback |
-| **W3-5** | Song Title Import | TODO | AG (A) | Wave 3 | import_titles_csv / import_titles_xlsx (calamine), preview -> apply transaction |
+| **W3-5** | Song Title Import | DONE | AG (A) | Wave 3 | calamine 0.38 + csv 1.3 parser for CSV/XLSX/XLS/ODS, preview with slot/title/range/duplicate validation, transactional apply into media_assets, admin PIN & main window guarded |
 
 

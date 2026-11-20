@@ -64,6 +64,8 @@ const ALL_COMMANDS: &[&str] = &[
     "verify_admin_pin",
     "clear_admin_pin",
     "get_admin_pin_status",
+    "preview_song_title_import",
+    "apply_song_title_import",
 ];
 
 fn main() {

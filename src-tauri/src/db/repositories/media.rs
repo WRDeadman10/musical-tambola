@@ -35,26 +35,41 @@ impl MediaRepository {
                     .as_deref()
                     .and_then(|s| serde_json::from_str(s).ok());
 
-                let media_type: Option<MediaType> = MediaType::from_str(&media_type_str).ok();
-                let source_type: Option<SourceType> = SourceType::from_str(&source_type_str).ok();
-
-                let validation_status: ValidationStatus = if last_validated_at.is_none() {
-                    ValidationStatus::NotTested
-                } else if is_valid {
-                    ValidationStatus::Valid
+                let is_configured: bool = !path_or_url.trim().is_empty();
+                let media_type: Option<MediaType> = if is_configured {
+                    MediaType::from_str(&media_type_str).ok()
                 } else {
-                    ValidationStatus::Invalid
+                    None
                 };
+                let source_type: Option<SourceType> = if is_configured {
+                    SourceType::from_str(&source_type_str).ok()
+                } else {
+                    None
+                };
+                let source: Option<String> = if is_configured {
+                    Some(path_or_url)
+                } else {
+                    None
+                };
+
+                let validation_status: ValidationStatus =
+                    if !is_configured || last_validated_at.is_none() {
+                        ValidationStatus::NotTested
+                    } else if is_valid {
+                        ValidationStatus::Valid
+                    } else {
+                        ValidationStatus::Invalid
+                    };
 
                 Ok((
                     number,
                     MediaSlot {
                         number,
-                        configured: true,
+                        configured: is_configured,
                         title: Some(title_gujarati),
                         media_type,
                         source_type,
-                        source: Some(path_or_url),
+                        source,
                         thumbnail_source: poster_path,
                         validation_status,
                         validation_message: validation_error,
@@ -125,24 +140,39 @@ impl MediaRepository {
                     .as_deref()
                     .and_then(|s| serde_json::from_str(s).ok());
 
-                let media_type: Option<MediaType> = MediaType::from_str(&media_type_str).ok();
-                let source_type: Option<SourceType> = SourceType::from_str(&source_type_str).ok();
-
-                let validation_status: ValidationStatus = if last_validated_at.is_none() {
-                    ValidationStatus::NotTested
-                } else if is_valid {
-                    ValidationStatus::Valid
+                let is_configured: bool = !path_or_url.trim().is_empty();
+                let media_type: Option<MediaType> = if is_configured {
+                    MediaType::from_str(&media_type_str).ok()
                 } else {
-                    ValidationStatus::Invalid
+                    None
                 };
+                let source_type: Option<SourceType> = if is_configured {
+                    SourceType::from_str(&source_type_str).ok()
+                } else {
+                    None
+                };
+                let source: Option<String> = if is_configured {
+                    Some(path_or_url)
+                } else {
+                    None
+                };
+
+                let validation_status: ValidationStatus =
+                    if !is_configured || last_validated_at.is_none() {
+                        ValidationStatus::NotTested
+                    } else if is_valid {
+                        ValidationStatus::Valid
+                    } else {
+                        ValidationStatus::Invalid
+                    };
 
                 Ok(MediaSlot {
                     number,
-                    configured: true,
+                    configured: is_configured,
                     title: Some(title_gujarati),
                     media_type,
                     source_type,
-                    source: Some(path_or_url),
+                    source,
                     thumbnail_source: poster_path,
                     validation_status,
                     validation_message: validation_error,

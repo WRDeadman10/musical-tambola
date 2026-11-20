@@ -35,6 +35,7 @@ use commands::ticket::{
     delete_ticket_batch, generate_ticket_batch, get_ticket, list_batch_tickets,
     list_ticket_batches, search_tickets,
 };
+use commands::title_import::{apply_song_title_import, preview_song_title_import};
 use db::connection::{get_app_data_dir, initialize_database, DbState};
 use services::media_protocol::handle_media_protocol;
 use std::path::PathBuf;
@@ -139,6 +140,8 @@ pub fn run() {
             verify_admin_pin,
             clear_admin_pin,
             get_admin_pin_status,
+            preview_song_title_import,
+            apply_song_title_import,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");

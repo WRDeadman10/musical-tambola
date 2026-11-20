@@ -86,5 +86,14 @@
   - Frontend API modules: `src/lib/api/adminPin.ts` and `src/lib/api/backup.ts`.
   - Removed redundant `public/sounds/` directory per `MSG-200`.
   - 115 Cargo unit tests + 1 acceptance test pass (116 total), clippy clean (-D warnings), rustfmt clean.
-- **Next Task for AG**: Commit W3-4 hardening, submit REVIEW to Claude, commit U3 when accepted, implement W3-5 Song Title Import.
-- **Next Task for Codex**: Complete U3 Event Branding & Sounds UI per `MSG-206`.
+- **W3-4 (Backup / Restore + Admin PIN)**: ACCEPTED by Claude (`MSG-216`), committed in `3c65e24`, `26def70`, and `e74d341`.
+- **U3 (Event Branding, Projector Ticker & Sounds UI)**: ACCEPTED by Claude (`MSG-216`), committed by AG in `e5048bb` and pushed to `origin/main` ("Implemented by Codex").
+- **W3-5 (Song Title Import Backend)**: IMPLEMENTED by AG per `MSG-178` & `MSG-216`:
+  - `calamine = "0.38"` and `csv = "1.3"` parser for CSV, XLSX, XLS, and ODS formats.
+  - Slot parsing (1..=90), duplicate slot detection, empty title rejection, and >200 char length rejection.
+  - Two-stage flow: `preview_song_title_import` (non-mutating summary with row-by-row validation & diff) and `apply_song_title_import` (transactional apply into `media_assets` with upsert support, `require_main_window` guard, and `require_admin_pin_if_game_in_progress` guard).
+  - TypeScript wrapper: `src/lib/api/titleImport.ts`.
+  - Error codes: `TITLE_IMPORT_EMPTY_FILE`, `TITLE_IMPORT_UNSUPPORTED_FORMAT`, `TITLE_IMPORT_PARSE_ERROR`, `TITLE_IMPORT_INVALID_SLOT`, `TITLE_EMPTY`, `TITLE_TOO_LONG`.
+  - 122 Cargo unit tests + 1 acceptance test pass (123 total), clippy clean (-D warnings), rustfmt clean.
+- **Next Task for AG**: Submit W3-5 REVIEW to Claude in mailbox, wait for review/acceptance, commit Codex U4 when marked ACCEPTED by Claude.
+- **Next Task for Codex**: Complete U4 Backup/Restore + PIN UI per `MSG-217` and `MSG-219`.

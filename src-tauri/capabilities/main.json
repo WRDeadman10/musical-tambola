@@ -71,6 +71,8 @@
     "allow-set-admin-pin",
     "allow-verify-admin-pin",
     "allow-clear-admin-pin",
-    "allow-get-admin-pin-status"
+    "allow-get-admin-pin-status",
+    "allow-preview-song-title-import",
+    "allow-apply-song-title-import"
   ]
 }

@@ -112,7 +112,20 @@ All backend errors are serialized to the frontend in the standard envelope:
 
 ---
 
-## 8. System & Infrastructure
+## 8. Song Title Import
+
+| Error Code | Parameters | English Fallback Description |
+|---|---|---|
+| `TITLE_IMPORT_EMPTY_FILE` | — | Import file is empty. |
+| `TITLE_IMPORT_UNSUPPORTED_FORMAT` | — | Unsupported spreadsheet or file format. |
+| `TITLE_IMPORT_PARSE_ERROR` | — | Failed to parse spreadsheet or CSV rows. |
+| `TITLE_IMPORT_INVALID_SLOT` | — | Slot number must be between 1 and 90. |
+| `TITLE_EMPTY` | — | Song title cannot be empty. |
+| `TITLE_TOO_LONG` | — | Song title must be 200 characters or less. |
+
+---
+
+## 9. System & Infrastructure
 
 | Error Code | English Fallback Description |
 |---|---|

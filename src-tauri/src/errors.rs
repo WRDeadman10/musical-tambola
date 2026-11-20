@@ -269,6 +269,7 @@ mod tests {
             assert!(!perm_str.contains("lucky"));
             assert!(!perm_str.contains("backup"));
             assert!(!perm_str.contains("admin-pin"));
+            assert!(!perm_str.contains("title-import"));
         }
     }
 
@@ -315,5 +316,26 @@ mod tests {
 
         let err7: AppError = AppError::new("BACKUP_INVALID_FILE", "Invalid file");
         assert_eq!(err7.code, "BACKUP_INVALID_FILE");
+    }
+
+    #[test]
+    fn test_title_import_error_codes() {
+        let err1: AppError = AppError::new("TITLE_IMPORT_EMPTY_FILE", "Empty file");
+        assert_eq!(err1.code, "TITLE_IMPORT_EMPTY_FILE");
+
+        let err2: AppError = AppError::new("TITLE_IMPORT_UNSUPPORTED_FORMAT", "Unsupported format");
+        assert_eq!(err2.code, "TITLE_IMPORT_UNSUPPORTED_FORMAT");
+
+        let err3: AppError = AppError::new("TITLE_IMPORT_PARSE_ERROR", "Parse error");
+        assert_eq!(err3.code, "TITLE_IMPORT_PARSE_ERROR");
+
+        let err4: AppError = AppError::new("TITLE_IMPORT_INVALID_SLOT", "Invalid slot");
+        assert_eq!(err4.code, "TITLE_IMPORT_INVALID_SLOT");
+
+        let err5: AppError = AppError::new("TITLE_EMPTY", "Title empty");
+        assert_eq!(err5.code, "TITLE_EMPTY");
+
+        let err6: AppError = AppError::new("TITLE_TOO_LONG", "Title too long");
+        assert_eq!(err6.code, "TITLE_TOO_LONG");
     }
 }
