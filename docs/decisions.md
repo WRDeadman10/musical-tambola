@@ -176,7 +176,10 @@ Phase 5 introduces the Game Controller and Draw Engine. Game execution requires 
 3. **State Machine & Atomic Transactions**:
    - Only one game may be in `ACTIVE` or `PAUSED` state across the database, enforced by partial unique index `idx_single_active_or_paused_game`.
    - State transitions: `create_game` (ACTIVE, position 1), `draw_next` (ACTIVE -> ACTIVE, or COMPLETED at 90), `pause_game` (ACTIVE -> PAUSED), `resume_game` (PAUSED -> ACTIVE), `end_game` (ACTIVE|PAUSED -> ENDED).
-   - `draw_next` requires status `ACTIVE` (rejected if `PAUSED`).
+   - Lifecycle operations (`pause_game`, `resume_game`, `end_game`) use single atomic conditional SQL `UPDATE ... WHERE id = ?1 AND status = '...'` with rows-affected verification to eliminate check-then-act races.
+   - `end_game` explicitly rejects games that are already in `COMPLETED` or `ENDED` status.
+   - `draw_next` is strictly idempotent: takes `expected_position`. If `current_draw_position != expected_position`, returns the existing `GameState` unchanged without drawing another number.
+   - Persisted draw sequence JSON is strictly validated as a 90-element permutation of 1..=90 both during `draw_next` and during game state restoration (`get_game`/`get_active_game`), failing gracefully with clear errors if corrupted.
 4. **Deterministic Crash Recovery**:
    - `get_active_game` reconstructs `GameState` purely from persisted SQLite records without regenerating or altering the draw sequence.
 

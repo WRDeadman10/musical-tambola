@@ -88,9 +88,9 @@
 
 | Task ID | Description | Status | Assignee | Notes |
 |---------|-------------|--------|----------|-------|
-| T4-F01 | Winning Schemes UI page & table | IN_PROGRESS | Codex | BT-9 underway |
-| T4-F02 | Add/Edit Scheme Dialog with RHF + Zod | IN_PROGRESS | Codex | Validation bounds, rule description |
-| T4-F03 | Schemes API wrapper & Vitest suite | IN_PROGRESS | Codex | Tests for toggle, save, errors |
+| T4-F01 | Winning Schemes UI page & table | DONE | Codex | BT-9 accepted & committed (`424c8eb`) |
+| T4-F02 | Add/Edit Scheme Dialog with RHF + Zod | DONE | Codex | BT-9 accepted & committed (`424c8eb`) |
+| T4-F03 | Schemes API wrapper & Vitest suite | DONE | Codex | BT-9 accepted & committed (`424c8eb`) |
 
 ---
 
@@ -102,10 +102,10 @@
 |---------|-------------|--------|----------|-------|
 | T5-B01 | Draw Engine with Fisher-Yates shuffle | DONE | AG (A) | `domain/tambola/draw_engine.rs`, 90 numbers, zero modulo bias, deterministic seeded tests |
 | T5-B02 | Game models & DTOs | DONE | AG (A) | `domain/game.rs`: GameStatus, GameSummary, CalledItem, GameSchemeState, GameState |
-| T5-B03 | Game Repository with atomic lifecycle transactions | DONE | AG (A) | `db/repositories/game.rs`: create_game, draw_next, pause, resume, end, get_active_game, list_games, build_call_position_map |
+| T5-B03 | Game Repository with atomic lifecycle transactions | DONE | AG (A) | `db/repositories/game.rs`: create_game, draw_next (idempotent with expectedPosition), pause, resume, end (conditional atomic updates), get_active_game, list_games, build_call_position_map |
 | T5-B04 | Media protocol extension for game snapshots | DONE | AG (A) | `services/media_protocol.rs`: serves `http://media.localhost/game/<gameId>/<number>` and `/thumb` |
 | T5-B05 | Tauri commands & lib.rs registration | DONE | AG (A) | `commands/game.rs`: preflight_media, create_game, get_active_game, get_game, draw_next, pause_game, resume_game, end_game, list_games, set_fullscreen |
-| T5-B06 | Comprehensive Cargo test suite | DONE | AG (A) | 39/39 tests pass (create rejections, 90-draw sequence progression & completion, pause/resume, DB reopen recovery, snapshot immutability) |
+| T5-B06 | Comprehensive Cargo test suite | DONE | AG (A) | 41/41 tests pass (create rejections, 90-draw sequence progression & completion, pause/resume, DB reopen recovery, snapshot immutability, draw_next idempotence, corrupted sequence validation) |
 
 ### Track 2: Frontend (Assignee: Codex — Implementer #2)
 

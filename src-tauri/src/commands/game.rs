@@ -48,13 +48,17 @@ pub fn get_game(game_id: i64, state: State<'_, DbState>) -> Result<GameState, St
 }
 
 #[tauri::command]
-pub fn draw_next(game_id: i64, state: State<'_, DbState>) -> Result<GameState, String> {
+pub fn draw_next(
+    game_id: i64,
+    expected_position: u32,
+    state: State<'_, DbState>,
+) -> Result<GameState, String> {
     let mut conn: MutexGuard<'_, Connection> = state
         .conn
         .lock()
         .map_err(|_| "Failed to acquire database lock".to_string())?;
 
-    GameRepository::draw_next(&mut conn, game_id)
+    GameRepository::draw_next(&mut conn, game_id, expected_position)
 }
 
 #[tauri::command]

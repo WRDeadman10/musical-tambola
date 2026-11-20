@@ -8,6 +8,37 @@ use std::str::FromStr;
 
 pub struct GameRepository;
 
+fn validate_draw_sequence_json(json_str: &str) -> Result<Vec<u8>, String> {
+    let seq: Vec<u8> = serde_json::from_str(json_str)
+        .map_err(|e| format!("Corrupted draw sequence JSON: {}", e))?;
+
+    if seq.len() != 90 {
+        return Err(format!(
+            "Corrupted draw sequence: expected exactly 90 numbers, got {}",
+            seq.len()
+        ));
+    }
+
+    let mut seen: [bool; 91] = [false; 91];
+    for &num in &seq {
+        if !(1..=90).contains(&num) {
+            return Err(format!(
+                "Corrupted draw sequence: number {} is out of valid range 1..=90",
+                num
+            ));
+        }
+        if seen[num as usize] {
+            return Err(format!(
+                "Corrupted draw sequence: duplicate number {} found",
+                num
+            ));
+        }
+        seen[num as usize] = true;
+    }
+
+    Ok(seq)
+}
+
 impl GameRepository {
     /// Creates a new game session in an atomic transaction.
     /// Rejects if any game is ACTIVE or PAUSED, if any of 90 media slots is not VALID,
@@ -106,7 +137,14 @@ impl GameRepository {
             .map_err(|e| format!("Failed to read game sequence: {}", e))?;
 
         let next_seq: u64 = match current_seq_str {
-            Some(s) => s.parse::<u64>().unwrap_or(0) + 1,
+            Some(s) => {
+                s.trim().parse::<u64>().map_err(|e| {
+                    format!(
+                        "Corrupted game sequence counter in app_settings for key '{}': {}",
+                        seq_key, e
+                    )
+                })? + 1
+            }
             None => 1,
         };
 
@@ -175,8 +213,13 @@ impl GameRepository {
         Self::get_game(conn, game_id)
     }
 
-    /// Advances game to the next number in the persisted sequence. Idempotent against double-clicks.
-    pub fn draw_next(conn: &mut Connection, game_id: i64) -> Result<GameState, String> {
+    /// Advances game to the next number in the persisted sequence.
+    /// Strictly idempotent: if current_draw_position != expected_position, returns the current GameState unchanged.
+    pub fn draw_next(
+        conn: &mut Connection,
+        game_id: i64,
+        expected_position: u32,
+    ) -> Result<GameState, String> {
         let tx = conn
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
             .map_err(|e| format!("Failed to start transaction: {}", e))?;
@@ -200,17 +243,25 @@ impl GameRepository {
             ));
         }
 
+        // Idempotence check: if position already moved past expected_position, return current state without drawing
+        if current_pos != expected_position {
+            log::info!(
+                "draw_next idempotent skip for game {}: current position {} != expected position {}",
+                game_id, current_pos, expected_position
+            );
+            drop(tx);
+            return Self::get_game(conn, game_id);
+        }
+
         if current_pos >= 90 {
             return Err("All 90 numbers have already been drawn.".to_string());
         }
 
-        let draw_seq: Vec<u8> = serde_json::from_str(&draw_seq_json)
-            .map_err(|e| format!("Corrupted draw sequence json: {}", e))?;
+        let draw_seq: Vec<u8> = validate_draw_sequence_json(&draw_seq_json)?;
 
         let next_pos: u32 = current_pos + 1;
         let next_number: u8 = draw_seq[(next_pos - 1) as usize];
 
-        // Idempotent insertion using INSERT OR IGNORE / check
         tx.execute(
             "INSERT INTO game_calls (game_id, draw_position, number, drawn_at)
              VALUES (?1, ?2, ?3, CURRENT_TIMESTAMP);",
@@ -238,80 +289,95 @@ impl GameRepository {
         Self::get_game(conn, game_id)
     }
 
-    /// Pauses an active game session.
+    /// Pauses an active game session using a single atomic conditional UPDATE.
     pub fn pause_game(conn: &mut Connection, game_id: i64) -> Result<GameState, String> {
-        let status_str: String = conn
-            .query_row(
-                "SELECT status FROM games WHERE id = ?1;",
+        let rows_affected: usize = conn
+            .execute(
+                "UPDATE games SET status = 'PAUSED' WHERE id = ?1 AND status = 'ACTIVE';",
                 params![game_id],
-                |r| r.get(0),
             )
-            .map_err(|e| format!("Game {} not found: {}", game_id, e))?;
+            .map_err(|e| format!("Failed to pause game: {}", e))?;
 
-        if status_str != "ACTIVE" {
-            return Err(format!(
-                "Cannot pause game: game is currently in {} status",
-                status_str
-            ));
+        if rows_affected == 0 {
+            let status_opt: Option<String> = conn
+                .query_row(
+                    "SELECT status FROM games WHERE id = ?1;",
+                    params![game_id],
+                    |r| r.get(0),
+                )
+                .optional()
+                .map_err(|e| format!("Database error checking game: {}", e))?;
+
+            return match status_opt {
+                Some(status) => Err(format!(
+                    "Cannot pause game: game is currently in {} status",
+                    status
+                )),
+                None => Err(format!("Game {} not found", game_id)),
+            };
         }
-
-        conn.execute(
-            "UPDATE games SET status = 'PAUSED' WHERE id = ?1;",
-            params![game_id],
-        )
-        .map_err(|e| format!("Failed to pause game: {}", e))?;
 
         Self::get_game(conn, game_id)
     }
 
-    /// Resumes a paused game session.
+    /// Resumes a paused game session using a single atomic conditional UPDATE.
     pub fn resume_game(conn: &mut Connection, game_id: i64) -> Result<GameState, String> {
-        let status_str: String = conn
-            .query_row(
-                "SELECT status FROM games WHERE id = ?1;",
+        let rows_affected: usize = conn
+            .execute(
+                "UPDATE games SET status = 'ACTIVE' WHERE id = ?1 AND status = 'PAUSED';",
                 params![game_id],
-                |r| r.get(0),
             )
-            .map_err(|e| format!("Game {} not found: {}", game_id, e))?;
+            .map_err(|e| format!("Failed to resume game: {}", e))?;
 
-        if status_str != "PAUSED" {
-            return Err(format!(
-                "Cannot resume game: game is currently in {} status",
-                status_str
-            ));
+        if rows_affected == 0 {
+            let status_opt: Option<String> = conn
+                .query_row(
+                    "SELECT status FROM games WHERE id = ?1;",
+                    params![game_id],
+                    |r| r.get(0),
+                )
+                .optional()
+                .map_err(|e| format!("Database error checking game: {}", e))?;
+
+            return match status_opt {
+                Some(status) => Err(format!(
+                    "Cannot resume game: game is currently in {} status",
+                    status
+                )),
+                None => Err(format!("Game {} not found", game_id)),
+            };
         }
-
-        conn.execute(
-            "UPDATE games SET status = 'ACTIVE' WHERE id = ?1;",
-            params![game_id],
-        )
-        .map_err(|e| format!("Failed to resume game: {}", e))?;
 
         Self::get_game(conn, game_id)
     }
 
-    /// Ends an active or paused game session permanently.
+    /// Ends an active or paused game session permanently using a single atomic conditional UPDATE.
     pub fn end_game(conn: &mut Connection, game_id: i64) -> Result<GameState, String> {
-        let status_str: String = conn
-            .query_row(
-                "SELECT status FROM games WHERE id = ?1;",
+        let rows_affected: usize = conn
+            .execute(
+                "UPDATE games SET status = 'ENDED', ended_at = CURRENT_TIMESTAMP WHERE id = ?1 AND status IN ('ACTIVE', 'PAUSED');",
                 params![game_id],
-                |r| r.get(0),
             )
-            .map_err(|e| format!("Game {} not found: {}", game_id, e))?;
+            .map_err(|e| format!("Failed to end game: {}", e))?;
 
-        if status_str != "ACTIVE" && status_str != "PAUSED" {
-            return Err(format!(
-                "Cannot end game: game is already in {} status",
-                status_str
-            ));
+        if rows_affected == 0 {
+            let status_opt: Option<String> = conn
+                .query_row(
+                    "SELECT status FROM games WHERE id = ?1;",
+                    params![game_id],
+                    |r| r.get(0),
+                )
+                .optional()
+                .map_err(|e| format!("Database error checking game: {}", e))?;
+
+            return match status_opt {
+                Some(status) => Err(format!(
+                    "Cannot end game: game is already in {} status",
+                    status
+                )),
+                None => Err(format!("Game {} not found", game_id)),
+            };
         }
-
-        conn.execute(
-            "UPDATE games SET status = 'ENDED', ended_at = CURRENT_TIMESTAMP WHERE id = ?1;",
-            params![game_id],
-        )
-        .map_err(|e| format!("Failed to end game: {}", e))?;
 
         Self::get_game(conn, game_id)
     }
@@ -381,6 +447,17 @@ impl GameRepository {
             .map_err(|e| format!("Game {} not found: {}", game_id, e))?;
 
         let status: GameStatus = GameStatus::from_db_str(&status_str)?;
+
+        // Validate persisted draw sequence JSON integrity
+        let draw_seq_json: String = conn
+            .query_row(
+                "SELECT draw_sequence_json FROM games WHERE id = ?1;",
+                params![game_id],
+                |r| r.get(0),
+            )
+            .map_err(|e| format!("Failed to read draw sequence for game {}: {}", game_id, e))?;
+
+        validate_draw_sequence_json(&draw_seq_json)?;
 
         let game_summary = GameSummary {
             id: game_id,
@@ -682,7 +759,7 @@ mod tests {
 
         // Advance draws from 2 to 90
         for pos in 2..=90 {
-            let state = GameRepository::draw_next(&mut conn, game_id).unwrap();
+            let state = GameRepository::draw_next(&mut conn, game_id, pos - 1).unwrap();
             assert_eq!(state.game.current_draw_position, pos);
             assert_eq!(state.history.len(), pos as usize);
             assert_eq!(state.current.as_ref().unwrap().position, pos);
@@ -696,11 +773,42 @@ mod tests {
         }
 
         // Attempting 91st draw must be rejected
-        let err_91 = GameRepository::draw_next(&mut conn, game_id).unwrap_err();
+        let err_91 = GameRepository::draw_next(&mut conn, game_id, 90).unwrap_err();
         assert!(
             err_91.contains("All 90 numbers have already been drawn")
                 || err_91.contains("COMPLETED")
         );
+    }
+
+    #[test]
+    fn test_draw_next_idempotence() {
+        let mut conn = setup_test_db();
+        let batch_id = populate_valid_media_and_batch(&mut conn);
+        let mut rng = DeterministicRandomSource::new(4321);
+
+        let state1 = GameRepository::create_game(&mut conn, batch_id, &mut rng).unwrap();
+        let game_id = state1.game.id;
+        assert_eq!(state1.game.current_draw_position, 1);
+
+        // First draw: expected_position 1 -> advances to pos 2
+        let state2 = GameRepository::draw_next(&mut conn, game_id, 1).unwrap();
+        assert_eq!(state2.game.current_draw_position, 2);
+        assert_eq!(state2.history.len(), 2);
+
+        // Duplicate call with stale expected_position 1 (e.g. double click) -> idempotent skip
+        let state_dup = GameRepository::draw_next(&mut conn, game_id, 1).unwrap();
+        assert_eq!(state_dup.game.current_draw_position, 2);
+        assert_eq!(state_dup.history.len(), 2);
+
+        // Calls count in DB must still be exactly 2
+        let calls_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM game_calls WHERE game_id = ?1;",
+                params![game_id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(calls_count, 2);
     }
 
     #[test]
@@ -717,7 +825,7 @@ mod tests {
         assert_eq!(paused_state.game.status, GameStatus::Paused);
 
         // Draw while paused must be rejected
-        let err_draw = GameRepository::draw_next(&mut conn, game_id).unwrap_err();
+        let err_draw = GameRepository::draw_next(&mut conn, game_id, 1).unwrap_err();
         assert!(err_draw.contains("Game is paused"));
 
         // Resume
@@ -725,13 +833,42 @@ mod tests {
         assert_eq!(resumed_state.game.status, GameStatus::Active);
 
         // Draw next succeeds after resume
-        let next_state = GameRepository::draw_next(&mut conn, game_id).unwrap();
+        let next_state = GameRepository::draw_next(&mut conn, game_id, 1).unwrap();
         assert_eq!(next_state.game.current_draw_position, 2);
 
         // End game
         let ended_state = GameRepository::end_game(&mut conn, game_id).unwrap();
         assert_eq!(ended_state.game.status, GameStatus::Ended);
         assert!(ended_state.game.ended_at.is_some());
+
+        // Ending an already ended game must be rejected
+        let err_already_ended = GameRepository::end_game(&mut conn, game_id).unwrap_err();
+        assert!(err_already_ended.contains("Cannot end game: game is already in ENDED status"));
+    }
+
+    #[test]
+    fn test_corrupted_sequence_handling() {
+        let mut conn = setup_test_db();
+        let batch_id = populate_valid_media_and_batch(&mut conn);
+        let mut rng = DeterministicRandomSource::new(111);
+
+        let state = GameRepository::create_game(&mut conn, batch_id, &mut rng).unwrap();
+        let game_id = state.game.id;
+
+        // Corrupt sequence JSON (length 3 instead of 90)
+        conn.execute(
+            "UPDATE games SET draw_sequence_json = '[1, 2, 3]' WHERE id = ?1;",
+            params![game_id],
+        )
+        .unwrap();
+
+        // get_game must fail gracefully with descriptive error
+        let err_get = GameRepository::get_game(&conn, game_id).unwrap_err();
+        assert!(err_get.contains("Corrupted draw sequence: expected exactly 90 numbers"));
+
+        // draw_next must also fail gracefully
+        let err_draw = GameRepository::draw_next(&mut conn, game_id, 1).unwrap_err();
+        assert!(err_draw.contains("Corrupted draw sequence: expected exactly 90 numbers"));
     }
 
     #[test]
@@ -744,8 +881,8 @@ mod tests {
         let game_id = state.game.id;
 
         // Draw 10 numbers total (pos 1 to 10)
-        for _ in 2..=10 {
-            GameRepository::draw_next(&mut conn, game_id).unwrap();
+        for p in 1..10 {
+            GameRepository::draw_next(&mut conn, game_id, p).unwrap();
         }
 
         // Query active game directly (simulating app relaunch / recovery)
@@ -793,8 +930,8 @@ mod tests {
             game_id = state.game.id;
 
             // Draw up to position 10
-            for _ in 2..=10 {
-                GameRepository::draw_next(&mut conn, game_id).unwrap();
+            for p in 1..10 {
+                GameRepository::draw_next(&mut conn, game_id, p).unwrap();
             }
 
             // Read the persisted sequence to know the 11th number (index 10 in 0-indexed slice)
@@ -825,8 +962,8 @@ mod tests {
             assert_eq!(active.history.len(), 10);
             assert_eq!(active.current.as_ref().unwrap().position, 10);
 
-            // Draw 11th call on the reopened connection
-            let next_state = GameRepository::draw_next(&mut conn2, game_id).unwrap();
+            // Draw 11th call on the reopened connection with expected_position 10
+            let next_state = GameRepository::draw_next(&mut conn2, game_id, 10).unwrap();
             assert_eq!(next_state.game.current_draw_position, 11);
             assert_eq!(
                 next_state.current.as_ref().unwrap().number,
