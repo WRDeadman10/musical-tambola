@@ -1,3 +1,4 @@
+pub mod draw_engine;
 pub mod ticket_generator;
 
 use serde::{Deserialize, Serialize};

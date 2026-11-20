@@ -1,3 +1,4 @@
+pub mod game;
 pub mod media;
 pub mod random;
 pub mod schemes;

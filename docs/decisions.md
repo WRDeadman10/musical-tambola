@@ -157,3 +157,33 @@ Phase 4 introduces customizable winning schemes (Early Five, Four Corners, Top L
   - Schema immutability preserved via versioned migration `0002_schemes_update.sql`.
 - **Cons**:
   - New scheme types require extending the Rust `SchemeType` enum and registry.
+
+---
+
+## ADR-008: Game Session Lifecycle, Snapshot Immutability, and Crash Recovery
+
+### Context
+Phase 5 introduces the Game Controller and Draw Engine. Game execution requires strict immutability: changes to live media assets or prize schemes must never alter or corrupt games already in progress. In addition, games must survive application crashes and power loss with 100% deterministic recovery of past draws, current position, and future draw sequences.
+
+### Decision
+1. **Cryptographic Draw Permutation**:
+   - `generate_draw_sequence` implements Fisher–Yates shuffle over numbers 1..=90 using `RandomSource` (`OsRngSource` in production, `DeterministicRandomSource` in tests).
+   - The entire 90-number permutation is persisted in SQLite as JSON (`draw_sequence_json`) *before* the first draw is used.
+2. **Game Media and Scheme Snapshots**:
+   - Upon `create_game`, all 90 media assets are snapshotted into `game_media_snapshots`, and all currently active prize schemes are snapshotted into `game_schemes`.
+   - The media protocol serves snapshot media via `http://media.localhost/game/<gameId>/<number>` and `/thumb`.
+   - Mutations to `media_assets` or `prize_schemes` during or after game creation have zero effect on active or historic games.
+3. **State Machine & Atomic Transactions**:
+   - Only one game may be in `ACTIVE` or `PAUSED` state across the database, enforced by partial unique index `idx_single_active_or_paused_game`.
+   - State transitions: `create_game` (ACTIVE, position 1), `draw_next` (ACTIVE -> ACTIVE, or COMPLETED at 90), `pause_game` (ACTIVE -> PAUSED), `resume_game` (PAUSED -> ACTIVE), `end_game` (ACTIVE|PAUSED -> ENDED).
+   - `draw_next` requires status `ACTIVE` (rejected if `PAUSED`).
+4. **Deterministic Crash Recovery**:
+   - `get_active_game` reconstructs `GameState` purely from persisted SQLite records without regenerating or altering the draw sequence.
+
+### Consequences
+- **Pros**:
+  - Complete crash recovery: dropping connections and restarting the application resumes exact game state.
+  - Snapshot immutability: games are self-contained and auditable.
+  - Zero chance of double draws or sequence desynchronization.
+- **Cons**:
+  - Snapshotting 90 media rows adds a minor one-time disk cost per game session (~few kilobytes).

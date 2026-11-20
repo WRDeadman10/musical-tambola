@@ -111,9 +111,14 @@ pub fn handle_media_protocol<R: tauri::Runtime>(
     request: Request<Vec<u8>>,
 ) -> Response<Vec<u8>> {
     let uri: &tauri::http::Uri = request.uri();
+    let host: &str = uri.host().unwrap_or("");
     let path: &str = uri.path().trim_start_matches('/');
 
-    let segments: Vec<&str> = path.split('/').filter(|s: &&str| !s.is_empty()).collect();
+    let mut segments: Vec<&str> = path.split('/').filter(|s: &&str| !s.is_empty()).collect();
+    if host != "localhost" && !host.is_empty() && host != "media.localhost" {
+        segments.insert(0, host);
+    }
+
     if segments.is_empty() {
         return Response::builder()
             .status(StatusCode::BAD_REQUEST)
@@ -121,17 +126,47 @@ pub fn handle_media_protocol<R: tauri::Runtime>(
             .unwrap();
     }
 
-    let number: u8 = match segments[0].parse::<u8>() {
-        Ok(n) if (1..=90).contains(&n) => n,
-        _ => {
-            return Response::builder()
-                .status(StatusCode::BAD_REQUEST)
-                .body(b"Invalid slot number (must be 1-90)".to_vec())
-                .unwrap();
-        }
-    };
-
-    let is_thumb: bool = segments.len() > 1 && segments[1] == "thumb";
+    let (is_game, game_id, number, is_thumb): (bool, Option<i64>, u8, bool) =
+        if segments.first() == Some(&"game") {
+            if segments.len() < 3 {
+                return Response::builder()
+                    .status(StatusCode::BAD_REQUEST)
+                    .body(b"Missing gameId or number in game media path".to_vec())
+                    .unwrap();
+            }
+            let g_id: i64 = match segments[1].parse::<i64>() {
+                Ok(g) => g,
+                Err(_) => {
+                    return Response::builder()
+                        .status(StatusCode::BAD_REQUEST)
+                        .body(b"Invalid gameId".to_vec())
+                        .unwrap();
+                }
+            };
+            let n: u8 = match segments[2].parse::<u8>() {
+                Ok(val) if (1..=90).contains(&val) => val,
+                _ => {
+                    return Response::builder()
+                        .status(StatusCode::BAD_REQUEST)
+                        .body(b"Invalid slot number (must be 1-90)".to_vec())
+                        .unwrap();
+                }
+            };
+            let thumb: bool = segments.len() > 3 && segments[3] == "thumb";
+            (true, Some(g_id), n, thumb)
+        } else {
+            let n: u8 = match segments[0].parse::<u8>() {
+                Ok(val) if (1..=90).contains(&val) => val,
+                _ => {
+                    return Response::builder()
+                        .status(StatusCode::BAD_REQUEST)
+                        .body(b"Invalid slot number (must be 1-90)".to_vec())
+                        .unwrap();
+                }
+            };
+            let thumb: bool = segments.len() > 1 && segments[1] == "thumb";
+            (false, None, n, thumb)
+        };
 
     let state: tauri::State<'_, crate::db::DbState> = match app.try_state::<crate::db::DbState>() {
         Some(s) => s,
@@ -153,13 +188,21 @@ pub fn handle_media_protocol<R: tauri::Runtime>(
         }
     };
 
-    let row_data: Option<(String, Option<String>, Option<String>)> = conn
-        .query_row(
+    let row_data: Option<(String, Option<String>, Option<String>)> = if is_game {
+        conn.query_row(
+            "SELECT source_type, path_or_url, poster_path FROM game_media_snapshots WHERE game_id = ?1 AND number = ?2;",
+            rusqlite::params![game_id.unwrap(), number],
+            |r: &rusqlite::Row<'_>| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .ok()
+    } else {
+        conn.query_row(
             "SELECT source_type, path_or_url, poster_path FROM media_assets WHERE number = ?1;",
             rusqlite::params![number],
             |r: &rusqlite::Row<'_>| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
         )
-        .ok();
+        .ok()
+    };
 
     drop(conn);
 

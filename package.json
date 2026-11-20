@@ -13,7 +13,8 @@
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
     "test": "vitest run && cargo test --manifest-path src-tauri/Cargo.toml",
     "package:win": "tauri build --bundles nsis",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css}\""
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.7",

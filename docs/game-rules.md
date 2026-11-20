@@ -106,3 +106,24 @@ A claim is submitted when the game is at `current_draw_position`.
 
 All checks and winner insertions run inside an atomic `BEGIN IMMEDIATE` transaction to guarantee zero race conditions.
 Rejected claims are permanently logged in the `claims` table for transparency.
+
+## 4. Game Controller & Draw Engine Lifecycle
+Game sessions operate as an authoritative finite state machine managed in SQLite transactions:
+
+### 4.1 State Machine
+- **States**: `READY`, `ACTIVE`, `PAUSED`, `COMPLETED`, `ENDED`.
+- **Concurrency Guard**: A partial unique index (`idx_single_active_or_paused_game`) prevents starting a game if another game is `ACTIVE` or `PAUSED`.
+- **Transitions**:
+  - `create_game(batch_id)`: Generates crypto draw sequence (Fisher-Yates 1..=90), snapshots all 90 media assets and active schemes, draws position 1 immediately, and enters `ACTIVE`.
+  - `draw_next(game_id)`: Advances position by 1 ($pos \le 90$). At position 90, status becomes `COMPLETED` with `ended_at`. Double-draw calls are prevented via transaction locks and unique constraints.
+  - `pause_game(game_id)`: Transitions `ACTIVE` -> `PAUSED`. Draw calls while paused are rejected.
+  - `resume_game(game_id)`: Transitions `PAUSED` -> `ACTIVE`.
+  - `end_game(game_id)`: Transitions `ACTIVE` | `PAUSED` -> `ENDED` with `ended_at`.
+
+### 4.2 Snapshot Immutability & Protocol Serving
+- At game inception, all 90 media assets and active schemes are copied to `game_media_snapshots` and `game_schemes`.
+- Local snapshot media is served via `http://media.localhost/game/<gameId>/<number>` and `/thumb`.
+- Master table modifications never alter games in progress.
+
+### 4.3 Deterministic Crash Recovery
+- `get_active_game` recovers the exact session state from database records without regenerating or altering the draw sequence.
