@@ -9,6 +9,8 @@ import { GameState } from "../../types/game";
 import { PresentationCommand, PresentationState } from "../../types/presentation";
 import { ProjectorScene } from "./ProjectorScene";
 import { useAppStore } from "../../stores/appStore";
+import { getAppInfo } from "../../lib/api";
+import { useSoundEffects } from "./useSoundEffects";
 
 const initialState: PresentationState = {
     scene: "IDLE",
@@ -41,6 +43,8 @@ function applyCommand(state: PresentationState, event: PresentationCommand): Pre
 export function PresentationPage(): React.JSX.Element {
     const [state, setState] = useState<PresentationState>(initialState);
     const appInfo = useAppStore((value) => value.appInfo);
+    const setAppInfo = useAppStore((value) => value.setAppInfo);
+    const playSound = useSoundEffects();
     const [volume, setVolume] = useState<number>(
         (appInfo?.defaultVideoVolume ?? Number(appInfo?.settings?.default_video_volume ?? 100)) /
             100,
@@ -60,13 +64,21 @@ export function PresentationPage(): React.JSX.Element {
             },
         );
         void listenToGameStateChanged((game: GameState) => {
-            if (mounted) setState((current) => ({ ...current, game, current: game.current }));
+            if (mounted) {
+                setState((current) => ({ ...current, game, current: game.current }));
+                playSound("draw");
+            }
         }).then((cleanup) => {
             if (mounted) stopGame = cleanup;
             else cleanup();
         });
         void listenToPresentationCommand((command) => {
             if (mounted) setState((current) => applyCommand(current, command));
+            if (command.command === "SHOW_ANSWER") playSound("reveal");
+            if (command.command === "CLAIM_RESULT")
+                playSound(command.payload.status === "ACCEPTED" ? "accepted" : "rejected");
+            if (command.command === "LUCKY_DRAW") playSound("lucky");
+            if (command.command === "SETTINGS_CHANGED") void getAppInfo().then(setAppInfo);
             if (mounted && command.command === "SET_VOLUME") {
                 const nextVolume: number = Number(command.payload.volume);
                 if (Number.isFinite(nextVolume))
@@ -81,7 +93,7 @@ export function PresentationPage(): React.JSX.Element {
             stopGame?.();
             stopCommand?.();
         };
-    }, []);
+    }, [playSound, setAppInfo]);
     useEffect(() => {
         let timeoutId: number | null = null;
         const resetCursor = (): void => {

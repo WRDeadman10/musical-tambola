@@ -3,13 +3,16 @@ import { Button } from "../../components/ui/button";
 import { useAppStore } from "../../stores/appStore";
 import { useClaimDesk } from "../claim-desk/useClaimDesk";
 import { ClaimResult } from "../../types/claim";
+import { emitClaimResult } from "../claim-desk/claimPresentation";
 
 export function QuickClaim({
     onFocusRef,
     onAccepted,
+    onRejected,
 }: {
     onFocusRef: React.RefObject<HTMLInputElement | null>;
     onAccepted?: (result: ClaimResult) => void;
+    onRejected?: (result: ClaimResult) => void;
 }): React.JSX.Element {
     const t = useAppStore((state) => state.t);
     const model = useClaimDesk();
@@ -18,7 +21,9 @@ export function QuickClaim({
         : (model.result?.rejectionReason ?? "");
     useEffect(() => {
         if (model.result?.status === "ACCEPTED") onAccepted?.(model.result);
-    }, [model.result, onAccepted]);
+        if (model.result?.status === "REJECTED") onRejected?.(model.result);
+        if (model.result) void emitClaimResult(model.result.status).catch(() => undefined);
+    }, [model.result, onAccepted, onRejected]);
     return (
         <section className="space-y-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
             <h2 className="font-semibold">{t("game.quickClaim")}</h2>

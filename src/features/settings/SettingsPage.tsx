@@ -7,6 +7,7 @@ import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { getGameFormat, setGameFormat } from "../../lib/api/formats";
 import { GameFormat } from "../../types/game";
+import { EventBrandingCard } from "./EventBrandingCard";
 
 type Theme = "dark" | "light" | "system";
 
@@ -145,6 +146,7 @@ export const SettingsPage: React.FC = () => {
                     {message}
                 </div>
             )}
+            <EventBrandingCard />
             <Card>
                 <CardHeader>
                     <CardTitle>{t("settings.gameFormat")}</CardTitle>

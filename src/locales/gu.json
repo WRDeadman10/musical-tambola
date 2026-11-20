@@ -43,6 +43,14 @@
         "foundationReady": "ફાઉન્ડેશન સેટઅપ પૂર્ણ. મીડિયા મેનેજર ફેઝ માટે તૈયાર."
     },
     "settings": {
+        "eventBranding": "ઇવેન્ટ બ્રાન્ડિંગ અને અવાજો",
+        "eventName": "ઇવેન્ટનું નામ",
+        "tickerText": "પ્રોજેક્ટર ટિકર લખાણ",
+        "accentColour": "ઉજાસ રંગ",
+        "soundsEnabled": "અવાજો સક્રિય કરો",
+        "projectorSounds": "પ્રોજેક્ટર પર અવાજ વગાડો",
+        "idlePoster": "નિષ્ક્રિય પોસ્ટર",
+        "clearIdlePoster": "નિષ્ક્રિય પોસ્ટર સાફ કરો",
         "title": "એપ્લિકેશન સેટિંગ્સ",
         "systemInfo": "સિસ્ટમ અને ડેટાબેઝ માહિતી",
         "version": "એપ વર્ઝન",

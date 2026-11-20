@@ -43,6 +43,14 @@
         "foundationReady": "Foundation setup complete. Ready for the Media Manager phase."
     },
     "settings": {
+        "eventBranding": "Event branding and sounds",
+        "eventName": "Event name",
+        "tickerText": "Projector ticker text",
+        "accentColour": "Accent colour",
+        "soundsEnabled": "Enable sounds",
+        "projectorSounds": "Play sounds on projector",
+        "idlePoster": "Idle poster",
+        "clearIdlePoster": "Clear idle poster",
         "title": "Application Settings",
         "systemInfo": "System & Environment Info",
         "version": "App Version",

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { pauseGame, resumeGame } from "../../lib/api/game";
 import { useAppStore } from "../../stores/appStore";
@@ -7,7 +7,7 @@ import { CountdownCard } from "./CountdownCard";
 import { DrawControls } from "./DrawControls";
 import { GameControllerModel } from "./useGameController";
 import { HostProjectorCard } from "./HostProjectorCard";
-import { presentationCommand } from "../../lib/api/presentation";
+import { listenToPresentationCommand, presentationCommand } from "../../lib/api/presentation";
 import { SongList } from "./SongList";
 import { QuickClaim } from "./QuickClaim";
 import { ShortcutHelp } from "./ShortcutHelp";
@@ -15,6 +15,7 @@ import { StatusBar } from "./StatusBar";
 import { useHostShortcuts } from "./useHostShortcuts";
 import { WinnersList } from "./WinnersList";
 import { LuckyDrawCard } from "./LuckyDrawCard";
+import { useSoundEffects } from "../presentation/useSoundEffects";
 
 export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.Element {
     const translate = useAppStore((state) => state.t);
@@ -35,6 +36,25 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
         schemeName: string;
         ticketCode: string;
     } | null>(null);
+    const playSound = useSoundEffects();
+    const currentNumber: number | null = model.state?.current?.number ?? null;
+    useEffect(() => {
+        if (currentNumber !== null) playSound("draw");
+    }, [currentNumber, playSound]);
+    useEffect(() => {
+        let stop: (() => void) | null = null;
+        void listenToPresentationCommand((command) => {
+            if (command.command === "SHOW_ANSWER") playSound("reveal");
+            if (command.command === "CLAIM_RESULT")
+                playSound(command.payload.status === "ACCEPTED" ? "accepted" : "rejected");
+            if (command.command === "LUCKY_DRAW") playSound("lucky");
+        })
+            .then((cleanup) => {
+                stop = cleanup;
+            })
+            .catch(() => undefined);
+        return () => stop?.();
+    }, [playSound]);
     const toggleAnswer = useCallback(() => setShowAnswer((value) => !value), []);
     const toggleNumber = useCallback(() => setShowNumber((value) => !value), []);
     const togglePause = useCallback(
@@ -115,6 +135,7 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                                 ticketCode: result.ticketCode,
                             })
                         }
+                        onRejected={() => playSound("rejected")}
                     />
                     <HostProjectorCard state={model.state} acceptedClaim={acceptedClaim} />
                     <WinnersList schemes={model.state.schemes} translate={translate} />

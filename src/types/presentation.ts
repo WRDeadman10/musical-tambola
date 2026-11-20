@@ -42,7 +42,10 @@ export type PresentationCommandName =
     | "COUNTDOWN"
     | "ANNOUNCE"
     | "SET_VOLUME"
-    | "PLAY";
+    | "PLAY"
+    | "LUCKY_DRAW"
+    | "SETTINGS_CHANGED"
+    | "CLAIM_RESULT";
 
 export interface PresentationCommand {
     command: PresentationCommandName;

@@ -6,10 +6,28 @@ import { MiniPatternGrid } from "../../components/scheme/MiniPatternGrid";
 
 export function ProjectorScene({ state }: { state: PresentationState }): React.JSX.Element {
     const t = useAppStore((value) => value.t);
+    const appInfo = useAppStore((value) => value.appInfo);
+    const ticker: string = appInfo?.tickerText ?? "";
+    const accentColor: string = appInfo?.accentColor ?? "#6366f1";
+    const frameStyle: React.CSSProperties = {
+        "--accent-color": accentColor,
+    } as React.CSSProperties;
     if (state.scene === "IDLE") {
         return (
-            <div className="flex h-full items-center justify-center text-center text-6xl font-bold">
-                {t("presentation.idle")}
+            <div
+                className="relative flex h-full items-center justify-center text-center text-6xl font-bold"
+                style={frameStyle}
+            >
+                {appInfo?.idlePoster ? (
+                    <img
+                        className="max-h-full max-w-full object-contain"
+                        src={appInfo.idlePoster}
+                        alt={appInfo.eventName ?? t("presentation.idle")}
+                    />
+                ) : (
+                    (appInfo?.eventName ?? t("presentation.idle"))
+                )}
+                {ticker && <Ticker text={ticker} />}
             </div>
         );
     }
@@ -49,7 +67,7 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
         );
     }
     return (
-        <div className="relative flex h-full items-center justify-center">
+        <div className="relative flex h-full items-center justify-center" style={frameStyle}>
             {state.current.mediaType === "VIDEO" ? (
                 <video
                     className="max-h-[90vh] w-full object-contain"
@@ -77,11 +95,22 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
                     {state.current.number}
                 </div>
             )}
+            {ticker && <Ticker text={ticker} />}
             {state.scene === "COUNTDOWN" && state.countdown !== null && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-[min(24vw,16rem)] font-black">
                     {state.countdown.seconds}
                 </div>
             )}
+        </div>
+    );
+}
+
+function Ticker({ text }: { text: string }): React.JSX.Element {
+    return (
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 overflow-hidden bg-[var(--accent-color)]/90 py-2 text-xl font-semibold">
+            <div className="animate-[marquee_18s_linear_infinite] whitespace-nowrap motion-reduce:animate-none">
+                {text}
+            </div>
         </div>
     );
 }
