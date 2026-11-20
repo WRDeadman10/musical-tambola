@@ -8,6 +8,7 @@
     "mediaLibrary": "Media Library",
     "ticketGenerator": "Ticket Generator",
     "ticketBatches": "Ticket Batches",
+    "schemes": "Winning Schemes",
     "tickets": "Tickets",
     "schemes": "Winning Schemes",
     "gameController": "Game Screen",
@@ -167,5 +168,22 @@
       "browseFailed": "Could not open the media picker."
     },
     "noResults": "No media slots match the current filters."
+  },
+  "schemes": {
+    "title": "Winning Schemes",
+    "subtitle": "Configure the prize rules used by the game.",
+    "snapshotNote": "Active schemes are copied into each game when it starts.",
+    "add": "Add scheme",
+    "new": "New scheme",
+    "edit": "Edit scheme",
+    "name": "Name",
+    "description": "Description",
+    "type": "Rule type",
+    "maxWinners": "Maximum winners",
+    "active": "Status",
+    "validation": "Enter a name, a description up to 500 characters, and 1–100 winners."
+  },
+  "game": {
+    "title": "Game Controller", "subtitle": "Run the live Tambola draw.", "preflight": "Prepare game", "validate": "Validate media", "valid": "valid", "invalid": "invalid", "chooseBatch": "Choose a ticket batch", "start": "Start game", "fullscreen": "Fullscreen", "noCurrent": "No item currently drawn", "play": "Play", "next": "Next", "pause": "Pause", "resume": "Resume", "end": "End game", "tickets": "View tickets"
   }
 }

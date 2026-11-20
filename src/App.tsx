@@ -6,6 +6,8 @@ import { SettingsPage } from "./features/settings/SettingsPage";
 import { MediaLibraryPage } from "./features/media-library/MediaLibraryPage";
 import { TicketGeneratorPage } from "./features/ticket-generator/TicketGeneratorPage";
 import { TicketBatchesPage } from "./features/ticket-batches/TicketBatchesPage";
+import { SchemesPage } from "./features/schemes/SchemesPage";
+import { GameControllerPage } from "./features/game-controller/GameControllerPage";
 
 export const App: React.FC = () => {
     return (
@@ -19,6 +21,8 @@ export const App: React.FC = () => {
                         <Route path="/media" element={<MediaLibraryPage />} />
                         <Route path="/tickets/generate" element={<TicketGeneratorPage />} />
                         <Route path="/tickets" element={<TicketBatchesPage />} />
+                        <Route path="/schemes" element={<SchemesPage />} />
+                        <Route path="/game" element={<GameControllerPage />} />
                     </Routes>
                 </main>
             </div>
