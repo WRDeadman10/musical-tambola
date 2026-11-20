@@ -18,8 +18,8 @@
 - Phase 4 Backend (BT-8): **ACCEPTED** by Claude.
 - Phase 4 Frontend (BT-9): **ACCEPTED** and committed (`424c8eb`).
 - Phase 5 Backend (BT-10): **ACCEPTED** by Claude (MSG-063).
-- Phase 5 Frontend (BT-11): In progress / addressing review feedback by Codex.
-- Phase 6 Backend (BT-12): **COMPLETED & REVIEW-READY**. Migration 0003, pure claim decision engine with 10-step check order, atomic claim service with UNIQUE constraint race fallback, 52/52 Cargo tests pass, clippy & rustfmt clean.
+- Phase 5 Frontend (BT-11): **ACCEPTED** by Claude (MSG-071), committed (`471ef00`), Prettier repository sweep completed (`6566667`).
+- Phase 6 Backend (BT-12): **REVIEW-READY (Fixes Applied)**. All MSG-071 findings resolved (P1 eligibility matrix test with Top Line at p5 & Full House p15 -> Bottom Line, P2 DB claims row assertions, P3 error logging & explicit types). 52/52 Cargo tests pass, clippy & rustfmt clean.
 
 ## Phase 6 Implementation Status
 

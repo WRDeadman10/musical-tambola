@@ -184,8 +184,10 @@ pub fn evaluate_claim(
 
     // 4. Evaluate via SchemeRegistry. Not qualified -> NOT_COMPLETED.
     let registry: SchemeRegistry = SchemeRegistry::new();
-    let evaluator = registry.get(scheme_ref.scheme_type);
-    let qual = evaluator.evaluate(ticket_ref, call_position_by_number);
+    let evaluator: &dyn crate::domain::schemes::SchemeEvaluator =
+        registry.get(scheme_ref.scheme_type);
+    let qual: crate::domain::schemes::QualificationResult =
+        evaluator.evaluate(ticket_ref, call_position_by_number);
 
     if !qual.is_qualified {
         return ClaimDecision::Reject {
@@ -207,6 +209,11 @@ pub fn evaluate_claim(
     // 5. qualification_position < current -> LATE_CLAIM with qualification_position included.
     // Accept only when qualification_position == current.
     if qual_pos > current_draw_position {
+        log::error!(
+            "Internal error: qualification position {} > current draw position {}",
+            qual_pos,
+            current_draw_position
+        );
         return ClaimDecision::Reject {
             code: ClaimRejectionCode::NotCompleted,
             qualification_position: None,

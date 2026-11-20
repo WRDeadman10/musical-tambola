@@ -111,9 +111,9 @@
 
 | Task ID | Description | Status | Assignee | Notes |
 |---------|-------------|--------|----------|-------|
-| T5-F01 | Game Controller page & projector screen | IN_PROGRESS | Codex | BT-11 underway |
-| T5-F02 | Preflight media validation panel & wizard | IN_PROGRESS | Codex | Wizard with progress bar |
-| T5-F03 | MediaStage, controls, history strip, fullscreen | IN_PROGRESS | Codex | Space key navigation guard, autoplay |
+| T5-F01 | Game Controller page & projector screen | DONE | Codex | BT-11 accepted & committed (`471ef00`) |
+| T5-F02 | Preflight media validation panel & wizard | DONE | Codex | Wizard with progress bar |
+| T5-F03 | MediaStage, controls, history strip, fullscreen | DONE | Codex | Space key navigation guard, autoplay |
 
 ---
 

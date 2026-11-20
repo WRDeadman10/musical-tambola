@@ -594,7 +594,8 @@ mod tests {
 
         // Fetch ticket 1's corner numbers: row 0 leftmost/rightmost, row 2 leftmost/rightmost
         let ticket_code: String = "T-000001".to_string();
-        let t_dto = TicketRepository::get_ticket(&conn, &ticket_code).unwrap();
+        let t_dto: crate::domain::tambola::TicketDto =
+            TicketRepository::get_ticket(&conn, &ticket_code).unwrap();
         let ticket: Ticket = dto_to_ticket(&t_dto.cells);
 
         let row0: Vec<u8> = ticket.cells[0].iter().filter_map(|&c| c).collect();
@@ -719,18 +720,19 @@ mod tests {
     #[test]
     fn test_eligibility_matrix_and_fresh_game() {
         let mut conn: Connection = setup_test_db();
-        let batch_id: i64 = populate_valid_media_and_batch(&mut conn, 1);
+        let batch_id: i64 = populate_valid_media_and_batch(&mut conn, 2);
         let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(30);
 
-        let t_dto = TicketRepository::get_ticket(&conn, "T-000001").unwrap();
-        let ticket: Ticket = dto_to_ticket(&t_dto.cells);
-        let mut all_ticket_nums: Vec<u8> = Vec::new();
-        for row in &ticket.cells {
-            for n in row.iter().flatten() {
-                all_ticket_nums.push(*n);
-            }
-        }
-        assert_eq!(all_ticket_nums.len(), 15);
+        let t1_dto: crate::domain::tambola::TicketDto =
+            TicketRepository::get_ticket(&conn, "T-000001").unwrap();
+        let t1: Ticket = dto_to_ticket(&t1_dto.cells);
+
+        let t1_top_row: Vec<u8> = t1.cells[0].iter().filter_map(|&c| c).collect();
+        let t1_middle_row: Vec<u8> = t1.cells[1].iter().filter_map(|&c| c).collect();
+        let t1_bottom_row: Vec<u8> = t1.cells[2].iter().filter_map(|&c| c).collect();
+        assert_eq!(t1_top_row.len(), 5);
+        assert_eq!(t1_middle_row.len(), 5);
+        assert_eq!(t1_bottom_row.len(), 5);
 
         let early_five_id: i64 = conn
             .query_row(
@@ -746,6 +748,13 @@ mod tests {
                 |r| r.get(0),
             )
             .unwrap();
+        let bottom_line_id: i64 = conn
+            .query_row(
+                "SELECT id FROM prize_schemes WHERE scheme_type = 'BOTTOM_LINE';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
         let full_house_id: i64 = conn
             .query_row(
                 "SELECT id FROM prize_schemes WHERE scheme_type = 'FULL_HOUSE';",
@@ -754,88 +763,228 @@ mod tests {
             )
             .unwrap();
 
-        // Sequence: priority given to all 15 ticket numbers
+        let assert_claim_db_row =
+            |c: &Connection,
+             claim_id: i64,
+             expected_status: &str,
+             expected_code: Option<&str>,
+             expected_qual_pos: Option<u32>| {
+                let (status, rejection_code, qual_pos): (String, Option<String>, Option<u32>) = c
+                .query_row(
+                    "SELECT status, rejection_code, qualification_position FROM claims WHERE id = ?1;",
+                    params![claim_id],
+                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                )
+                .unwrap();
+                assert_eq!(status, expected_status);
+                assert_eq!(rejection_code.as_deref(), expected_code);
+                assert_eq!(qual_pos, expected_qual_pos);
+            };
+
+        // --- GAME 1: Test Early Five, ONLY_FULL_HOUSE_ELIGIBLE, and Full House on T-000001 ---
         let g1 = GameRepository::create_game(&mut conn, batch_id, &mut rng).unwrap();
         let g1_id: i64 = g1.game.id;
         let g1_first: u8 = g1.current.unwrap().number;
 
-        let seq: Vec<u8> = build_valid_permutation(g1_first, &all_ticket_nums);
+        // Priority sequence: 5 top-row numbers first! Then middle and bottom.
+        let mut g1_priority: Vec<u8> = Vec::new();
+        g1_priority.extend_from_slice(&t1_top_row);
+        g1_priority.extend_from_slice(&t1_middle_row);
+        g1_priority.extend_from_slice(&t1_bottom_row);
+
+        let g1_seq: Vec<u8> = build_valid_permutation(g1_first, &g1_priority);
         conn.execute(
             "UPDATE games SET draw_sequence_json = ?1 WHERE id = ?2;",
-            params![serde_json::to_string(&seq).unwrap(), g1_id],
+            params![serde_json::to_string(&g1_seq).unwrap(), g1_id],
         )
         .unwrap();
 
-        // Find position of 5th ticket number in seq
-        let mut t_nums_drawn: u32 = 0;
+        // Find position where 5th top-row number is drawn (p5) and 15th ticket number (p15)
+        let mut t1_top_drawn: u32 = 0;
+        let mut t1_all_drawn: u32 = 0;
         let mut p5: u32 = 0;
         let mut p15: u32 = 0;
-        for (idx, &num) in seq.iter().enumerate() {
-            if all_ticket_nums.contains(&num) {
-                t_nums_drawn += 1;
-                if t_nums_drawn == 5 {
+        for (idx, &num) in g1_seq.iter().enumerate() {
+            if t1_top_row.contains(&num) {
+                t1_top_drawn += 1;
+                if t1_top_drawn == 5 && p5 == 0 {
                     p5 = (idx + 1) as u32;
                 }
-                if t_nums_drawn == 15 {
+            }
+            if g1_priority.contains(&num) {
+                t1_all_drawn += 1;
+                if t1_all_drawn == 15 {
                     p15 = (idx + 1) as u32;
                     break;
                 }
             }
         }
 
-        // Draw up to p5 (5 ticket numbers drawn)
+        // Draw up to p5 (both Early Five and Top Line qualify at p5!)
         for p in 1..p5 {
             GameRepository::draw_next(&mut conn, g1_id, p).unwrap();
         }
 
-        // 1. First claim: Early Five at p5 -> ACCEPTED
+        // 1. Claim Early Five at p5 -> ACCEPTED
         let res_ef: ClaimResult =
             ClaimRepository::submit_claim(&mut conn, g1_id, early_five_id, "T-000001").unwrap();
         assert_eq!(res_ef.status, "ACCEPTED");
         assert_eq!(res_ef.winner_position, Some(1));
+        assert_eq!(res_ef.qualification_position, Some(p5));
+        assert_claim_db_row(&conn, res_ef.claim_id, "ACCEPTED", None, Some(p5));
 
-        // 2. Claiming same scheme again -> ALREADY_WON_SCHEME
+        // 2. Claiming same scheme again at p5 -> ALREADY_WON_SCHEME
         let res_ef_dup: ClaimResult =
             ClaimRepository::submit_claim(&mut conn, g1_id, early_five_id, "T-000001").unwrap();
         assert_eq!(res_ef_dup.status, "REJECTED");
+        assert_eq!(res_ef_dup.winner_position, None);
         assert_eq!(
             res_ef_dup.rejection_code,
             Some(ClaimRejectionCode::AlreadyWonScheme)
         );
+        assert_claim_db_row(
+            &conn,
+            res_ef_dup.claim_id,
+            "REJECTED",
+            Some("ALREADY_WON_SCHEME"),
+            Some(p5),
+        );
 
-        // 3. Draw remaining numbers up to p15 (all 15 numbers completed at p15)
+        // 3. Claim Top Line at p5 (which also qualifies at p5):
+        // Rejected specifically as ONLY_FULL_HOUSE_ELIGIBLE because ticket already won non-FH!
+        let res_top_p5: ClaimResult =
+            ClaimRepository::submit_claim(&mut conn, g1_id, top_line_id, "T-000001").unwrap();
+        assert_eq!(res_top_p5.status, "REJECTED");
+        assert_eq!(res_top_p5.winner_position, None);
+        assert_eq!(
+            res_top_p5.rejection_code,
+            Some(ClaimRejectionCode::OnlyFullHouseEligible)
+        );
+        assert_eq!(res_top_p5.qualification_position, Some(p5));
+        assert_claim_db_row(
+            &conn,
+            res_top_p5.claim_id,
+            "REJECTED",
+            Some("ONLY_FULL_HOUSE_ELIGIBLE"),
+            Some(p5),
+        );
+
+        // 4. Draw remaining numbers up to p15 (all 15 numbers completed at p15)
         for p in p5..p15 {
             GameRepository::draw_next(&mut conn, g1_id, p).unwrap();
         }
 
-        // Claiming Top Line after winning Early Five -> REJECTED (ONLY_FULL_HOUSE_ELIGIBLE or LATE_CLAIM)
-        let res_top: ClaimResult =
-            ClaimRepository::submit_claim(&mut conn, g1_id, top_line_id, "T-000001").unwrap();
-        assert_eq!(res_top.status, "REJECTED");
-
-        // 4. Claiming Full House at p15 (exact qualification pos) -> ACCEPTED!
+        // Claiming Full House at p15 (exact qualification pos) -> ACCEPTED!
         let res_fh: ClaimResult =
             ClaimRepository::submit_claim(&mut conn, g1_id, full_house_id, "T-000001").unwrap();
         assert_eq!(res_fh.status, "ACCEPTED");
         assert_eq!(res_fh.winner_position, Some(1));
+        assert_eq!(res_fh.qualification_position, Some(p15));
+        assert_claim_db_row(&conn, res_fh.claim_id, "ACCEPTED", None, Some(p15));
 
-        // 5. Subsequent claim after Full House -> ALREADY_WON_SCHEME or ALREADY_WON_FULL_HOUSE
+        // 5. Subsequent claim for Bottom Line after Full House on T-000001 -> ALREADY_WON_FULL_HOUSE
         let res_after_fh: ClaimResult =
-            ClaimRepository::submit_claim(&mut conn, g1_id, full_house_id, "T-000001").unwrap();
+            ClaimRepository::submit_claim(&mut conn, g1_id, bottom_line_id, "T-000001").unwrap();
         assert_eq!(res_after_fh.status, "REJECTED");
+        assert_eq!(res_after_fh.winner_position, None);
         assert_eq!(
             res_after_fh.rejection_code,
-            Some(ClaimRejectionCode::AlreadyWonScheme)
+            Some(ClaimRejectionCode::AlreadyWonFullHouse)
+        );
+        assert_claim_db_row(
+            &conn,
+            res_after_fh.claim_id,
+            "REJECTED",
+            Some("ALREADY_WON_FULL_HOUSE"),
+            Some(p15),
         );
 
-        // End Game 1
+        // End Game 1 before starting Game 3
         GameRepository::end_game(&mut conn, g1_id).unwrap();
+
+        // --- Matrix Row 3 Test on fresh ticket T-000002 (no prior wins): ---
+        // Arrange draws in Game 3 so the last number completes both Full House and Bottom Line at p_fh.
+        // At p_fh, claim Full House (ACCEPTED), then claim Bottom Line at p_fh -> ALREADY_WON_FULL_HOUSE.
+        let t2_dto: crate::domain::tambola::TicketDto =
+            TicketRepository::get_ticket(&conn, "T-000002").unwrap();
+        let t2: Ticket = dto_to_ticket(&t2_dto.cells);
+        let t2_top: Vec<u8> = t2.cells[0].iter().filter_map(|&c| c).collect();
+        let t2_mid: Vec<u8> = t2.cells[1].iter().filter_map(|&c| c).collect();
+        let t2_bot: Vec<u8> = t2.cells[2].iter().filter_map(|&c| c).collect();
+
+        // 14 numbers (top + mid + first 4 of bot), then 15th number is the last bottom row number
+        let last_bot_num: u8 = t2_bot[4];
+        let mut t2_priority: Vec<u8> = Vec::new();
+        t2_priority.extend_from_slice(&t2_top);
+        t2_priority.extend_from_slice(&t2_mid);
+        t2_priority.extend_from_slice(&t2_bot[..4]);
+        t2_priority.push(last_bot_num);
+
+        let g3 = GameRepository::create_game(&mut conn, batch_id, &mut rng).unwrap();
+        let g3_id: i64 = g3.game.id;
+        let g3_first: u8 = g3.current.unwrap().number;
+        let g3_seq: Vec<u8> = build_valid_permutation(g3_first, &t2_priority);
+        conn.execute(
+            "UPDATE games SET draw_sequence_json = ?1 WHERE id = ?2;",
+            params![serde_json::to_string(&g3_seq).unwrap(), g3_id],
+        )
+        .unwrap();
+
+        let mut p_fh: u32 = 0;
+        let mut t2_all_drawn: u32 = 0;
+        for (idx, &num) in g3_seq.iter().enumerate() {
+            if t2_priority.contains(&num) {
+                t2_all_drawn += 1;
+                if t2_all_drawn == 15 {
+                    p_fh = (idx + 1) as u32;
+                    break;
+                }
+            }
+        }
+
+        for p in 1..p_fh {
+            GameRepository::draw_next(&mut conn, g3_id, p).unwrap();
+        }
+
+        // T-000002 has 0 prior wins. At p_fh, completes both Full House and Bottom Line.
+        // First claim Full House -> ACCEPTED
+        let res_t2_fh: ClaimResult =
+            ClaimRepository::submit_claim(&mut conn, g3_id, full_house_id, "T-000002").unwrap();
+        assert_eq!(res_t2_fh.status, "ACCEPTED");
+        assert_eq!(res_t2_fh.winner_position, Some(1));
+        assert_eq!(res_t2_fh.qualification_position, Some(p_fh));
+        assert_claim_db_row(&conn, res_t2_fh.claim_id, "ACCEPTED", None, Some(p_fh));
+
+        // Immediately claim Bottom Line at p_fh -> REJECTED with ALREADY_WON_FULL_HOUSE
+        let res_t2_bl: ClaimResult =
+            ClaimRepository::submit_claim(&mut conn, g3_id, bottom_line_id, "T-000002").unwrap();
+        assert_eq!(res_t2_bl.status, "REJECTED");
+        assert_eq!(res_t2_bl.winner_position, None);
+        assert_eq!(
+            res_t2_bl.rejection_code,
+            Some(ClaimRejectionCode::AlreadyWonFullHouse)
+        );
+        assert_eq!(res_t2_bl.qualification_position, Some(p_fh));
+        assert_claim_db_row(
+            &conn,
+            res_t2_bl.claim_id,
+            "REJECTED",
+            Some("ALREADY_WON_FULL_HOUSE"),
+            Some(p_fh),
+        );
+
+        // End Game 3
+        GameRepository::end_game(&mut conn, g3_id).unwrap();
 
         // 6. Fresh Game 2 with same batch: ticket 1 has fresh eligibility!
         let g2 = GameRepository::create_game(&mut conn, batch_id, &mut rng).unwrap();
         let g2_id: i64 = g2.game.id;
         let g2_first: u8 = g2.current.unwrap().number;
-        let g2_seq: Vec<u8> = build_valid_permutation(g2_first, &all_ticket_nums);
+        let mut all_t1_nums: Vec<u8> = Vec::new();
+        all_t1_nums.extend_from_slice(&t1_top_row);
+        all_t1_nums.extend_from_slice(&t1_middle_row);
+        all_t1_nums.extend_from_slice(&t1_bottom_row);
+        let g2_seq: Vec<u8> = build_valid_permutation(g2_first, &all_t1_nums);
         conn.execute(
             "UPDATE games SET draw_sequence_json = ?1 WHERE id = ?2;",
             params![serde_json::to_string(&g2_seq).unwrap(), g2_id],
@@ -845,7 +994,7 @@ mod tests {
         let mut g2_t_drawn: u32 = 0;
         let mut g2_p5: u32 = 0;
         for (idx, &num) in g2_seq.iter().enumerate() {
-            if all_ticket_nums.contains(&num) {
+            if all_t1_nums.contains(&num) {
                 g2_t_drawn += 1;
                 if g2_t_drawn == 5 {
                     g2_p5 = (idx + 1) as u32;
@@ -863,6 +1012,7 @@ mod tests {
             ClaimRepository::submit_claim(&mut conn, g2_id, early_five_id, "T-000001").unwrap();
         assert_eq!(res_g2_ef.status, "ACCEPTED");
         assert_eq!(res_g2_ef.winner_position, Some(1));
+        assert_claim_db_row(&conn, res_g2_ef.claim_id, "ACCEPTED", None, Some(g2_p5));
 
         // Game 1 winners are still preserved
         let g1_winners_count: i64 = conn
