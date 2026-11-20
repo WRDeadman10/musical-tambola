@@ -1,8 +1,15 @@
 pub mod commands;
 pub mod db;
+pub mod domain;
+pub mod services;
 
 use commands::app_info::{get_app_info, set_app_setting};
+use commands::media::{
+    clear_media, get_media, list_media, pick_media_file, save_media, validate_all_media,
+    validate_media,
+};
 use db::connection::{get_app_data_dir, initialize_database, DbState};
+use services::media_protocol::handle_media_protocol;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::Manager;
@@ -20,6 +27,9 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_dialog::init())
+        .register_uri_scheme_protocol("media", |ctx, req| {
+            handle_media_protocol(ctx.app_handle(), req)
+        })
         .setup(|app| {
             let app_handle = app.handle();
             let data_dir: PathBuf = get_app_data_dir(app_handle)?;
@@ -34,7 +44,17 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_app_info, set_app_setting,])
+        .invoke_handler(tauri::generate_handler![
+            get_app_info,
+            set_app_setting,
+            list_media,
+            get_media,
+            save_media,
+            clear_media,
+            validate_media,
+            validate_all_media,
+            pick_media_file,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");
 }

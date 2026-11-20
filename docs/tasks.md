@@ -27,18 +27,18 @@
 | Task ID | Description | Status | Assignee | Notes |
 |---------|-------------|--------|----------|-------|
 | T2-B01 | Carry-over fixes (settings allowlist, OFL copyright) | DONE | AG (A) | Commit 50a54e9 |
-| T2-B02 | Media Repository (`src-tauri/src/db/repositories/media.rs`) | IN_PROGRESS | AG (A) | 90-slot CRUD, upsert, clear, list 90 slots, get by number |
-| T2-B03 | Validation Engine (`services/media_validation.rs`) | PENDING | AG (A) | Local magic byte sniff, remote reqwest Range GET / HEAD |
-| T2-B04 | Custom Media Protocol (`services/media_protocol.rs`) | PENDING | AG (A) | `media://localhost/<number>` streaming with HTTP Range |
-| T2-B05 | Tauri Commands Registration | PENDING | AG (A) | list_media, get_media, save_media, clear_media, validate_media, validate_all_media, pick_media_file |
-| T2-B06 | Backend Unit & Integration Tests | PENDING | AG (A) | Magic bytes, local/remote validation, repository tests |
+| T2-B02 | Media Repository (`src-tauri/src/db/repositories/media.rs`) | DONE | AG (A) | 90-slot CRUD, upsert, clear, list 90 slots, get by number |
+| T2-B03 | Validation Engine (`services/media_validation.rs`) | DONE | AG (A) | Local magic byte sniff, remote reqwest Range GET / HEAD |
+| T2-B04 | Custom Media Protocol (`services/media_protocol.rs`) | DONE | AG (A) | `media://localhost/<number>` streaming with HTTP Range |
+| T2-B05 | Tauri Commands Registration | DONE | AG (A) | list_media, get_media, save_media, clear_media, validate_media, validate_all_media, pick_media_file |
+| T2-B06 | Backend Unit & Integration Tests | DONE | AG (A) | 11/11 tests pass (magic bytes, local/remote validation, repository tests) |
 
 ### Track 2: Frontend (Assignee: Codex — Implementer #2)
 
 | Task ID | Description | Status | Assignee | Notes |
 |---------|-------------|--------|----------|-------|
-| T2-F01 | Media Library 90-row table & filters | PENDING | Codex | src/features/media-library/** |
-| T2-F02 | Add/Edit Media Dialog (RHF + Zod) | PENDING | Codex | File browse via IPC pick_media_file |
-| T2-F03 | Media Preview Dialog & Thumbnails | PENDING | Codex | Image & video playback |
-| T2-F04 | Validation Report Panel & Progress Event | PENDING | Codex | Listen to media-validation-progress |
-| T2-F05 | Frontend Vitest Suite | PENDING | Codex | API wrapper, filters, validation |
+| T2-F01 | Media Library 90-row table & filters | DONE | Codex | Implemented in `src/features/media-library/**` |
+| T2-F02 | Add/Edit Media Dialog (RHF + Zod) | DONE | Codex | Implemented in `MediaEditDialog.tsx` |
+| T2-F03 | Media Preview Dialog & Thumbnails | DONE | Codex | Implemented in `MediaPreviewDialog.tsx` |
+| T2-F04 | Validation Report Panel & Progress Event | DONE | Codex | Implemented in `MediaValidationReportModal.tsx` |
+| T2-F05 | Frontend Vitest Suite | DONE | Codex | 11/11 Vitest tests pass across 5 test suites |

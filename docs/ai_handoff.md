@@ -17,9 +17,24 @@
   - Enforced exact spec keys in `AppSettingKey` (language, theme, default_video_volume, video_autoplay, show_internal_numbers).
   - Prepended Noto Project copyright header in `src/assets/fonts/OFL.txt`.
 
-## Phase 2 Backend Plan (AG Track)
-1. Media Repository: `src-tauri/src/db/repositories/media.rs` (CRUD for 90 slots).
-2. Media Validation Service: `src-tauri/src/services/media_validation.rs` (local magic-byte sniffing, reqwest Range GET / HEAD with timeouts).
-3. Custom URI Protocol: `src-tauri/src/services/media_protocol.rs` (`media://localhost/<number>` with Range request streaming).
-4. Tauri Commands: `list_media`, `get_media`, `save_media`, `clear_media`, `validate_media`, `validate_all_media`, `pick_media_file`.
-5. Cargo test suite for validation and repository.
+## Phase 2 Implementation Status (Ready for Review)
+
+### Track 1: Backend / Rust (AG) - COMPLETED
+- `src-tauri/src/domain/media.rs`: MediaSlot, SaveMediaInput, MediaValidationReport DTOs with camelCase Serde.
+- `src-tauri/src/db/repositories/media.rs`: Full 90-slot CRUD, upsert with automatic status reset to NOT_TESTED, clear.
+- `src-tauri/src/services/media_validation.rs`: Local magic-byte sniffer (JPEG, PNG, GIF, WebP, MP4, WebM) and remote HTTP validator (Range GET bytes=0-4095 fallback to HEAD, HTML rejection, timeout).
+- `src-tauri/src/services/media_protocol.rs`: Custom `media://localhost/<number>` and `/<number>/thumb` URI scheme handler with MIME detection and HTTP 206 Range streaming.
+- `src-tauri/src/commands/media.rs`: Commands `list_media`, `get_media`, `save_media`, `clear_media`, `validate_media`, `validate_all_media` (4-worker concurrency emitting `media-validation-progress`), `pick_media_file`.
+- All 11 Cargo unit tests passing. Clippy and fmt clean.
+
+### Track 2: Frontend (Codex) - COMPLETED
+- `src/features/media-library/**`: 90-slot Media Library table, search, and 7 status/source/type filters.
+- `MediaEditDialog.tsx`: RHF + Zod dialog for local path picker or remote URL with direct-media hints.
+- `MediaPreviewDialog.tsx`: Modal image/video preview with playback controls.
+- `MediaValidationReportModal.tsx`: Report dialog with progress bar and issue click-to-row highlighting.
+- `src/locales/en.json` & `src/locales/gu.json`: Full English/Gujarati media localization.
+- 11 Vitest tests passing across 5 suites.
+
+## Next Recommended Task
+- Await Claude's Phase 2 review and acceptance.
+- Move to Phase 3: Ticket Generator & Batches.

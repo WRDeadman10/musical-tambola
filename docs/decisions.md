@@ -52,3 +52,32 @@ Implement a custom Tauri URI protocol (`media://<number>` or `media://asset/<id>
   - Enables centralized media streaming, caching, and placeholder fallback in Rust.
 - **Cons**:
   - Protocol handler must correctly handle streaming and Range requests for video playback.
+
+---
+
+## ADR-004: Two-Tier Media Validation Strategy and Concurrency
+
+### Context
+Tambola media assets consist of local file paths and remote URLs. Remote links may be slow, return full payloads without Range headers, point to HTML landing pages, or fail HEAD requests. Local files may have spoofed extensions or corrupt headers.
+
+### Decision
+Implement a two-tier validation pipeline in Rust (`src-tauri/src/services/media_validation.rs`):
+1. **Local Media**:
+   - Verify absolute file existence and readability.
+   - Enforce extension allowlist (`jpg`, `jpeg`, `png`, `webp`, `gif`, `mp4`, `webm`).
+   - Read initial bytes and sniff magic headers (JPEG `FFD8FF`, PNG `89504E47`, GIF `47494638`, WebP `52494646...57454250`, MP4 `ftyp` box at offset 4, WebM `1A45DFA3`). Flag mismatches between declared type (`IMAGE`/`VIDEO`) and sniffed format.
+2. **Remote Media**:
+   - Execute HTTP GET with `Range: bytes=0-4095` (10s timeout, max 5 redirects) to inspect headers and initial bytes without downloading the entire resource.
+   - If server rejects Range with 405/501 or network-level error, fall back to `HEAD`.
+   - Reject `text/html` responses immediately.
+   - Validate `Content-Type` against declared `IMAGE` / `VIDEO` requirements.
+3. **Concurrency & Progress**:
+   - `validate_all_media` runs over all 90 slots bounded by a 4-worker semaphore, emitting `media-validation-progress` events to prevent freezing UI.
+
+### Consequences
+- **Pros**:
+  - Eliminates UI stalls and minimizes bandwidth usage during batch validation.
+  - Catches broken, corrupt, or spoofed assets before games begin.
+  - Safe against remote servers that reject HEAD or Range requests.
+- **Cons**:
+  - Transient remote network failures require retry ("Validate again").
