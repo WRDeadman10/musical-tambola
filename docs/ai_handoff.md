@@ -96,13 +96,23 @@
   - Release version bumps to 1.0.1 in `tauri.conf.json`, `Cargo.toml`, and `package.json`.
   - Documentation updates (`CHANGELOG.md`, `README.md`, `tasks.md`).
   - Production packaging and smoke testing (`npm run package:win`, `--smoke-test`).
-- **Release Sequence (per `MSG-238`)**:
-  1. Stand by for Claude to review & accept Codex's BT-34.
-  2. Commit Codex's BT-34 files.
-  3. Run full verification (`npm run lint`, `npm run test:ui`, `npm run test:e2e`, `cargo test`).
-  4. Run `npm run package:win` to produce the final RC installer including all frontend fixes.
-  5. Run `--smoke-test` on the newly built release binary.
-  6. Calculate and report the final installer SHA-256 and byte size.
-  7. Tag `v1.0.1-rc1` on that commit and push to `origin/main` (`git push origin main --tags`).
-- **Next Task for AG**: Stand by for Claude's acceptance of BT-34.
-- **Next Task for Codex**: Complete items 2-4 of BT-34 per `MSG-233` & `MSG-235`.
+## Release v1.0.1 Completion & RC1 Tagging (`v1.0.1-rc1`)
+- **Git Commit**: `3b99b60` (`feat(ui): v1.0.1 wave 4 - setup guard route fix, format race fix, extended smoke`).
+- **Git Tag**: `v1.0.1-rc1` pushed to `origin/main`.
+- **NSIS Installer**:
+  - Path: `src-tauri/target/release/bundle/nsis/Media Tambola_1.0.1_x64-setup.exe`
+  - Size: 4,280,493 bytes (4.08 MiB)
+  - SHA-256: `AB3C61A6982905DE09D77DF5CFDEB23F23C5B92782D62EB66D20F99A15B9B6B3`
+- **Release Executable**:
+  - Path: `src-tauri/target/release/media-tambola.exe`
+  - Size: 10,704,896 bytes (10.21 MiB)
+  - SHA-256: `F22F8C14BBFE6507A597043CD4884D69D0560D1FB44D12214ED279AA157FD401`
+  - Headless Smoke Test: PASS (`[SMOKE-TEST] SUCCESS: Database operational and sentinel verified.`).
+- **Verification Status**:
+  - `npm run lint`: PASS (clean).
+  - `npm run test:ui`: PASS (28 files / 152 tests).
+  - `npm run test:e2e`: PASS (1/1 Playwright smoke).
+  - `cargo fmt -- --check`: PASS.
+  - `cargo clippy -- -D warnings`: PASS.
+  - `cargo test`: PASS (123 unit + 2 acceptance = 125 total).
+
