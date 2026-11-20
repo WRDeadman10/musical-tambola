@@ -68,3 +68,26 @@
 | T3-F03 | Ticket Batches page & pagination | DONE | Codex | `src/features/ticket-batches/TicketBatchesPage.tsx` |
 | T3-F04 | Reusable `TicketGrid` component | DONE | Codex | `src/components/ticket/TicketGrid.tsx` |
 | T3-F05 | Ticket API wrappers & Vitest suite | DONE | Codex | 18/18 Vitest tests pass across 8 test suites |
+
+---
+
+## Phase 4: Winning Schemes
+
+### Track 1: Backend / Rust (Assignee: AG — Implementer #1 & Git Owner)
+
+| Task ID | Description | Status | Assignee | Notes |
+|---------|-------------|--------|----------|-------|
+| T4-B01 | Migration 0002 (`prize_schemes` description, updated_at, nocase index) | DONE | AG (A) | `0002_schemes_update.sql`, constant default compatible with SQLite ALTER TABLE |
+| T4-B02 | SchemeType enum, Evaluator trait, Pure evaluators | DONE | AG (A) | `domain/schemes/mod.rs`: EARLY_FIVE, FOUR_CORNERS, TOP/MIDDLE/BOTTOM_LINE, FULL_HOUSE |
+| T4-B03 | SchemeRegistry & DTOs | DONE | AG (A) | Registration, canonical rule descriptions, PrizeScheme, SaveSchemeInput, SchemeTypeInfo |
+| T4-B04 | Scheme repository with validation & name uniqueness | DONE | AG (A) | `db/repositories/scheme.rs`: list, get_by_id, save, set_active (case-insensitive name check) |
+| T4-B05 | Scheme Tauri commands & lib.rs registration | DONE | AG (A) | `commands/scheme.rs`: list_schemes, save_scheme, set_scheme_active, list_scheme_types |
+| T4-B06 | Comprehensive Cargo test suite | DONE | AG (A) | 28/28 tests pass (evaluators, chronological draw order, Four Corners 12/63/55 spec case, Early Five 4 vs 7, repository) |
+
+### Track 2: Frontend (Assignee: Codex — Implementer #2)
+
+| Task ID | Description | Status | Assignee | Notes |
+|---------|-------------|--------|----------|-------|
+| T4-F01 | Winning Schemes UI page & table | IN_PROGRESS | Codex | BT-9 underway |
+| T4-F02 | Add/Edit Scheme Dialog with RHF + Zod | IN_PROGRESS | Codex | Validation bounds, rule description |
+| T4-F03 | Schemes API wrapper & Vitest suite | IN_PROGRESS | Codex | Tests for toggle, save, errors |

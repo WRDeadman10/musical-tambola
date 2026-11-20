@@ -1,6 +1,6 @@
 # AI Handoff & Session State — Media Tambola
 
-## Current Phase: Phase 3 — Ticket Generator & Batches
+## Current Phase: Phase 4 — Winning Schemes
 - **Date**: 2026-11-20
 - **Lead / Reviewer**: Claude (C)
 - **Implementer #1 (Backend / Rust & Git Owner)**: Antigravity (AG / A)
@@ -11,44 +11,47 @@
 - **Codex owns**: `src/features/**`, `src/components/**`, `src/lib/api/**`, `src/types/**`, `src/test/**`, locales, and navigation.
 - When Codex completes frontend work, AG commits Codex's files in dedicated commits prefixed `feat(ui): ...` with body `Implemented by Codex`.
 
-## Phase 1 & 2 Status
-- **ACCEPTED** by Claude.
-- Carry-over protocol fix landed in commit `398013d` (`RangeSpec::Empty` for 0-byte files).
+## Phase 1, 2, 3 Status
+- Phase 1 & 2: **ACCEPTED** by Claude.
+- Phase 3 Backend (BT-6): **ACCEPTED** by Claude (MSG-034).
+- Phase 3 Frontend (BT-7): Fixes submitted by Codex (MSG-036) awaiting Claude's ACCEPTED before commit.
 
-## Phase 3 Implementation Status (Ready for Review)
+## Phase 4 Implementation Status
 
-### Track 1: Backend / Rust (AG) - COMPLETED
-- `src-tauri/Cargo.toml`: Re-added `rand = "0.8"` and `sha2 = "0.10"`.
-- `src-tauri/src/domain/random.rs`: Defined `RandomSource` trait (`fn next_index(&mut self, upper: usize) -> usize`) with `OsRngSource`, `DeterministicRandomSource` (for tests), and `ConstantRandomSource` (for collision testing).
-- `src-tauri/src/domain/tambola/ticket_generator.rs`:
-  - Constrained layout generation via randomized backtracking over column counts and row combinations. Eliminates layout bias (guarantees positive probability for singletons in row 2 and all valid column counts). Removed static fallback layout.
-  - Strict `validate_ticket` function verifying all 8 Tambola invariants.
-  - `canonical_layout` formatting and SHA-256 `layout_hash`.
-- `src-tauri/src/db/repositories/ticket.rs`:
-  - `generate_batch`: executes within a single SQLite transaction with monotonic ticket codes (`T-000001` format) persisted in `app_settings`. Propagates sequence and batch ID errors explicitly.
-  - Collision retry budget (50 per ticket, 10x overall) with complete rollback on exhaustion.
-  - Paginated ticket retrieval (`list_batch_tickets`), single ticket lookup (`get_ticket`), prefix search (`search_tickets`).
-  - Deletion guard (`delete_batch`): prevents deletion if tickets are referenced in `game_tickets`, `claims`, or `winners`.
-- `src-tauri/src/commands/ticket.rs`:
-  - Asynchronous `generate_ticket_batch` via `spawn_blocking` emitting `ticket-generation-progress` {done, total} events.
-  - Commands `list_ticket_batches`, `list_batch_tickets`, `get_ticket`, `search_tickets`, `delete_ticket_batch`.
-- Tests: 21/21 Cargo tests passing:
-  - 10,000 ticket generation validation without a single invariant failure.
-  - 20,000 sample statistical distribution test verifying all column counts 1..=3 and singleton row 2 cells appear in every column.
-  - Deterministic reproducibility with seeded RNG.
-  - Exhausted retry budget transaction rollback.
-  - Monotonic ticket code continuation across batches.
-  - Deletion guard integrity.
-- Clippy clean across all targets (`-D warnings`).
+### Track 1: Backend / Rust (AG) - COMPLETED (BT-8)
+- `src-tauri/migrations/0002_schemes_update.sql`:
+  - Added `description` (TEXT DEFAULT '') and `updated_at` (DATETIME DEFAULT '') to `prize_schemes`.
+  - Backfilled `updated_at = created_at` to avoid SQLite's non-constant default restriction on `ALTER TABLE ADD COLUMN`.
+  - Created case-insensitive unique index `idx_prize_schemes_name_nocase` on `prize_schemes(name COLLATE NOCASE)`.
+- `src-tauri/src/db/migrations.rs`:
+  - Registered migration 2 in `MIGRATIONS` array and updated migration tests to assert version 2.
+- `src-tauri/src/domain/schemes/mod.rs`:
+  - `SchemeType` enum (EARLY_FIVE, FOUR_CORNERS, TOP_LINE, MIDDLE_LINE, BOTTOM_LINE, FULL_HOUSE) with serde `SCREAMING_SNAKE_CASE`.
+  - `QualificationResult { is_qualified: bool, qualification_position: Option<u32> }`.
+  - Pure `SchemeEvaluator` trait without DB dependencies.
+  - `LineEvaluator` (Top, Middle, Bottom: max of 5 row numbers).
+  - `FullHouseEvaluator` (max of 15 ticket numbers).
+  - `FourCornersEvaluator` (isolated convention: leftmost/rightmost cells of Row 0 and Row 2; max call position).
+  - `EarlyFiveEvaluator` (sorts ticket's called numbers' draw positions ascending; takes 5th smallest).
+  - Chronological draw order invariant: number magnitudes are never compared.
+  - `SchemeRegistry` mapping `SchemeType` to pure evaluators; `is_full_house(SchemeType) -> bool`.
+  - DTOs: `PrizeScheme`, `SaveSchemeInput`, `SchemeTypeInfo`.
+- `src-tauri/src/db/repositories/scheme.rs`:
+  - `list`, `get_by_id`, `save` (create or update with validation: name 1–100, desc ≤ 500, max_winners 1–100, case-insensitive duplicate check), `set_active` (soft deactivate, no hard delete).
+- `src-tauri/src/commands/scheme.rs`:
+  - `list_schemes`, `save_scheme`, `set_scheme_active`, `list_scheme_types`.
+- `src-tauri/src/lib.rs`:
+  - Registered scheme commands in `invoke_handler!`.
+- Tests: 28/28 Cargo tests passing (all targets clean, 0 warnings, clippy clean):
+  - Mandatory spec scenario: draws [12, 63, 55], corners completed by 63 has position == 2.
+  - Early five with 4 called (not qualified) vs 7 called (5th position).
+  - Partial vs complete lines and full house.
+  - Repository validation, duplicate name rejection, active toggling.
 
-### Track 2: Frontend (Codex) - COMPLETED (BT-7)
-- `src/features/media-library/`: Extracted `MediaModal.tsx`, `MediaPreviewDialog.tsx`, and `RemoveMediaDialog.tsx`.
-- `src/features/ticket-generator/TicketGeneratorPage.tsx`: Batch generation modal with RHF + Zod bounds (1–10,000) and real-time progress bar listening to `ticket-generation-progress`.
-- `src/features/ticket-batches/TicketBatchesPage.tsx`: Batch listing, paginated (24/page) ticket preview, ticket lookup search, and AlertDialog delete confirmation with error surfacing.
-- `src/components/ticket/TicketGrid.tsx`: Reusable 3x9 grid rendering media thumbnails (image → poster → placeholder), Gujarati titles, and optional internal numbers.
-- `src/lib/api/tickets.ts` & `src/types/ticket.ts`: Typed IPC client wrappers and data models.
-- Tests: 18/18 Vitest tests passing across 8 test suites.
+### Track 2: Frontend (Codex) - IN PROGRESS (BT-9)
+- Codex building Winning Schemes UI against the Phase 4 contract (MSG-035).
 
 ## Next Recommended Task
-- Await Claude's Phase 3 review and acceptance.
-- Move to Phase 4: Winning Schemes Engine.
+- Move BT-8 to review on the board.
+- Send REVIEW to Claude via MailSocket.
+- Await Codex completion of BT-7/BT-9 and Claude's review.

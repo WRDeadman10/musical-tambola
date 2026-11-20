@@ -125,3 +125,35 @@ Tambola tickets require a valid 3x9 grid (15 numbers, 5 per row, 1–3 per colum
   - Atomic generation: no partial batches or corrupted sequences.
 - **Cons**:
   - Media protocol requests are blocked during large batch generation (acceptable for V1 offline desktop usage).
+
+---
+
+## ADR-007: Stateless Winning Scheme Evaluators and Qualification Logic
+
+### Context
+Phase 4 introduces customizable winning schemes (Early Five, Four Corners, Top Line, Middle Line, Bottom Line, Full House) with maximum winner quotas, active flags, and qualification rules. Claim validation requires calculating the exact chronological draw position at which a ticket qualified to strictly enforce the "no late claims" rule.
+
+### Decision
+1. **Stateless, Pure Evaluators**:
+   - Evaluator implementations (`LineEvaluator`, `FullHouseEvaluator`, `FourCornersEvaluator`, `EarlyFiveEvaluator`) implement a common `SchemeEvaluator` trait without any database dependencies or side effects.
+   - Dynamic code evaluation (`eval` or script interpreters) is strictly prohibited.
+2. **Four Corners Convention**:
+   - Isolated explicitly in `FourCornersEvaluator`: defined as the leftmost (index 0) and rightmost (index 4) occupied cells of Row 0 and Row 2.
+3. **Early Five Qualification Position**:
+   - Gathers all ticket numbers present in `call_position_by_number`. If count < 5, ticket is not qualified (`None`). If count $\ge 5$, draw positions are sorted ascending and the 5th smallest ($P_4$) is authoritative.
+4. **Lines and Full House Position**:
+   - Qualification position is the maximum call position among required numbers:
+     $$\max_{n \in \text{required}} (\text{call\_position}[n])$$
+5. **Full House Identification**:
+   - Authoritatively identified via `SchemeType::FullHouse` enum check, never by matching user-editable string names.
+6. **Database Migration 0002**:
+   - Added `description` and `updated_at` to `prize_schemes` and created a case-insensitive unique index `idx_prize_schemes_name_nocase` on `prize_schemes(name COLLATE NOCASE)`.
+   - `updated_at` added with constant default `DEFAULT ''` and backfilled from `created_at` to comply with SQLite's non-constant default restrictions on `ALTER TABLE ADD COLUMN`.
+
+### Consequences
+- **Pros**:
+  - Highly testable, zero side-effect qualification engine.
+  - Chronological draw order invariant guaranteed (number magnitudes never compared).
+  - Schema immutability preserved via versioned migration `0002_schemes_update.sql`.
+- **Cons**:
+  - New scheme types require extending the Rust `SchemeType` enum and registry.

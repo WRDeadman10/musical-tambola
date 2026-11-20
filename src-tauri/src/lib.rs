@@ -8,6 +8,7 @@ use commands::media::{
     clear_media, get_media, list_media, pick_media_file, save_media, validate_all_media,
     validate_media,
 };
+use commands::scheme::{list_scheme_types, list_schemes, save_scheme, set_scheme_active};
 use commands::ticket::{
     delete_ticket_batch, generate_ticket_batch, get_ticket, list_batch_tickets,
     list_ticket_batches, search_tickets,
@@ -64,6 +65,10 @@ pub fn run() {
             get_ticket,
             search_tickets,
             delete_ticket_batch,
+            list_schemes,
+            save_scheme,
+            set_scheme_active,
+            list_scheme_types,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");

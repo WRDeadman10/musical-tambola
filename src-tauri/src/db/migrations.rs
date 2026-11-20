@@ -1,10 +1,17 @@
 use rusqlite::{params, Connection, Transaction};
 
-const MIGRATIONS: &[(i32, &str, &str)] = &[(
-    1,
-    "0001_init",
-    include_str!("../../migrations/0001_init.sql"),
-)];
+const MIGRATIONS: &[(i32, &str, &str)] = &[
+    (
+        1,
+        "0001_init",
+        include_str!("../../migrations/0001_init.sql"),
+    ),
+    (
+        2,
+        "0002_schemes_update",
+        include_str!("../../migrations/0002_schemes_update.sql"),
+    ),
+];
 
 pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
     conn.execute_batch(
@@ -73,7 +80,7 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let applied_version: i32 = run_migrations(&conn).expect("Migrations failed");
-        assert_eq!(applied_version, 1);
+        assert_eq!(applied_version, 2);
 
         let tables = [
             "app_settings",
@@ -112,10 +119,10 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let v1: i32 = run_migrations(&conn).expect("First migration run failed");
-        assert_eq!(v1, 1);
+        assert_eq!(v1, 2);
 
         let v2: i32 = run_migrations(&conn).expect("Second migration run failed");
-        assert_eq!(v2, 1);
+        assert_eq!(v2, 2);
     }
 
     #[test]

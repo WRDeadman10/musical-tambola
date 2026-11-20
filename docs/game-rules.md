@@ -29,14 +29,45 @@ A standard 90-ball Tambola ticket conforms to the following strict mathematical 
   - Every column count 1, 2, and 3 occurs for every column ($> 0$).
   - For every column, the singleton case ($count = 1$) located in Row 2 occurs ($> 0$).
 
-## 2. Winning Schemes
-Media Tambola provides 6 standard data-driven schemes:
-1. **EARLY_FIVE**: Any 5 numbers on the ticket are struck/called.
-2. **FOUR_CORNERS**: The leftmost and rightmost occupied cells of the top row (Row 0) and bottom row (Row 2).
-3. **TOP_LINE**: All 5 numbers in Row 0 are struck.
-4. **MIDDLE_LINE**: All 5 numbers in Row 1 are struck.
-5. **BOTTOM_LINE**: All 5 numbers in Row 2 are struck.
-6. **FULL_HOUSE**: All 15 numbers on the ticket are struck.
+## 2. Winning Schemes Architecture & Rules
+Media Tambola provides 6 standard data-driven schemes implemented via pure, stateless evaluators (`SchemeEvaluator` trait in `src-tauri/src/domain/schemes/mod.rs`):
+
+### 2.1 Scheme Types and Position Formulas
+1. **EARLY_FIVE**:
+   - **Condition**: Any 5 numbers on the ticket have been called.
+   - **Position Formula**: All called numbers on the ticket are gathered with their draw positions in `call_position_by_number`. If fewer than 5 have been called, the ticket is not qualified. When 5 or more are called, their positions are sorted in ascending order; the 5th smallest position is the qualification position ($P_4$ in 0-indexed order).
+   - **Full House Flag**: `false`.
+
+2. **FOUR_CORNERS**:
+   - **Condition**: The leftmost and rightmost occupied cells of Row 0 (top line) and Row 2 (bottom line).
+   - **Convention**: In standard 90-ball Tambola tickets with 3 rows of 5 numbers across 9 columns, "corners" are defined as the first and fifth numbers in Row 0 (the leftmost and rightmost occupied cells of the top line) and the first and fifth numbers in Row 2 (the leftmost and rightmost occupied cells of the bottom line). This convention is isolated within `FourCornersEvaluator`.
+   - **Position Formula**: The maximum call position of these 4 corner numbers:
+     $$\text{position} = \max_{n \in \text{corners}} (\text{call\_position}[n])$$
+   - **Full House Flag**: `false`.
+
+3. **TOP_LINE**:
+   - **Condition**: All 5 numbers located in Row 0 have been called.
+   - **Position Formula**: $\text{position} = \max_{n \in \text{row}_0} (\text{call\_position}[n])$.
+   - **Full House Flag**: `false`.
+
+4. **MIDDLE_LINE**:
+   - **Condition**: All 5 numbers located in Row 1 have been called.
+   - **Position Formula**: $\text{position} = \max_{n \in \text{row}_1} (\text{call\_position}[n])$.
+   - **Full House Flag**: `false`.
+
+5. **BOTTOM_LINE**:
+   - **Condition**: All 5 numbers located in Row 2 have been called.
+   - **Position Formula**: $\text{position} = \max_{n \in \text{row}_2} (\text{call\_position}[n])$.
+   - **Full House Flag**: `false`.
+
+6. **FULL_HOUSE**:
+   - **Condition**: All 15 numbers across the entire ticket have been called.
+   - **Position Formula**: $\text{position} = \max_{n \in \text{all\_15\_numbers}} (\text{call\_position}[n])$.
+   - **Full House Flag**: `true` (authoritatively determined by `scheme_type == SchemeType::FullHouse`, never by string name).
+
+### 2.2 Chronological Draw Order Invariant
+- Under no circumstances are number magnitudes compared or evaluated for qualification order.
+- The 1-based chronological draw sequence recorded in `call_position_by_number` is authoritative. For instance, if corners are [12, 63, 55, 90] and numbers are called in order [12, 55, 90, 63], the qualification position is the call position of 63, regardless of the numerical values.
 
 ## 3. Claim Evaluation & Late Claim Rule
 Qualification and validation are evaluated authoritatively by the Rust backend.
