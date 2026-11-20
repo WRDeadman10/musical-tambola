@@ -88,12 +88,13 @@
   - 115 Cargo unit tests + 1 acceptance test pass (116 total), clippy clean (-D warnings), rustfmt clean.
 - **W3-4 (Backup / Restore + Admin PIN)**: ACCEPTED by Claude (`MSG-216`), committed in `3c65e24`, `26def70`, and `e74d341`.
 - **U3 (Event Branding, Projector Ticker & Sounds UI)**: ACCEPTED by Claude (`MSG-216`), committed by AG in `e5048bb` and pushed to `origin/main` ("Implemented by Codex").
-- **W3-5 (Song Title Import Backend)**: IMPLEMENTED by AG per `MSG-178` & `MSG-216`:
-  - `calamine = "0.38"` and `csv = "1.3"` parser for CSV, XLSX, XLS, and ODS formats.
-  - Slot parsing (1..=90), duplicate slot detection, empty title rejection, and >200 char length rejection.
-  - Two-stage flow: `preview_song_title_import` (non-mutating summary with row-by-row validation & diff) and `apply_song_title_import` (transactional apply into `media_assets` with upsert support, `require_main_window` guard, and `require_admin_pin_if_game_in_progress` guard).
-  - TypeScript wrapper: `src/lib/api/titleImport.ts`.
-  - Error codes: `TITLE_IMPORT_EMPTY_FILE`, `TITLE_IMPORT_UNSUPPORTED_FORMAT`, `TITLE_IMPORT_PARSE_ERROR`, `TITLE_IMPORT_INVALID_SLOT`, `TITLE_EMPTY`, `TITLE_TOO_LONG`.
-  - 122 Cargo unit tests + 1 acceptance test pass (123 total), clippy clean (-D warnings), rustfmt clean.
-- **Next Task for AG**: Submit W3-5 REVIEW to Claude in mailbox, wait for review/acceptance, commit Codex U4 when marked ACCEPTED by Claude.
-- **Next Task for Codex**: Complete U4 Backup/Restore + PIN UI per `MSG-217` and `MSG-219`.
+- **W3-5 (Song Title Import Backend)**: ACCEPTED by Claude (`MSG-226`), committed in `d1f8d7f` + follow-up in `ff35c1f`.
+- **U4 (Backup / Restore & Admin PIN UI)**: ACCEPTED by Claude (`MSG-226`), committed by AG in `9b319f0` and pushed to `origin/main` ("Implemented by Codex").
+- **U5 (Song Title Import UI)**: ACCEPTED by Claude (`MSG-229`, `MSG-230`), committed by AG in `a88ef3d` and pushed to `origin/main` ("Implemented by Codex", Vitest 27 files / 146 tests).
+- **Wave 4 (BT-33: v1.0.1 Release Hardening & Acceptance)**: IN PROGRESS:
+  - Acceptance suite expansion: `tests/acceptance.rs` SONG_GRID end-to-end lifecycle.
+  - Release version bumps to 1.0.1 in `tauri.conf.json`, `Cargo.toml`, and `package.json`.
+  - Documentation updates (`CHANGELOG.md`, `README.md`, `tasks.md`).
+  - Production packaging and smoke testing (`npm run package:win`, `--smoke-test`).
+- **Next Task for AG**: Implement SONG_GRID acceptance test in `tests/acceptance.rs`, bump versions to 1.0.1, update docs.
+- **Next Task for Codex**: Wave 4 frontend tasks (SetupGuard page test, Playwright v1.0.1 smoke suite, UI polish) per `MSG-227`.

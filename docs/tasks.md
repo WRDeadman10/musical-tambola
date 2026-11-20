@@ -206,8 +206,12 @@
 | **W3-2** | Lucky Draw Backend Engine | DONE | AG (A) | Wave 3 | Migration 0009, pools (NAMES/TICKETS), OsRng draw, no repeats, exclude previous winners, presentation LUCKY_DRAW event (accepted MSG-193, committed `3925752`) |
 | **U2** | Lucky Draw UI | DONE | Codex (X) | Wave 3 | Host Lucky Draw card, drawId integration, batch selector, exclude toggle, history list, projector command backend-owned (accepted MSG-194, committed `dfe4701`) |
 | **W3-3** | Event Branding & Sound Settings Backend | DONE | AG (A) | Wave 3 | Migration 0010, allowlist branding & sound keys, upload_idle_poster / clear_idle_poster, bundled 5 procedural WAVs under src-tauri/resources/sounds and public/sounds, media://idle_poster & media://sound/ streaming |
-| **U3** | Event Branding & Sounds UI | IN_PROGRESS | Codex (X) | Wave 3 | Settings Event Branding card, sound controls, projector ticker strip, sound triggers |
-| **W3-4** | Backup / Restore + Admin PIN | DONE | AG (A) | Wave 3 | SQLite online backup into zip, staging restore with restart marker, Argon2id admin PIN, rate limiter, session auth for active games, zip-bomb/path safety, PRAGMA integrity_check, WAL checkpoint & pre_restore rollback |
-| **W3-5** | Song Title Import | DONE | AG (A) | Wave 3 | calamine 0.38 + csv 1.3 parser for CSV/XLSX/XLS/ODS, preview with slot/title/range/duplicate validation, transactional apply into media_assets, admin PIN & main window guarded |
+| **U3** | Event Branding & Sounds UI | DONE | Codex (X) | Wave 3 | Settings Event Branding card, sound controls, projector ticker strip, sound triggers (committed `e5048bb`) |
+| **W3-4** | Backup / Restore + Admin PIN | DONE | AG (A) | Wave 3 | SQLite online backup into zip, staging restore with restart marker, Argon2id admin PIN, rate limiter, session auth for active games, zip-bomb/path safety, PRAGMA integrity_check, WAL checkpoint & pre_restore rollback (committed `e74d341`) |
+| **W3-5** | Song Title Import | DONE | AG (A) | Wave 3 | calamine 0.38 + csv 1.3 parser for CSV/XLSX/XLS/ODS, preview with slot/title/range/duplicate validation, transactional apply into media_assets, admin PIN & main window guarded, outOfFormatRange warnings (committed `d1f8d7f`, `ff35c1f`) |
+| **U4** | Backup / Restore & Admin PIN UI | DONE | Codex (X) | Wave 3 | DataManagementCard, SetupGuard, PinLockOverlay, active game lock, 10-minute session countdown, rate limit feedback (committed `9b319f0`) |
+| **U5** | Song Title Import UI | DONE | Codex (X) | Wave 3 | TitleImportCard, CSV/XLS/XLSX file read, preview table, apply with outOfFormatRange warnings (committed `a88ef3d`) |
+| **BT-33** | v1.0.1 Release Backend Hardening & Packaging | IN_PROGRESS | AG (A) | Wave 4 | Extended SONG_GRID acceptance suite, v1.0.1 version bump, NSIS packaging, smoke test, CHANGELOG & README |
+| **BT-34** | v1.0.1 Release Frontend Verification & E2E | IN_PROGRESS | Codex (X) | Wave 4 | SetupGuard page-level test, Playwright v1.0.1 smoke test suite, UI layout & Gujarati typography polish |
 
 
