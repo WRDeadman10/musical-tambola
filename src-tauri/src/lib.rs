@@ -34,10 +34,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
-            get_app_info,
-            set_app_setting,
-        ])
+        .invoke_handler(tauri::generate_handler![get_app_info, set_app_setting,])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");
 }

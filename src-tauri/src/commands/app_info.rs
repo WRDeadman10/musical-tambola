@@ -75,3 +75,64 @@ pub fn set_app_setting(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::migrations::run_migrations;
+    use rusqlite::Connection;
+    use std::sync::Mutex;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_app_setting_persistence_across_reopen() {
+        let temp_file = NamedTempFile::new().expect("Failed to create temp file");
+        let path = temp_file.path().to_path_buf();
+
+        // Initial setup and migration
+        {
+            let conn = Connection::open(&path).expect("Failed to open DB");
+            run_migrations(&conn).expect("Failed migrations");
+
+            let db_state = DbState {
+                conn: Mutex::new(conn),
+                db_path: path.clone(),
+            };
+
+            // Initial language should be default seeded 'gu'
+            let stmt = db_state.conn.lock().unwrap();
+            let initial_lang: String = stmt
+                .query_row(
+                    "SELECT value FROM app_settings WHERE key = 'language';",
+                    [],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert_eq!(initial_lang, "gu");
+
+            // Update language to 'en'
+            stmt.execute(
+                "INSERT INTO app_settings (key, value, updated_at) VALUES ('language', 'en', CURRENT_TIMESTAMP)
+                 ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP;",
+                [],
+            )
+            .unwrap();
+        }
+
+        // Re-open DB from disk and verify persistence
+        {
+            let conn = Connection::open(&path).expect("Failed to reopen DB");
+            let reloaded_lang: String = conn
+                .query_row(
+                    "SELECT value FROM app_settings WHERE key = 'language';",
+                    [],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert_eq!(
+                reloaded_lang, "en",
+                "Language setting must persist across reopen"
+            );
+        }
+    }
+}

@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS games (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_games_batch_id ON games(ticket_batch_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_single_active_or_paused_game ON games(status) WHERE status IN ('ACTIVE', 'PAUSED');
+CREATE UNIQUE INDEX IF NOT EXISTS idx_single_active_or_paused_game ON games((1)) WHERE status IN ('ACTIVE', 'PAUSED');
 
 -- 8. Game Tickets Mapping
 CREATE TABLE IF NOT EXISTS game_tickets (

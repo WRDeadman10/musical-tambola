@@ -80,8 +80,8 @@ Session records for Tambola games.
 - `ended_at` DATETIME
 - `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
 
-Partial unique index ensures at most one active or paused game:
-`CREATE UNIQUE INDEX idx_single_active_or_paused_game ON games(status) WHERE status IN ('ACTIVE', 'PAUSED');`
+Partial unique index ensures at most one game in ACTIVE or PAUSED:
+`CREATE UNIQUE INDEX idx_single_active_or_paused_game ON games((1)) WHERE status IN ('ACTIVE', 'PAUSED');`
 
 ### 8. `game_tickets`
 Snapshot link of tickets participating in an active game.
