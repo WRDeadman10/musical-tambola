@@ -9,7 +9,7 @@ pub struct MediaRepository;
 
 impl MediaRepository {
     pub fn list_all(conn: &Connection) -> Result<Vec<MediaSlot>, String> {
-        let mut stmt = conn
+        let mut stmt: rusqlite::Statement<'_> = conn
             .prepare(
                 "SELECT number, media_type, source_type, path_or_url, poster_path, title_gujarati,
                         is_valid, validation_error, last_validated_at
@@ -18,7 +18,7 @@ impl MediaRepository {
             .map_err(|e: rusqlite::Error| format!("Failed to prepare list_all query: {}", e))?;
 
         let rows = stmt
-            .query_map([], |row| {
+            .query_map([], |row: &rusqlite::Row<'_>| {
                 let number: u8 = row.get(0)?;
                 let media_type_str: String = row.get(1)?;
                 let source_type_str: String = row.get(2)?;
@@ -91,7 +91,7 @@ impl MediaRepository {
             return Err(format!("Number must be between 1 and 90, got {}", number));
         }
 
-        let mut stmt = conn
+        let mut stmt: rusqlite::Statement<'_> = conn
             .prepare(
                 "SELECT media_type, source_type, path_or_url, poster_path, title_gujarati,
                         is_valid, validation_error, last_validated_at
@@ -99,8 +99,8 @@ impl MediaRepository {
             )
             .map_err(|e: rusqlite::Error| format!("Prepare query failed: {}", e))?;
 
-        let row_opt = stmt
-            .query_row(params![number], |row| {
+        let row_opt: Option<MediaSlot> = stmt
+            .query_row(params![number], |row: &rusqlite::Row<'_>| {
                 let media_type_str: String = row.get(0)?;
                 let source_type_str: String = row.get(1)?;
                 let path_or_url: String = row.get(2)?;
@@ -239,10 +239,10 @@ mod tests {
 
     #[test]
     fn test_list_all_returns_90_slots() {
-        let conn = Connection::open_in_memory().unwrap();
+        let conn: Connection = Connection::open_in_memory().unwrap();
         run_migrations(&conn).unwrap();
 
-        let slots = MediaRepository::list_all(&conn).unwrap();
+        let slots: Vec<MediaSlot> = MediaRepository::list_all(&conn).unwrap();
         assert_eq!(slots.len(), 90);
         assert_eq!(slots[0].number, 1);
         assert!(!slots[0].configured);
@@ -251,10 +251,10 @@ mod tests {
 
     #[test]
     fn test_upsert_and_clear_media_slot() {
-        let conn = Connection::open_in_memory().unwrap();
+        let conn: Connection = Connection::open_in_memory().unwrap();
         run_migrations(&conn).unwrap();
 
-        let input = SaveMediaInput {
+        let input: SaveMediaInput = SaveMediaInput {
             number: 7,
             title: "તંબોલા ૭".to_string(),
             media_type: MediaType::Image,
@@ -263,22 +263,22 @@ mod tests {
             thumbnail_source: None,
         };
 
-        let saved = MediaRepository::upsert(&conn, &input).unwrap();
+        let saved: MediaSlot = MediaRepository::upsert(&conn, &input).unwrap();
         assert!(saved.configured);
         assert_eq!(saved.title.as_deref(), Some("તંબોલા ૭"));
         assert_eq!(saved.validation_status, ValidationStatus::NotTested);
 
-        let cleared = MediaRepository::clear(&conn, 7).unwrap();
+        let cleared: MediaSlot = MediaRepository::clear(&conn, 7).unwrap();
         assert!(!cleared.configured);
         assert!(cleared.title.is_none());
     }
 
     #[test]
     fn test_edit_resets_validation_status_to_not_tested() {
-        let conn = Connection::open_in_memory().unwrap();
+        let conn: Connection = Connection::open_in_memory().unwrap();
         run_migrations(&conn).unwrap();
 
-        let input = SaveMediaInput {
+        let input: SaveMediaInput = SaveMediaInput {
             number: 10,
             title: "Item 10".to_string(),
             media_type: MediaType::Image,
@@ -291,11 +291,11 @@ mod tests {
         MediaRepository::update_validation_status(&conn, 10, ValidationStatus::Valid, None)
             .unwrap();
 
-        let slot_valid = MediaRepository::get_by_number(&conn, 10).unwrap();
+        let slot_valid: MediaSlot = MediaRepository::get_by_number(&conn, 10).unwrap();
         assert_eq!(slot_valid.validation_status, ValidationStatus::Valid);
 
         // Modify and assert reset
-        let edit_input = SaveMediaInput {
+        let edit_input: SaveMediaInput = SaveMediaInput {
             number: 10,
             title: "Item 10 Updated".to_string(),
             media_type: MediaType::Image,
@@ -303,7 +303,7 @@ mod tests {
             source: "https://example.com/10_new.png".to_string(),
             thumbnail_source: None,
         };
-        let slot_edited = MediaRepository::upsert(&conn, &edit_input).unwrap();
+        let slot_edited: MediaSlot = MediaRepository::upsert(&conn, &edit_input).unwrap();
         assert_eq!(slot_edited.validation_status, ValidationStatus::NotTested);
     }
 }

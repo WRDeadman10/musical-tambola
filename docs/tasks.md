@@ -31,14 +31,14 @@
 | T2-B03 | Validation Engine (`services/media_validation.rs`) | DONE | AG (A) | Local magic byte sniff, remote reqwest Range GET / HEAD |
 | T2-B04 | Custom Media Protocol (`services/media_protocol.rs`) | DONE | AG (A) | `media://localhost/<number>` streaming with HTTP Range |
 | T2-B05 | Tauri Commands Registration | DONE | AG (A) | list_media, get_media, save_media, clear_media, validate_media, validate_all_media, pick_media_file |
-| T2-B06 | Backend Unit & Integration Tests | DONE | AG (A) | 11/11 tests pass (magic bytes, local/remote validation, repository tests) |
+| T2-B06 | Backend Unit & Integration Tests | DONE | AG (A) | 13/13 tests pass (Range parsing, magic bytes, remote stream early-stop, timeout, repository) |
 
 ### Track 2: Frontend (Assignee: Codex — Implementer #2)
 
 | Task ID | Description | Status | Assignee | Notes |
 |---------|-------------|--------|----------|-------|
 | T2-F01 | Media Library 90-row table & filters | DONE | Codex | Implemented in `src/features/media-library/**` |
-| T2-F02 | Add/Edit Media Dialog (RHF + Zod) | DONE | Codex | Implemented in `MediaEditDialog.tsx` |
-| T2-F03 | Media Preview Dialog & Thumbnails | DONE | Codex | Implemented in `MediaPreviewDialog.tsx` |
+| T2-F02 | Add/Edit Media Dialog (RHF + Zod) | DONE | Codex | Implemented in `MediaEditDialog.tsx` with YouTube/Vimeo block |
+| T2-F03 | Media Preview Dialog & Thumbnails | DONE | Codex | Implemented in `MediaPreviewDialog.tsx` with native controls |
 | T2-F04 | Validation Report Panel & Progress Event | DONE | Codex | Implemented in `MediaValidationReportModal.tsx` |
-| T2-F05 | Frontend Vitest Suite | DONE | Codex | 11/11 Vitest tests pass across 5 test suites |
+| T2-F05 | Frontend Vitest Suite | DONE | Codex | 13/13 Vitest tests pass across 5 test suites |

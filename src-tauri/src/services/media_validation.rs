@@ -65,7 +65,7 @@ pub fn sniff_magic_bytes(bytes: &[u8]) -> Option<DetectedFormat> {
 }
 
 pub fn validate_local_media(path_str: &str, expected_type: MediaType) -> Result<(), String> {
-    let path = Path::new(path_str);
+    let path: &Path = Path::new(path_str);
     if !path.exists() {
         return Err(format!("File does not exist: '{}'", path_str));
     }
@@ -73,13 +73,13 @@ pub fn validate_local_media(path_str: &str, expected_type: MediaType) -> Result<
         return Err(format!("Path is not a regular file: '{}'", path_str));
     }
 
-    let ext = path
+    let ext: String = path
         .extension()
-        .and_then(|e| e.to_str())
-        .map(|s| s.to_ascii_lowercase())
+        .and_then(|e: &std::ffi::OsStr| e.to_str())
+        .map(|s: &str| s.to_ascii_lowercase())
         .unwrap_or_default();
 
-    let allowed_exts = match expected_type {
+    let allowed_exts: &[&str] = match expected_type {
         MediaType::Image => &["jpg", "jpeg", "png", "webp", "gif"][..],
         MediaType::Video => &["mp4", "webm"][..],
     };
@@ -93,11 +93,12 @@ pub fn validate_local_media(path_str: &str, expected_type: MediaType) -> Result<
         ));
     }
 
-    let mut file = File::open(path).map_err(|e| format!("Cannot open file for reading: {}", e))?;
-    let mut buffer = [0u8; 64];
-    let bytes_read = file
+    let mut file: File = File::open(path)
+        .map_err(|e: std::io::Error| format!("Cannot open file for reading: {}", e))?;
+    let mut buffer: [u8; 64] = [0u8; 64];
+    let bytes_read: usize = file
         .read(&mut buffer)
-        .map_err(|e| format!("Cannot read file header: {}", e))?;
+        .map_err(|e: std::io::Error| format!("Cannot read file header: {}", e))?;
 
     if bytes_read == 0 {
         return Err("File is empty (0 bytes)".to_string());
@@ -127,13 +128,21 @@ pub fn validate_local_media(path_str: &str, expected_type: MediaType) -> Result<
 }
 
 pub async fn validate_remote_media(url_str: &str, expected_type: MediaType) -> Result<(), String> {
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(10))
+    validate_remote_media_with_timeout(url_str, expected_type, Duration::from_secs(10)).await
+}
+
+pub async fn validate_remote_media_with_timeout(
+    url_str: &str,
+    expected_type: MediaType,
+    timeout: Duration,
+) -> Result<(), String> {
+    let client: reqwest::Client = reqwest::Client::builder()
+        .timeout(timeout)
         .redirect(reqwest::redirect::Policy::limited(5))
         .build()
-        .map_err(|e| format!("Failed to build HTTP client: {}", e))?;
+        .map_err(|e: reqwest::Error| format!("Failed to build HTTP client: {}", e))?;
 
-    let range_res = client
+    let range_res: Result<reqwest::Response, reqwest::Error> = client
         .get(url_str)
         .header("Range", "bytes=0-4095")
         .send()
@@ -143,32 +152,42 @@ pub async fn validate_remote_media(url_str: &str, expected_type: MediaType) -> R
     let mut content_type: Option<String> = None;
 
     match range_res {
-        Ok(res) => {
-            let status = res.status();
+        Ok(mut res) => {
+            let status: reqwest::StatusCode = res.status();
             if status.is_success() || status.as_u16() == 206 {
                 if let Some(ct) = res.headers().get("content-type") {
-                    content_type = ct.to_str().ok().map(|s| s.to_string());
+                    content_type = ct.to_str().ok().map(|s: &str| s.to_string());
                 }
 
-                // Read at most 4KB from body stream without loading entire file
-                let bytes = res
-                    .bytes()
-                    .await
-                    .map_err(|e| format!("Failed to read response chunk: {}", e))?;
-                body_bytes = Some(bytes.to_vec());
+                // Read at most 4096 bytes via chunk stream, stopping early without full download
+                let mut chunk_buf: Vec<u8> = Vec::new();
+                while let Ok(Some(chunk)) = res.chunk().await {
+                    let needed: usize = 4096 - chunk_buf.len();
+                    if chunk.len() > needed {
+                        chunk_buf.extend_from_slice(&chunk[..needed]);
+                        break;
+                    } else {
+                        chunk_buf.extend_from_slice(&chunk);
+                        if chunk_buf.len() >= 4096 {
+                            break;
+                        }
+                    }
+                }
+                drop(res);
+                body_bytes = Some(chunk_buf);
             } else if status.as_u16() == 405 || status.as_u16() == 501 {
                 // Fall back to HEAD request
-                let head_res = client
+                let head_res: reqwest::Response = client
                     .head(url_str)
                     .send()
                     .await
-                    .map_err(|e| format!("HEAD fallback failed: {}", e))?;
+                    .map_err(|e: reqwest::Error| format!("HEAD fallback failed: {}", e))?;
 
                 if !head_res.status().is_success() {
                     return Err(format!("Remote server returned HTTP {}", head_res.status()));
                 }
                 if let Some(ct) = head_res.headers().get("content-type") {
-                    content_type = ct.to_str().ok().map(|s| s.to_string());
+                    content_type = ct.to_str().ok().map(|s: &str| s.to_string());
                 }
             } else {
                 return Err(format!("Remote server returned HTTP {}", status));
@@ -176,23 +195,23 @@ pub async fn validate_remote_media(url_str: &str, expected_type: MediaType) -> R
         }
         Err(e) => {
             // Attempt HEAD fallback on network-level Range refusal
-            let head_res = client
+            let head_res: reqwest::Response = client
                 .head(url_str)
                 .send()
                 .await
-                .map_err(|_| format!("Remote connection failed: {}", e))?;
+                .map_err(|_: reqwest::Error| format!("Remote connection failed: {}", e))?;
 
             if !head_res.status().is_success() {
                 return Err(format!("Remote server returned HTTP {}", head_res.status()));
             }
             if let Some(ct) = head_res.headers().get("content-type") {
-                content_type = ct.to_str().ok().map(|s| s.to_string());
+                content_type = ct.to_str().ok().map(|s: &str| s.to_string());
             }
         }
     }
 
-    if let Some(ref ct) = content_type {
-        let ct_lower = ct.to_ascii_lowercase();
+    let has_valid_ct: bool = if let Some(ref ct) = content_type {
+        let ct_lower: String = ct.to_ascii_lowercase();
         if ct_lower.contains("text/html") {
             return Err(
                 "URL points to an HTML web page instead of a direct media file".to_string(),
@@ -201,42 +220,60 @@ pub async fn validate_remote_media(url_str: &str, expected_type: MediaType) -> R
 
         match expected_type {
             MediaType::Image => {
-                if !ct_lower.starts_with("image/") {
+                let valid: bool = ct_lower.starts_with("image/jpeg")
+                    || ct_lower.starts_with("image/jpg")
+                    || ct_lower.starts_with("image/png")
+                    || ct_lower.starts_with("image/webp")
+                    || ct_lower.starts_with("image/gif");
+                if !valid {
                     return Err(format!(
-                        "Invalid Content-Type '{}' for Image. Expected image/*",
+                        "Invalid Content-Type '{}' for Image. Expected jpeg/png/webp/gif",
                         ct
                     ));
                 }
+                true
             }
             MediaType::Video => {
-                if !ct_lower.starts_with("video/") {
+                let valid: bool =
+                    ct_lower.starts_with("video/mp4") || ct_lower.starts_with("video/webm");
+                if !valid {
                     return Err(format!(
-                        "Invalid Content-Type '{}' for Video. Expected video/*",
+                        "Invalid Content-Type '{}' for Video. Expected video/mp4 or video/webm",
                         ct
                     ));
                 }
+                true
             }
         }
-    }
+    } else {
+        false
+    };
 
-    if let Some(ref bytes) = body_bytes {
-        if let Some(format) = sniff_magic_bytes(bytes) {
-            match expected_type {
-                MediaType::Image if !format.is_image() => {
-                    return Err(format!(
-                        "Type mismatch: expected Image, but bytes indicate Video ({:?})",
-                        format
-                    ));
-                }
-                MediaType::Video if !format.is_video() => {
-                    return Err(format!(
-                        "Type mismatch: expected Video, but bytes indicate Image ({:?})",
-                        format
-                    ));
-                }
-                _ => {}
+    let detected_format: Option<DetectedFormat> = body_bytes
+        .as_ref()
+        .and_then(|bytes: &Vec<u8>| sniff_magic_bytes(bytes));
+
+    if let Some(format) = detected_format {
+        match expected_type {
+            MediaType::Image if !format.is_image() => {
+                return Err(format!(
+                    "Type mismatch: expected Image, but bytes indicate Video ({:?})",
+                    format
+                ));
             }
+            MediaType::Video if !format.is_video() => {
+                return Err(format!(
+                    "Type mismatch: expected Video, but bytes indicate Image ({:?})",
+                    format
+                ));
+            }
+            _ => {}
         }
+    } else if !has_valid_ct {
+        return Err(
+            "Cannot verify remote media: missing Content-Type and unrecognized magic header bytes"
+                .to_string(),
+        );
     }
 
     Ok(())
@@ -251,11 +288,11 @@ pub async fn validate_slot(slot: &MediaSlot) -> (ValidationStatus, Option<String
         return (ValidationStatus::NotTested, None);
     }
 
-    let source = slot.source.as_ref().unwrap();
-    let media_type = slot.media_type.unwrap();
-    let source_type = slot.source_type.unwrap();
+    let source: &String = slot.source.as_ref().unwrap();
+    let media_type: MediaType = slot.media_type.unwrap();
+    let source_type: SourceType = slot.source_type.unwrap();
 
-    let res = match source_type {
+    let res: Result<(), String> = match source_type {
         SourceType::Local => validate_local_media(source, media_type),
         SourceType::Remote => validate_remote_media(source, media_type).await,
     };
@@ -267,9 +304,9 @@ pub async fn validate_slot(slot: &MediaSlot) -> (ValidationStatus, Option<String
 }
 
 pub fn summarize_report(slots: &[MediaSlot]) -> MediaValidationReport {
-    let mut valid_count = 0;
-    let mut invalid_count = 0;
-    let mut issues = Vec::new();
+    let mut valid_count: usize = 0;
+    let mut invalid_count: usize = 0;
+    let mut issues: Vec<MediaValidationIssue> = Vec::new();
 
     for slot in slots {
         if slot.configured {
@@ -345,46 +382,47 @@ mod tests {
     #[test]
     fn test_local_validation_cases() {
         // 1. Missing file
-        let missing_res = validate_local_media("C:\\non_existent_file_xyz.png", MediaType::Image);
+        let missing_res: Result<(), String> =
+            validate_local_media("C:\\non_existent_file_xyz.png", MediaType::Image);
         assert!(missing_res.is_err());
         assert!(missing_res.unwrap_err().contains("does not exist"));
 
         // 2. Valid PNG
-        let mut png_file = NamedTempFile::with_suffix(".png").unwrap();
+        let mut png_file: NamedTempFile = NamedTempFile::with_suffix(".png").unwrap();
         png_file
             .write_all(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
             .unwrap();
         assert!(validate_local_media(png_file.path().to_str().unwrap(), MediaType::Image).is_ok());
 
         // 3. Wrong extension for image
-        let mut txt_file = NamedTempFile::with_suffix(".txt").unwrap();
+        let mut txt_file: NamedTempFile = NamedTempFile::with_suffix(".txt").unwrap();
         txt_file.write_all(&[0x89, 0x50, 0x4E, 0x47]).unwrap();
-        let wrong_ext_res =
+        let wrong_ext_res: Result<(), String> =
             validate_local_media(txt_file.path().to_str().unwrap(), MediaType::Image);
         assert!(wrong_ext_res.is_err());
         assert!(wrong_ext_res.unwrap_err().contains("Invalid extension"));
 
         // 4. Type mismatch: Image extension with MP4 magic bytes
-        let mut mismatch_file = NamedTempFile::with_suffix(".png").unwrap();
+        let mut mismatch_file: NamedTempFile = NamedTempFile::with_suffix(".png").unwrap();
         mismatch_file
             .write_all(&[0, 0, 0, 0x18, b'f', b't', b'y', b'p'])
             .unwrap();
-        let mismatch_res =
+        let mismatch_res: Result<(), String> =
             validate_local_media(mismatch_file.path().to_str().unwrap(), MediaType::Image);
         assert!(mismatch_res.is_err());
         assert!(mismatch_res.unwrap_err().contains("Type mismatch"));
 
         // 5. Valid MP4 video
-        let mut mp4_file = NamedTempFile::with_suffix(".mp4").unwrap();
+        let mut mp4_file: NamedTempFile = NamedTempFile::with_suffix(".mp4").unwrap();
         mp4_file
             .write_all(&[0, 0, 0, 0x18, b'f', b't', b'y', b'p'])
             .unwrap();
         assert!(validate_local_media(mp4_file.path().to_str().unwrap(), MediaType::Video).is_ok());
 
         // 6. Unsupported magic header
-        let mut corrupt_file = NamedTempFile::with_suffix(".jpg").unwrap();
+        let mut corrupt_file: NamedTempFile = NamedTempFile::with_suffix(".jpg").unwrap();
         corrupt_file.write_all(b"not a valid jpeg").unwrap();
-        let corrupt_res =
+        let corrupt_res: Result<(), String> =
             validate_local_media(corrupt_file.path().to_str().unwrap(), MediaType::Image);
         assert!(corrupt_res.is_err());
         assert!(corrupt_res.unwrap_err().contains("Unsupported file format"));
@@ -396,11 +434,11 @@ mod tests {
         use tokio::net::TcpListener;
         use tokio::sync::oneshot;
 
-        let listener = TcpListener::bind("127.0.0.1:0")
+        let listener: TcpListener = TcpListener::bind("127.0.0.1:0")
             .await
             .expect("Failed to bind async test listener");
-        let addr = listener.local_addr().unwrap();
-        let base_url = format!("http://{}", addr);
+        let addr: std::net::SocketAddr = listener.local_addr().unwrap();
+        let base_url: String = format!("http://{}", addr);
 
         let (shutdown_tx, mut shutdown_rx) = oneshot::channel::<()>();
 
@@ -413,42 +451,61 @@ mod tests {
                     accept_res = listener.accept() => {
                         if let Ok((mut socket, _)) = accept_res {
                             tokio::spawn(async move {
-                                let mut buf = [0u8; 1024];
+                                let mut buf: [u8; 1024] = [0u8; 1024];
                                 if let Ok(n) = socket.read(&mut buf).await {
                                     if n > 0 {
-                                        let req = String::from_utf8_lossy(&buf[..n]);
+                                        let req: std::borrow::Cow<'_, str> = String::from_utf8_lossy(&buf[..n]);
                                         if req.contains("/valid-image") {
-                                            let body = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
-                                            let resp = format!(
+                                            let body: [u8; 8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+                                            let resp: String = format!(
                                                 "HTTP/1.1 206 Partial Content\r\nContent-Type: image/png\r\nContent-Length: {}\r\nContent-Range: bytes 0-7/8\r\nConnection: close\r\n\r\n",
                                                 body.len()
                                             );
                                             let _ = socket.write_all(resp.as_bytes()).await;
                                             let _ = socket.write_all(&body).await;
                                         } else if req.contains("/html-page") {
-                                            let resp = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 13\r\nConnection: close\r\n\r\n<html></html>";
+                                            let resp: &str = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 13\r\nConnection: close\r\n\r\n<html></html>";
                                             let _ = socket.write_all(resp.as_bytes()).await;
                                         } else if req.contains("/redirect") {
-                                            let resp = format!(
+                                            let resp: String = format!(
                                                 "HTTP/1.1 302 Found\r\nLocation: http://{}/valid-image\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
                                                 addr
                                             );
                                             let _ = socket.write_all(resp.as_bytes()).await;
-                                        } else if req.contains("/no-head") {
+                                        } else if req.contains("/fallback-head") {
                                             if req.starts_with("HEAD") {
-                                                let resp = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+                                                let resp: &str = "HTTP/1.1 200 OK\r\nContent-Type: image/jpeg\r\nContent-Length: 4\r\nConnection: close\r\n\r\n";
                                                 let _ = socket.write_all(resp.as_bytes()).await;
                                             } else {
-                                                let body = [0xFF, 0xD8, 0xFF, 0xE0];
-                                                let resp = format!(
-                                                    "HTTP/1.1 200 OK\r\nContent-Type: image/jpeg\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-                                                    body.len()
-                                                );
+                                                let resp: &str = "HTTP/1.1 405 Method Not Allowed\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
                                                 let _ = socket.write_all(resp.as_bytes()).await;
-                                                let _ = socket.write_all(&body).await;
                                             }
+                                        } else if req.contains("/large-stream") {
+                                            // Server ignores Range and returns 200 with 5 MB body
+                                            let total_size: usize = 5 * 1024 * 1024;
+                                            let resp: String = format!(
+                                                "HTTP/1.1 200 OK\r\nContent-Type: video/mp4\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                                                total_size
+                                            );
+                                            let _ = socket.write_all(resp.as_bytes()).await;
+                                            // Stream 64KB chunks up to 5 MB
+                                            let mut header_chunk: Vec<u8> = vec![0u8; 65536];
+                                            header_chunk[4..8].copy_from_slice(b"ftyp");
+                                            let _ = socket.write_all(&header_chunk).await;
+                                            for _ in 1..80 {
+                                                let zeros: [u8; 65536] = [0u8; 65536];
+                                                if socket.write_all(&zeros).await.is_err() {
+                                                    break;
+                                                }
+                                            }
+                                        } else if req.contains("/unknown-type") {
+                                            let resp: &str = "HTTP/1.1 200 OK\r\nContent-Length: 10\r\nConnection: close\r\n\r\n0123456789";
+                                            let _ = socket.write_all(resp.as_bytes()).await;
+                                        } else if req.contains("/slow-timeout") {
+                                            // Accept and sleep 2 seconds
+                                            tokio::time::sleep(Duration::from_millis(1500)).await;
                                         } else {
-                                            let resp = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+                                            let resp: &str = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
                                             let _ = socket.write_all(resp.as_bytes()).await;
                                         }
                                     }
@@ -461,30 +518,50 @@ mod tests {
         });
 
         // 1. Valid image URL
-        let valid_res =
+        let valid_res: Result<(), String> =
             validate_remote_media(&format!("{}/valid-image", base_url), MediaType::Image).await;
         assert!(valid_res.is_ok());
 
         // 2. 404 URL
-        let not_found_res =
+        let not_found_res: Result<(), String> =
             validate_remote_media(&format!("{}/not-found", base_url), MediaType::Image).await;
         assert!(not_found_res.is_err());
 
         // 3. HTML instead of media
-        let html_res =
+        let html_res: Result<(), String> =
             validate_remote_media(&format!("{}/html-page", base_url), MediaType::Image).await;
         assert!(html_res.is_err());
         assert!(html_res.unwrap_err().contains("HTML"));
 
         // 4. Redirect to valid media
-        let redir_res =
+        let redir_res: Result<(), String> =
             validate_remote_media(&format!("{}/redirect", base_url), MediaType::Image).await;
         assert!(redir_res.is_ok());
 
-        // 5. Server returning full body 200 without Range
-        let no_head_res =
-            validate_remote_media(&format!("{}/no-head", base_url), MediaType::Image).await;
-        assert!(no_head_res.is_ok());
+        // 5. GET 405 -> HEAD fallback succeeds
+        let head_fallback_res: Result<(), String> =
+            validate_remote_media(&format!("{}/fallback-head", base_url), MediaType::Image).await;
+        assert!(head_fallback_res.is_ok());
+
+        // 6. Large stream: server returns 200 with 5MB body, client stops at 4096 bytes and validates MP4
+        let large_stream_res: Result<(), String> =
+            validate_remote_media(&format!("{}/large-stream", base_url), MediaType::Video).await;
+        assert!(large_stream_res.is_ok());
+
+        // 7. Missing Content-Type with unknown bytes is rejected
+        let unknown_type_res: Result<(), String> =
+            validate_remote_media(&format!("{}/unknown-type", base_url), MediaType::Image).await;
+        assert!(unknown_type_res.is_err());
+        assert!(unknown_type_res.unwrap_err().contains("Cannot verify"));
+
+        // 8. Timeout injection test: 200ms timeout on slow server fails fast
+        let timeout_res: Result<(), String> = validate_remote_media_with_timeout(
+            &format!("{}/slow-timeout", base_url),
+            MediaType::Image,
+            Duration::from_millis(200),
+        )
+        .await;
+        assert!(timeout_res.is_err());
 
         let _ = shutdown_tx.send(());
     }

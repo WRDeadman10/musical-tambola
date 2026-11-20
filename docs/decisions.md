@@ -81,3 +81,20 @@ Implement a two-tier validation pipeline in Rust (`src-tauri/src/services/media_
   - Safe against remote servers that reject HEAD or Range requests.
 - **Cons**:
   - Transient remote network failures require retry ("Validate again").
+
+---
+
+## ADR-005: Schema Migration Immutability and Final In-Place Edit Note
+
+### Context
+During Phase 2 implementation, `0001_init.sql` was amended in place to support `REMOTE` source types and temporarily contained a stray `'URL'` value. In production and after tag/release, editing historical migration files destroys reproducibility and breaks checksum tracking.
+
+### Decision
+`0001_init.sql` CHECK constraint is strictly set to `CHECK(source_type IN ('LOCAL', 'REMOTE'))`. Per Lead review (MSG-019), because the application has not yet been released or deployed to users, this represents the final in-place edit allowed inside `0001_init.sql`. All future schema modifications across subsequent phases must strictly be committed as new, sequential, immutable SQL migration files (e.g. `0002_*.sql`).
+
+### Consequences
+- **Pros**:
+  - Guarantees deterministic database state across all development and production environments.
+  - Aligns with standard migration lifecycle best practices.
+- **Cons**:
+  - Schema changes require creating new migration files rather than editing initial schema definitions.

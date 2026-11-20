@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS media_assets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     number INTEGER NOT NULL UNIQUE CHECK(number >= 1 AND number <= 90),
     media_type TEXT NOT NULL CHECK(media_type IN ('IMAGE', 'VIDEO')),
-    source_type TEXT NOT NULL CHECK(source_type IN ('LOCAL', 'REMOTE', 'URL')),
+    source_type TEXT NOT NULL CHECK(source_type IN ('LOCAL', 'REMOTE')),
     path_or_url TEXT NOT NULL,
     poster_path TEXT,
     title_gujarati TEXT NOT NULL,
