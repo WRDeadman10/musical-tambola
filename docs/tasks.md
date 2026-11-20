@@ -211,7 +211,7 @@
 | **W3-5** | Song Title Import | DONE | AG (A) | Wave 3 | calamine 0.38 + csv 1.3 parser for CSV/XLSX/XLS/ODS, preview with slot/title/range/duplicate validation, transactional apply into media_assets, admin PIN & main window guarded, outOfFormatRange warnings (committed `d1f8d7f`, `ff35c1f`) |
 | **U4** | Backup / Restore & Admin PIN UI | DONE | Codex (X) | Wave 3 | DataManagementCard, SetupGuard, PinLockOverlay, active game lock, 10-minute session countdown, rate limit feedback (committed `9b319f0`) |
 | **U5** | Song Title Import UI | DONE | Codex (X) | Wave 3 | TitleImportCard, CSV/XLS/XLSX file read, preview table, apply with outOfFormatRange warnings (committed `a88ef3d`) |
-| **BT-33** | v1.0.1 Release Backend Hardening & Packaging | IN_PROGRESS | AG (A) | Wave 4 | Extended SONG_GRID acceptance suite, v1.0.1 version bump, NSIS packaging, smoke test, CHANGELOG & README |
+| **BT-33** | v1.0.1 Release Backend Hardening & Packaging | REVIEW | AG (A) | Wave 4 | Extended SONG_GRID acceptance suite (125 tests total), v1.0.1 version bump, NSIS packaging (4.08 MiB), smoke test PASS, CHANGELOG & README updated |
 | **BT-34** | v1.0.1 Release Frontend Verification & E2E | IN_PROGRESS | Codex (X) | Wave 4 | SetupGuard page-level test, Playwright v1.0.1 smoke test suite, UI layout & Gujarati typography polish |
 
 

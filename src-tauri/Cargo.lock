@@ -2211,7 +2211,7 @@ dependencies = [
 
 [[package]]
 name = "media-tambola"
-version = "0.1.0"
+version = "1.0.1"
 dependencies = [
  "argon2",
  "calamine",
