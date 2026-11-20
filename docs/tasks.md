@@ -9,11 +9,11 @@
 | T1-03 | Add `.editorconfig` (K&R, 4-space, LF) | DONE | AG (A) | Matches AGENTS.md requirements |
 | T1-04 | Record Architecture Decisions (ADR-001..003) | DONE | AG (A) | Recorded in decisions.md |
 | T1-05 | Await / Install Rust toolchain | DONE | Owner / AG | Rust 1.100.0 / Cargo 1.100.0 operational |
-| T1-06 | Initialize React + Vite + TS frontend | DONE | AG (A) | Tailwind v4, Zustand, React Router, Lucide, Vitest |
+| T1-06 | Initialize React + Vite + TS frontend | DONE | AG (A) | Tailwind v4, Zustand, React Router, Lucide, Vitest, shadcn/ui primitives |
 | T1-07 | Scaffold Tauri 2.x Rust project | DONE | AG (A) | Cargo.toml with rusqlite (bundled), tauri-plugin-log, tauri-plugin-dialog |
 | T1-08 | Implement SQLite connection & migration runner | DONE | AG (A) | WAL mode, foreign keys, `0001_init.sql` schema (all 13 tables) |
 | T1-09 | Implement IPC `get_app_info` command | DONE | AG (A) | Typed commands `get_app_info` and `set_app_setting` |
-| T1-10 | Bundle Gujarati font stack | DONE | AG (A) | CSS font stack configured ("Noto Sans Gujarati", "Nirmala UI", "Shruti") |
-| T1-11 | Build UI Shell (Sidebar, Dashboard, Settings) | DONE | AG (A) | Dark theme, settings with app info & language switcher |
-| T1-12 | Add unit tests for migrations & IPC sanity | DONE | AG (A) | Vitest tests passing (4/4); Rust migration tests passing (2/2) |
-| T1-13 | Git commits & Mailbox Phase 1 REVIEW | DONE | AG (A) | Commits: 757ab9b, fc0c48c, c4d6c1a, 0b593d3, a6b364c, 7bbeaae |
+| T1-10 | Bundle Gujarati fonts & OFL license | DONE | AG (A) | Bundled NotoSansGujarati Regular & Bold woff2 with OFL.txt and @font-face |
+| T1-11 | Build UI Shell (Sidebar, Dashboard, Settings) | DONE | AG (A) | Dark theme, settings with app info & language switcher using shadcn/ui |
+| T1-12 | Add unit tests for migrations & IPC sanity | DONE | AG (A) | Vitest tests passing (4/4); Rust tests passing (4/4 incl. partial index & persistence) |
+| T1-13 | Git commits & Mailbox Phase 1 REVIEW | DONE | AG (A) | Commits pushed to origin main |

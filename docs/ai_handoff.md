@@ -1,51 +1,35 @@
 # AI Handoff & Session State — Media Tambola
 
-## Current Phase: Phase 1 — Application Foundation (Complete — Submitted for Review)
+## Current Phase: Phase 1 — Application Foundation (Complete & Pushed)
 - **Date**: 2026-11-20
 - **Lead Agent**: Claude (C)
 - **Implementer Agent**: Antigravity (AG / A)
 
 ## Completed Milestones & Git Commits
-1. **Initial Baseline & Docs**: Commit `757ab9b`
-   - `.editorconfig` (K&R braces, 4 spaces, UTF-8, LF)
-   - `docs/project-overview.md`, `architecture.md`, `database.md`, `game-rules.md`, `development.md`, `roadmap.md`, `tasks.md`, `decisions.md` (ADR-001..003), `ai_handoff.md`
-2. **Project Scaffolding**: Commit `fc0c48c`
-   - Tauri 2.x + React + Vite + TypeScript
-   - Tailwind CSS v4, Lucide React, Zustand, React Router DOM, Vitest
-   - Strict TypeScript configuration (`tsconfig.json`) and `.gitignore`
-3. **Backend Foundation**: Commit `c4d6c1a`
-   - `src-tauri/Cargo.toml` configured with `rusqlite` (`bundled`), `tauri-plugin-log`, `tauri-plugin-dialog`, `rand`, `sha2`, `serde`
-   - Embedded SQLite migration runner (`src-tauri/src/db/migrations.rs`)
-   - Baseline migration `0001_init.sql` implementing all 13 tables, constraints, indices, and default seed data
-   - Database connection manager with WAL mode and foreign keys (`src-tauri/src/db/connection.rs`)
-   - IPC commands `get_app_info` and `set_app_setting` (`src-tauri/src/commands/app_info.rs`)
-   - Tauri application configuration (`tauri.conf.json`) with strict CSP and minimal capabilities
-4. **UI Shell & Localization**: Commit `0b593d3`
-   - Full dark theme layout with responsive navigation sidebar (Dashboard & Settings)
-   - English (`src/locales/en.json`) and Gujarati (`src/locales/gu.json`) translations
-   - Typed Zustand app store (`src/stores/appStore.ts`) with translation helper and setting persistence
-   - Settings page with real-time system/database inspection and language toggle
-   - Dashboard summary indicators
-5. **Native Compilation & Testing**: Commit `7bbeaae`
-   - Rust toolchain (Rust `1.100.0` / Cargo `1.100.0`) verified and operational
-   - Desktop binary built cleanly (`cargo build`)
-   - `Cargo.lock` committed
-   - `npm run test` executes both Vitest (4/4 passed) and Cargo tests (2/2 passed)
-   - `npm run lint` (`tsc --noEmit`) passes with 0 errors
-   - `cargo clippy -- -D warnings` passes with 0 code warnings
+All commits have been pushed to remote `origin/main`:
+1. `757ab9b`: `docs: initialize technical specifications and project baseline`
+2. `fc0c48c`: `chore: scaffold Tauri 2.x and React Vite TypeScript project`
+3. `c4d6c1a`: `feat(backend): implement SQLite migration runner and IPC commands`
+4. `0b593d3`: `feat(ui): implement dark theme UI shell, navigation, and settings`
+5. `a6b364c`: `docs: update task tracker and handoff for Phase 1 milestone`
+6. `7bbeaae`: `feat(build): compile native desktop binary and configure full test script`
+7. `81d605f`: `docs: finalize tasks and handoff for Phase 1 review`
+8. `2eb8caa`: `feat(ui): bundle Noto Sans Gujarati fonts and configure shadcn/ui components`
+9. `8800c8f`: `feat(backend): strengthen CSP, index constraints, and add persistence tests`
 
-## Modified / Created Files
-- `.editorconfig`
-- `.gitignore`
-- `package.json`, `package-lock.json`, `tsconfig.json`, `vite.config.ts`, `index.html`
-- `src/` (App.tsx, main.tsx, index.css, components/layout/Sidebar.tsx, features/dashboard/DashboardPage.tsx, features/settings/SettingsPage.tsx, stores/appStore.ts, lib/api.ts, locales/{en,gu}.json, test/appStore.test.ts)
-- `src-tauri/` (Cargo.toml, Cargo.lock, tauri.conf.json, capabilities/default.json, migrations/0001_init.sql, src/main.rs, src/lib.rs, src/db/*, src/commands/*)
-- `docs/` (project-overview.md, architecture.md, database.md, game-rules.md, development.md, roadmap.md, tasks.md, decisions.md, ai_handoff.md)
+## Implementation Verification
+- **Fonts**: Bundled `NotoSansGujarati-Regular.woff2`, `NotoSansGujarati-Bold.woff2`, and `OFL.txt` in `src/assets/fonts/` with `@font-face` rules.
+- **shadcn/ui**: Created `src/components/ui/` primitives (Button, Card, Badge) and `src/lib/utils.ts` (`cn`). Applied across Dashboard and Settings views.
+- **CSP**: Configured in `tauri.conf.json` with `http://ipc.localhost` and `http://media.localhost` (no `asset:`).
+- **SQLite Partial Unique Index**: Fixed to `games((1)) WHERE status IN ('ACTIVE', 'PAUSED')` guaranteeing at most one active or paused game across all sessions.
+- **Tests**:
+  - `npm run test` executes both Vitest and Cargo test suites:
+    - Vitest: 4/4 passed (`appStore.test.ts`).
+    - Cargo tests: 4/4 passed (all 13 tables + migrations existence, seeded prize schemes, migration idempotency, single active/paused game partial unique index enforcement, and language setting persistence across reopen).
+  - `cargo fmt --manifest-path src-tauri/Cargo.toml --check`: Clean (exit code 0).
+  - `cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings`: Clean (exit code 0).
+  - `npm run lint` (`tsc --noEmit`): 0 errors.
 
-## Next Recommended Task
-- Wait for Claude's (Lead) acceptance of Phase 1 in `docs/Tel_Mailbox/MAILBOX.md`.
-- Upon `ACCEPTED`, commence **Phase 2: Media Manager**:
-  - Implement 90-slot media grid / list management.
-  - Rust custom protocol `media://` handler for safe local streaming.
-  - Media validation engine using `reqwest` (HEAD/Range GET, mime-types, magic bytes).
-  - Preflight game validation report.
+## Next Step
+- Await Claude's `ACCEPTED` for Phase 1 in `docs/Tel_Mailbox/MAILBOX.md`.
+- Proceed to **Phase 2: Media Manager**.
