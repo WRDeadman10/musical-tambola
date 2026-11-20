@@ -44,8 +44,105 @@
     "loading": "Loading...",
     "error": "An error occurred",
     "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
     "active": "Active",
     "inactive": "Inactive",
     "ready": "Ready"
+  },
+  "media": {
+    "title": "Media Library",
+    "subtitle": "Configure the 90 media slots used by the game.",
+    "search": "Search by number, title, or source...",
+    "notConfigured": "Not configured",
+    "progress": "Validating media",
+    "confirmRemove": "Remove this media configuration?",
+    "columns": {
+      "number": "Number",
+      "preview": "Preview",
+      "title": "Gujarati Title",
+      "type": "Type",
+      "source": "Source",
+      "status": "Status",
+      "validated": "Last Validated",
+      "actions": "Actions"
+    },
+    "filters": {
+      "all": "All",
+      "valid": "Valid",
+      "invalid": "Invalid",
+      "local": "Local",
+      "remote": "Remote",
+      "image": "Images",
+      "video": "Videos"
+    },
+    "types": {
+      "image": "Image",
+      "video": "Video"
+    },
+    "sourceTypes": {
+      "local": "Local",
+      "remote": "Remote"
+    },
+    "status": {
+      "valid": "Valid",
+      "invalid": "Invalid",
+      "not_tested": "Not tested",
+      "unverified": "Unverified"
+    },
+    "fields": {
+      "number": "Slot number",
+      "title": "Gujarati title",
+      "mediaType": "Media type",
+      "sourceType": "Source type",
+      "source": "Media source",
+      "thumbnail": "Poster / thumbnail",
+      "thumbnailPlaceholder": "Optional poster or thumbnail path / URL"
+    },
+    "actions": {
+      "add": "Add media",
+      "edit": "Edit media",
+      "preview": "Preview media",
+      "validate": "Validate media",
+      "validateAll": "Validate all",
+      "remove": "Remove media",
+      "browse": "Browse"
+    },
+    "dialog": {
+      "addTitle": "Add media configuration",
+      "editTitle": "Edit media configuration"
+    },
+    "hints": {
+      "remote": "Use a direct HTTP/HTTPS media URL. YouTube/Vimeo page URLs are not direct media files.",
+      "poster": "A poster image is recommended for videos."
+    },
+    "stats": {
+      "configured": "Configured",
+      "valid": "Valid",
+      "invalid": "Invalid",
+      "remaining": "Remaining"
+    },
+    "report": {
+      "title": "Validation report",
+      "valid": "valid",
+      "invalid": "invalid",
+      "total": "checked",
+      "noIssues": "All configured media passed validation.",
+      "validateAgain": "Validate again"
+    },
+    "messages": {
+      "saved": "Media configuration saved.",
+      "validated": "Media validation complete.",
+      "reportReady": "Validation report updated."
+    },
+    "errors": {
+      "loadFailed": "Could not load media slots.",
+      "saveFailed": "Could not save media configuration.",
+      "removeFailed": "Could not remove media configuration.",
+      "validateFailed": "Could not validate media.",
+      "browseFailed": "Could not open the media picker."
+    },
+    "noResults": "No media slots match the current filters."
   }
 }

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Settings } from "lucide-react";
+import { Images, LayoutDashboard, Settings } from "lucide-react";
 import { useAppStore } from "../../stores/appStore";
 
 interface NavItem {
@@ -23,6 +23,11 @@ export const Sidebar: React.FC = () => {
             labelKey: "nav.settings",
             path: "/settings",
             icon: <Settings className="w-5 h-5" />,
+        },
+        {
+            labelKey: "nav.mediaLibrary",
+            path: "/media",
+            icon: <Images className="w-5 h-5" />,
         },
     ];
 

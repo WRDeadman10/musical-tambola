@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Sidebar } from "./components/layout/Sidebar";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
+import { MediaLibraryPage } from "./features/media-library/MediaLibraryPage";
 
 export const App: React.FC = () => {
     return (
@@ -13,6 +14,7 @@ export const App: React.FC = () => {
                     <Routes>
                         <Route path="/" element={<DashboardPage />} />
                         <Route path="/settings" element={<SettingsPage />} />
+                        <Route path="/media" element={<MediaLibraryPage />} />
                     </Routes>
                 </main>
             </div>
