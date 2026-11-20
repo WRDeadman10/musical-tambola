@@ -115,7 +115,12 @@
     },
     "hints": {
       "remote": "Use a direct HTTP/HTTPS media URL. YouTube/Vimeo page URLs are not direct media files.",
-      "poster": "A poster image is recommended for videos."
+      "poster": "A poster image is recommended for videos.",
+      "directMediaRequired": "This is a YouTube/Vimeo page URL. Use the direct media file URL instead."
+    },
+    "removeDialog": {
+      "title": "Remove media",
+      "description": "Remove this media configuration?"
     },
     "stats": {
       "configured": "Configured",

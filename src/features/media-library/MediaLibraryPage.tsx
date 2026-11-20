@@ -46,6 +46,15 @@ import { useAppStore } from "../../stores/appStore";
 
 const windowsPathPattern: RegExp = /^(?:[A-Za-z]:[\\/]|\\\\).+/;
 
+function isKnownMediaPageUrl(value: string): boolean {
+    try {
+        const hostname: string = new URL(value).hostname.toLocaleLowerCase();
+        return hostname === "youtube.com" || hostname.endsWith(".youtube.com") || hostname === "youtu.be" || hostname === "vimeo.com" || hostname.endsWith(".vimeo.com");
+    } catch {
+        return false;
+    }
+}
+
 export const mediaFormSchema = z.object({
     number: z.number().int().min(1).max(90),
     title: z.string().trim().min(1).max(200),
@@ -62,6 +71,9 @@ export const mediaFormSchema = z.object({
             }
         } catch {
             context.addIssue({ code: "custom", path: ["source"], message: "Enter a valid HTTP or HTTPS URL." });
+        }
+        if (isKnownMediaPageUrl(value.source)) {
+            context.addIssue({ code: "custom", path: ["source"], message: "Use a direct media file URL, not a YouTube or Vimeo page URL." });
         }
     }
 
@@ -163,6 +175,8 @@ function MediaEditorDialog({ slot, onClose, onSaved }: MediaEditorDialogProps): 
     const sourceType: SourceType = form.watch("sourceType");
     const mediaType: MediaType = form.watch("mediaType");
     const isVideo: boolean = mediaType === "VIDEO";
+    const sourceValue: string = form.watch("source");
+    const showsMediaPageHint: boolean = sourceType === "REMOTE" && isKnownMediaPageUrl(sourceValue);
 
     useEffect(() => {
         form.reset({
@@ -258,6 +272,7 @@ function MediaEditorDialog({ slot, onClose, onSaved }: MediaEditorDialogProps): 
                             <CircleHelp className="h-3 w-3" /> {t("media.hints.remote")}
                         </span>
                     )}
+                    {showsMediaPageHint && <span className="mt-1 block text-xs text-amber-400">{t("media.hints.directMediaRequired")}</span>}
                 </label>
 
                 <label className="space-y-1 text-sm text-zinc-300">
@@ -291,13 +306,24 @@ function PreviewDialog({ slot, onClose }: PreviewDialogProps): React.JSX.Element
                 {!slot.configured || displaySource === null ? (
                     <div className="text-sm text-zinc-500">No media configured</div>
                 ) : slot.mediaType === "VIDEO" ? (
-                    <video className="max-h-[60vh] max-w-full" controls poster={thumbnailSource ?? undefined} src={displaySource} />
+                    <video className="max-h-[60vh] max-w-full" controls preload="metadata" poster={thumbnailSource ?? undefined} src={displaySource} onError={(event: React.SyntheticEvent<HTMLVideoElement>) => { event.currentTarget.load(); }} />
                 ) : (
                     <img className="max-h-[60vh] max-w-full object-contain" src={displaySource} alt={slot.title ?? `Media ${slot.number}`} />
                 )}
             </div>
         </Modal>
     );
+}
+
+interface RemoveDialogProps {
+    slot: MediaSlot;
+    onCancel: () => void;
+    onConfirm: () => void;
+}
+
+function RemoveDialog({ slot, onCancel, onConfirm }: RemoveDialogProps): React.JSX.Element {
+    const t = useAppStore((state) => state.t);
+    return <Modal onClose={onCancel} title={t("media.removeDialog.title")}><p className="text-sm text-zinc-300">{t("media.removeDialog.description")} ({slot.number})</p><div className="mt-6 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onCancel}>{t("common.cancel")}</Button><Button type="button" variant="destructive" onClick={onConfirm}>{t("media.actions.remove")}</Button></div></Modal>;
 }
 
 interface ModalProps {
@@ -334,6 +360,7 @@ export const MediaLibraryPage: React.FC = () => {
     const [toast, setToast] = useState<string | null>(null);
     const rowRefs = useRef<Map<number, HTMLTableRowElement>>(new Map<number, HTMLTableRowElement>());
     const [highlightedNumber, setHighlightedNumber] = useState<number | null>(null);
+    const [removingSlot, setRemovingSlot] = useState<MediaSlot | null>(null);
 
     const refreshSlots = async (): Promise<void> => {
         setIsLoading(true);
@@ -403,14 +430,11 @@ export const MediaLibraryPage: React.FC = () => {
     };
 
     const handleClear = async (slot: MediaSlot): Promise<void> => {
-        if (!window.confirm(t("media.confirmRemove"))) {
-            return;
-        }
-
         try {
             const clearedSlot: MediaSlot = await clearMedia(slot.number);
             await updateSlot(clearedSlot);
             setReport(null);
+            setRemovingSlot(null);
         } catch {
             setToast(t("media.errors.removeFailed"));
         }
@@ -529,7 +553,7 @@ export const MediaLibraryPage: React.FC = () => {
                                 <td className="px-4 py-3 text-zinc-400">{slot.sourceType === "LOCAL" ? t("media.sourceTypes.local") : slot.sourceType === "REMOTE" ? t("media.sourceTypes.remote") : "—"}</td>
                                 <td className="px-4 py-3"><Badge variant={getStatusVariant(slot.validationStatus)}>{t(`media.status.${slot.validationStatus.toLowerCase()}`)}</Badge>{slot.validationMessage !== null && <div className="mt-1 max-w-40 truncate text-xs text-red-400" title={slot.validationMessage}>{slot.validationMessage}</div>}</td>
                                 <td className="whitespace-nowrap px-4 py-3 text-xs text-zinc-500">{formatValidationDate(slot.lastValidatedAt)}</td>
-                                <td className="px-4 py-3"><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" aria-label={t("media.actions.edit")} onClick={() => setEditingSlot(slot)}><Pencil className="h-4 w-4" /></Button>{slot.configured && <><Button variant="ghost" size="icon" aria-label={t("media.actions.preview")} onClick={() => setPreviewSlot(slot)}><ImageIcon className="h-4 w-4" /></Button><Button variant="ghost" size="icon" aria-label={t("media.actions.validate")} onClick={() => void handleValidate(slot)}><CheckCircle2 className="h-4 w-4" /></Button><Button variant="ghost" size="icon" aria-label={t("media.actions.remove")} onClick={() => void handleClear(slot)}><Trash2 className="h-4 w-4 text-red-400" /></Button></>}</div></td>
+                            <td className="px-4 py-3"><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" aria-label={t("media.actions.edit")} onClick={() => setEditingSlot(slot)}><Pencil className="h-4 w-4" /></Button>{slot.configured && <><Button variant="ghost" size="icon" aria-label={t("media.actions.preview")} onClick={() => setPreviewSlot(slot)}><ImageIcon className="h-4 w-4" /></Button><Button variant="ghost" size="icon" aria-label={t("media.actions.validate")} onClick={() => void handleValidate(slot)}><CheckCircle2 className="h-4 w-4" /></Button><Button variant="ghost" size="icon" aria-label={t("media.actions.remove")} onClick={() => setRemovingSlot(slot)}><Trash2 className="h-4 w-4 text-red-400" /></Button></>}</div></td>
                             </tr>)}
                         </tbody>
                     </table>
@@ -541,6 +565,7 @@ export const MediaLibraryPage: React.FC = () => {
             {toast !== null && <div className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 shadow-xl"><CheckCircle2 className="h-4 w-4 text-emerald-400" />{toast}</div>}
             {editingSlot !== null && <MediaEditorDialog slot={editingSlot.configured ? editingSlot : null} onClose={() => setEditingSlot(null)} onSaved={updateSlot} />}
             {previewSlot !== null && <PreviewDialog slot={previewSlot} onClose={() => setPreviewSlot(null)} />}
+            {removingSlot !== null && <RemoveDialog slot={removingSlot} onCancel={() => setRemovingSlot(null)} onConfirm={() => void handleClear(removingSlot)} />}
         </div>
     );
 };

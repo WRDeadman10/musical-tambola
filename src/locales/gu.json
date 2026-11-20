@@ -115,7 +115,12 @@
     },
     "hints": {
       "remote": "સીધી HTTP/HTTPS મીડિયા URL વાપરો. YouTube/Vimeo પેજ URL સીધી મીડિયા ફાઇલ નથી.",
-      "poster": "વિડિયો માટે પોસ્ટર છબીની ભલામણ છે."
+      "poster": "વિડિયો માટે પોસ્ટર છબીની ભલામણ છે.",
+      "directMediaRequired": "આ YouTube/Vimeo પેજ URL છે. તેના બદલે સીધી મીડિયા ફાઇલ URL વાપરો."
+    },
+    "removeDialog": {
+      "title": "મીડિયા દૂર કરો",
+      "description": "આ મીડિયા ગોઠવણી દૂર કરવી છે?"
     },
     "stats": {
       "configured": "ગોઠવેલ",

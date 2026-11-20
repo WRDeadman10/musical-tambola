@@ -43,6 +43,28 @@ describe("MediaLibraryPage", () => {
         expect(validLocal.success).toBe(true);
     });
 
+    it("rejects YouTube and Vimeo page URLs", () => {
+        const youtubePage = mediaFormSchema.safeParse({ number: 1, title: "Test", mediaType: "VIDEO", sourceType: "REMOTE", source: "https://www.youtube.com/watch?v=1", thumbnailSource: null });
+        const vimeoPage = mediaFormSchema.safeParse({ number: 1, title: "Test", mediaType: "VIDEO", sourceType: "REMOTE", source: "https://vimeo.com/123", thumbnailSource: null });
+
+        expect(youtubePage.success).toBe(false);
+        expect(vimeoPage.success).toBe(false);
+    });
+
+    it("clears media only after remove confirmation", async () => {
+        useAppStore.setState({ language: "en" });
+        mockedMediaApi.listMedia.mockResolvedValueOnce([createSlot(1, { configured: true, title: "One", mediaType: "IMAGE", sourceType: "LOCAL", source: "C:\\Media\\one.jpg" })]);
+        mockedMediaApi.listenToMediaValidationProgress.mockResolvedValue(() => undefined);
+        mockedMediaApi.clearMedia.mockResolvedValue(createSlot(1));
+
+        render(<MediaLibraryPage />);
+        await waitFor(() => expect(mockedMediaApi.listMedia).toHaveBeenCalled());
+        fireEvent.click(screen.getByRole("button", { name: "Remove media" }));
+        expect(mockedMediaApi.clearMedia).not.toHaveBeenCalled();
+        fireEvent.click(screen.getAllByRole("button", { name: "Remove media" })[1]);
+        await waitFor(() => expect(mockedMediaApi.clearMedia).toHaveBeenCalledWith(1));
+    });
+
     it("jumps to and highlights a report issue row", async () => {
         useAppStore.setState({ language: "en" });
         const slots: MediaSlot[] = Array.from({ length: 90 }, (_value: undefined, index: number) => createSlot(index + 1));
