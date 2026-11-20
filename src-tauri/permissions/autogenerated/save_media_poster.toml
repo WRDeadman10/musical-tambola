@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-save-media-poster"
+description = "Enables the save_media_poster command without any pre-configured scope."
+commands.allow = ["save_media_poster"]
+
+[[permission]]
+identifier = "deny-save-media-poster"
+description = "Denies the save_media_poster command without any pre-configured scope."
+commands.deny = ["save_media_poster"]

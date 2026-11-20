@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-next-item"
+description = "Enables the get_next_item command without any pre-configured scope."
+commands.allow = ["get_next_item"]
+
+[[permission]]
+identifier = "deny-get-next-item"
+description = "Denies the get_next_item command without any pre-configured scope."
+commands.deny = ["get_next_item"]

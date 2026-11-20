@@ -55,11 +55,16 @@
 - **BT-25 (Backend Folder Scan/Apply & Posters Engine & Hardening)**: IMPLEMENTED and HARDENED (`1613707`): 5000-file cap, symlink traversal prevention, hidden/system file skip, magic-byte checking, 2MB poster limit, JPEG header check, and sha8 hashed poster storage with snapshot protection.
 - **BT-21 (Pattern Engine & Mask Evaluators)**: ACCEPTED by Claude (`MSG-168`), committed in `1316f37` + `9b4a760`, with Song Grid DB claim scenarios (exact late-claim, already-won Full House, and winner-limit-reached) added and verified in `1613707`.
 - **BT-28 (Pattern Editor UI & Preset Gallery)**: ACCEPTED by Claude (`MSG-168`, `MSG-169`), committed in `65c85db` and pushed to `origin/main`.
-- **BT-26 (Presentation Window Management & IPC Backend)**: IMPLEMENTED by AG in `f7cfc3c`:
-  - Tauri multi-window commands: `list_displays`, `open_presentation`, `close_presentation`, `presentation_status`.
-  - State & IPC: `presentation_command`, `get_presentation_state`, `get_next_item`.
-  - Multi-window permission enabled in `capabilities/default.json`.
-  - Event emissions for `game-state-changed` and `presentation-command`.
-  - 90 Cargo unit tests + 1 acceptance test pass (91 total). Pushed to `origin/main`.
-- **Next Task for AG**: Review Codex's incoming BT-29 (Game Format UI) once submitted to Claude, then coordinate Wave 3/4 tasks.
-- **Next Task for Codex**: Complete BT-29 Game Format UI per `MSG-169`.
+- **BT-29 (Game Format UI & Song Grid Tickets)**: ACCEPTED by Claude (`MSG-173`), committed by AG in `919bcc2` and pushed to `origin/main`.
+- **BT-26 (Presentation Window Management & IPC Backend)**: IMPLEMENTED and SECURED by AG per `MSG-173`:
+  - ACL capabilities split: `capabilities/main.json` (windows `["main"]`, full capabilities) and `capabilities/presentation.json` (windows `["presentation"]`, read-only: `allow-get-game`, `allow-get-active-game`, `allow-get-presentation-state`, `allow-get-app-info`, `allow-list-media`, `core:event:default`).
+  - All 49 commands declared via `tauri_build::Attributes::app_manifest`.
+  - Defence-in-depth: `require_main_window(&window)` guard on all mutating commands (game lifecycle, claims, media, schemes, tickets, app settings, presentation commands, `get_next_item`).
+  - Unit tests: `test_require_main_window_guard` (verifies label `presentation` is rejected with `WINDOW_NOT_AUTHORIZED` and `main` accepted) and `test_presentation_capability_file_no_mutating_commands` (verifies `presentation.json` has zero mutating commands).
+  - Multi-monitor positioning: `open_presentation` sets decorations to false, positions window to `monitor.position()`, and fullscreen to true.
+  - Display persistence: `presentation_display` added to `AppSettingKey` allowlist, validated, persisted on `open_presentation`, and reused as default on subsequent opens.
+  - Multi-monitor recommendation: `suggest_presentation_display_if_multimonitor` emits `presentation-suggested` with first non-primary display index on `create_game` and `get_active_game` (active recovery) when 2+ displays exist and presentation window is not open.
+  - 93 Cargo unit tests + 1 acceptance test pass (94 total), clippy clean, rustfmt clean.
+- **BT-30 (Ticket Printing & Templates UI)**: Submitted by Codex for review in `MSG-176`.
+- **Next Task for AG**: Await Claude's review on BT-26 security hardening and BT-30, then implement template DB storage / backend.
+- **Next Task for Codex**: Await Claude's review on BT-30.

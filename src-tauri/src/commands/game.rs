@@ -8,22 +8,56 @@ use crate::domain::random::OsRngSource;
 use crate::errors::AppError;
 use rusqlite::{params, Connection};
 use std::sync::MutexGuard;
-use tauri::{AppHandle, Emitter, State, Window};
+use tauri::{AppHandle, Emitter, Manager, State, Window};
+
+pub fn suggest_presentation_display_if_multimonitor(app: &AppHandle) {
+    if let Ok(monitors) = app.available_monitors() {
+        if monitors.len() >= 2 && app.get_webview_window("presentation").is_none() {
+            let primary_name: Option<String> = app
+                .primary_monitor()
+                .ok()
+                .flatten()
+                .and_then(|m: tauri::Monitor| m.name().cloned());
+
+            let mut suggested_idx: usize = 1;
+            for (idx, mon) in monitors.iter().enumerate() {
+                let name = mon.name().cloned().unwrap_or_default();
+                let is_primary = primary_name
+                    .as_ref()
+                    .map(|p| p == &name)
+                    .unwrap_or(idx == 0);
+                if !is_primary {
+                    suggested_idx = idx;
+                    break;
+                }
+            }
+
+            let _ = app.emit(
+                "presentation-suggested",
+                serde_json::json!({ "displayIndex": suggested_idx }),
+            );
+        }
+    }
+}
 
 #[tauri::command]
 pub async fn preflight_media(
     app_handle: AppHandle,
+    window: Window,
     state: State<'_, DbState>,
 ) -> Result<MediaValidationReport, AppError> {
-    validate_all_media(app_handle, state).await
+    crate::errors::require_main_window(&window)?;
+    validate_all_media(app_handle, window, state).await
 }
 
 #[tauri::command]
 pub fn create_game(
     batch_id: i64,
+    window: Window,
     app: AppHandle,
     state: State<'_, DbState>,
 ) -> Result<GameState, AppError> {
+    crate::errors::require_main_window(&window)?;
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
 
@@ -68,15 +102,24 @@ pub fn create_game(
             }
         })?;
 
+    suggest_presentation_display_if_multimonitor(&app);
     let _ = app.emit("game-state-changed", &res);
     Ok(res)
 }
 
 #[tauri::command]
-pub fn get_active_game(state: State<'_, DbState>) -> Result<Option<GameState>, AppError> {
+pub fn get_active_game(
+    app: AppHandle,
+    state: State<'_, DbState>,
+) -> Result<Option<GameState>, AppError> {
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
 
-    GameRepository::get_active_game(&conn).map_err(AppError::database_error)
+    let res: Option<GameState> =
+        GameRepository::get_active_game(&conn).map_err(AppError::database_error)?;
+    if res.is_some() {
+        suggest_presentation_display_if_multimonitor(&app);
+    }
+    Ok(res)
 }
 
 #[tauri::command]
@@ -100,9 +143,11 @@ pub fn get_game(game_id: i64, state: State<'_, DbState>) -> Result<GameState, Ap
 pub fn draw_next(
     game_id: i64,
     expected_position: u32,
+    window: Window,
     app: AppHandle,
     state: State<'_, DbState>,
 ) -> Result<GameState, AppError> {
+    crate::errors::require_main_window(&window)?;
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
 
@@ -141,9 +186,11 @@ pub fn draw_next(
 #[tauri::command]
 pub fn pause_game(
     game_id: i64,
+    window: Window,
     app: AppHandle,
     state: State<'_, DbState>,
 ) -> Result<GameState, AppError> {
+    crate::errors::require_main_window(&window)?;
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
 
@@ -166,9 +213,11 @@ pub fn pause_game(
 #[tauri::command]
 pub fn resume_game(
     game_id: i64,
+    window: Window,
     app: AppHandle,
     state: State<'_, DbState>,
 ) -> Result<GameState, AppError> {
+    crate::errors::require_main_window(&window)?;
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
 
@@ -191,9 +240,11 @@ pub fn resume_game(
 #[tauri::command]
 pub fn end_game(
     game_id: i64,
+    window: Window,
     app: AppHandle,
     state: State<'_, DbState>,
 ) -> Result<GameState, AppError> {
+    crate::errors::require_main_window(&window)?;
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
 
@@ -222,6 +273,7 @@ pub fn list_games(state: State<'_, DbState>) -> Result<Vec<GameSummary>, AppErro
 
 #[tauri::command]
 pub fn set_fullscreen(fullscreen: bool, window: Window) -> Result<(), AppError> {
+    crate::errors::require_main_window(&window)?;
     window.set_fullscreen(fullscreen).map_err(|e| {
         AppError::with_detail(
             "UNKNOWN_ERROR",
@@ -266,8 +318,10 @@ pub fn get_game_format(state: State<'_, DbState>) -> Result<GameFormatConfig, Ap
 #[tauri::command]
 pub fn set_game_format(
     input: SetGameFormatInput,
+    window: Window,
     state: State<'_, DbState>,
 ) -> Result<GameFormatConfig, AppError> {
+    crate::errors::require_main_window(&window)?;
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
 
     // Validate that no game is ACTIVE or PAUSED

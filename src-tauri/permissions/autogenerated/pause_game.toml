@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-pause-game"
+description = "Enables the pause_game command without any pre-configured scope."
+commands.allow = ["pause_game"]
+
+[[permission]]
+identifier = "deny-pause-game"
+description = "Denies the pause_game command without any pre-configured scope."
+commands.deny = ["pause_game"]

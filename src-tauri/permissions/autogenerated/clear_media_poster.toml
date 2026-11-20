@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-clear-media-poster"
+description = "Enables the clear_media_poster command without any pre-configured scope."
+commands.allow = ["clear_media_poster"]
+
+[[permission]]
+identifier = "deny-clear-media-poster"
+description = "Denies the clear_media_poster command without any pre-configured scope."
+commands.deny = ["clear_media_poster"]

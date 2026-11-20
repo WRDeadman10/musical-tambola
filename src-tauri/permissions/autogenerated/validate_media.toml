@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-validate-media"
+description = "Enables the validate_media command without any pre-configured scope."
+commands.allow = ["validate_media"]
+
+[[permission]]
+identifier = "deny-validate-media"
+description = "Denies the validate_media command without any pre-configured scope."
+commands.deny = ["validate_media"]

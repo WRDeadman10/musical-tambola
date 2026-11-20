@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-scheme-active"
+description = "Enables the set_scheme_active command without any pre-configured scope."
+commands.allow = ["set_scheme_active"]
+
+[[permission]]
+identifier = "deny-set-scheme-active"
+description = "Denies the set_scheme_active command without any pre-configured scope."
+commands.deny = ["set_scheme_active"]

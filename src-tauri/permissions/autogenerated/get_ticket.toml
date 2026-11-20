@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-ticket"
+description = "Enables the get_ticket command without any pre-configured scope."
+commands.allow = ["get_ticket"]
+
+[[permission]]
+identifier = "deny-get-ticket"
+description = "Denies the get_ticket command without any pre-configured scope."
+commands.deny = ["get_ticket"]

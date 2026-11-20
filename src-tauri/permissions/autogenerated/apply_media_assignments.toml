@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-apply-media-assignments"
+description = "Enables the apply_media_assignments command without any pre-configured scope."
+commands.allow = ["apply_media_assignments"]
+
+[[permission]]
+identifier = "deny-apply-media-assignments"
+description = "Denies the apply_media_assignments command without any pre-configured scope."
+commands.deny = ["apply_media_assignments"]

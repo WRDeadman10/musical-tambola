@@ -11,7 +11,7 @@ use rusqlite::{params, Connection};
 use serde::Serialize;
 use std::path::Path;
 use std::sync::{Arc, MutexGuard};
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State, Window};
 use tauri_plugin_dialog::DialogExt;
 
 #[derive(Debug, Clone, Serialize)]
@@ -52,7 +52,12 @@ pub fn get_media(number: u8, state: State<'_, DbState>) -> Result<MediaSlot, App
 }
 
 #[tauri::command]
-pub fn save_media(input: SaveMediaInput, state: State<'_, DbState>) -> Result<MediaSlot, AppError> {
+pub fn save_media(
+    input: SaveMediaInput,
+    window: Window,
+    state: State<'_, DbState>,
+) -> Result<MediaSlot, AppError> {
+    crate::errors::require_main_window(&window)?;
     if !(1..=90).contains(&input.number) {
         return Err(AppError::new(
             "MEDIA_SLOT_OUT_OF_RANGE",
@@ -82,7 +87,12 @@ pub fn save_media(input: SaveMediaInput, state: State<'_, DbState>) -> Result<Me
 }
 
 #[tauri::command]
-pub fn clear_media(number: u8, state: State<'_, DbState>) -> Result<MediaSlot, AppError> {
+pub fn clear_media(
+    number: u8,
+    window: Window,
+    state: State<'_, DbState>,
+) -> Result<MediaSlot, AppError> {
+    crate::errors::require_main_window(&window)?;
     if !(1..=90).contains(&number) {
         return Err(AppError::new(
             "MEDIA_SLOT_OUT_OF_RANGE",
@@ -97,7 +107,12 @@ pub fn clear_media(number: u8, state: State<'_, DbState>) -> Result<MediaSlot, A
 }
 
 #[tauri::command]
-pub async fn validate_media(number: u8, state: State<'_, DbState>) -> Result<MediaSlot, AppError> {
+pub async fn validate_media(
+    number: u8,
+    window: Window,
+    state: State<'_, DbState>,
+) -> Result<MediaSlot, AppError> {
+    crate::errors::require_main_window(&window)?;
     let slot: MediaSlot = {
         let conn: MutexGuard<'_, Connection> =
             state.conn.lock().map_err(|_| AppError::lock_error())?;
@@ -127,8 +142,10 @@ pub async fn validate_media(number: u8, state: State<'_, DbState>) -> Result<Med
 #[tauri::command]
 pub async fn validate_all_media(
     app_handle: AppHandle,
+    window: Window,
     state: State<'_, DbState>,
 ) -> Result<MediaValidationReport, AppError> {
+    crate::errors::require_main_window(&window)?;
     let slots: Vec<MediaSlot> = {
         let conn: MutexGuard<'_, Connection> =
             state.conn.lock().map_err(|_| AppError::lock_error())?;
@@ -211,7 +228,9 @@ pub async fn validate_all_media(
 pub async fn pick_media_file(
     kind: String,
     app_handle: AppHandle,
+    window: Window,
 ) -> Result<Option<String>, AppError> {
+    crate::errors::require_main_window(&window)?;
     let mut builder = app_handle.dialog().file();
 
     let extensions: Vec<&str> = match kind.to_ascii_uppercase().as_str() {
@@ -230,7 +249,11 @@ pub async fn pick_media_file(
 }
 
 #[tauri::command]
-pub async fn pick_media_folder(app_handle: AppHandle) -> Result<Option<String>, AppError> {
+pub async fn pick_media_folder(
+    app_handle: AppHandle,
+    window: Window,
+) -> Result<Option<String>, AppError> {
+    crate::errors::require_main_window(&window)?;
     let folder_path: Option<tauri_plugin_dialog::FilePath> =
         app_handle.dialog().file().blocking_pick_folder();
     Ok(folder_path.map(|p: tauri_plugin_dialog::FilePath| match p {
@@ -245,8 +268,10 @@ pub fn scan_media_folder(
     order: MediaFolderOrder,
     recursive: bool,
     seed: Option<u64>,
+    window: Window,
     state: State<'_, DbState>,
 ) -> Result<MediaFolderScanResult, AppError> {
+    crate::errors::require_main_window(&window)?;
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
     let active_format_str: String = conn
         .query_row(
@@ -281,8 +306,10 @@ pub fn scan_media_folder(
 #[tauri::command]
 pub fn apply_media_assignments(
     assignments: Vec<MediaAssignment>,
+    window: Window,
     state: State<'_, DbState>,
 ) -> Result<Vec<MediaSlot>, AppError> {
+    crate::errors::require_main_window(&window)?;
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
     MediaRepository::apply_assignments(&mut conn, &assignments).map_err(AppError::database_error)
@@ -315,8 +342,10 @@ pub fn save_media_poster(
     number: u8,
     image_bytes: Vec<u8>,
     app_handle: AppHandle,
+    window: Window,
     state: State<'_, DbState>,
 ) -> Result<MediaSlot, AppError> {
+    crate::errors::require_main_window(&window)?;
     if !(1..=90).contains(&number) {
         return Err(AppError::new(
             "MEDIA_SLOT_OUT_OF_RANGE",
@@ -392,8 +421,10 @@ pub fn save_media_poster(
 pub fn clear_media_poster(
     number: u8,
     _app_handle: AppHandle,
+    window: Window,
     state: State<'_, DbState>,
 ) -> Result<MediaSlot, AppError> {
+    crate::errors::require_main_window(&window)?;
     if !(1..=90).contains(&number) {
         return Err(AppError::new(
             "MEDIA_SLOT_OUT_OF_RANGE",

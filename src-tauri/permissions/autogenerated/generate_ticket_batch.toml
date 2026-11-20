@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-generate-ticket-batch"
+description = "Enables the generate_ticket_batch command without any pre-configured scope."
+commands.allow = ["generate_ticket_batch"]
+
+[[permission]]
+identifier = "deny-generate-ticket-batch"
+description = "Denies the generate_ticket_batch command without any pre-configured scope."
+commands.deny = ["generate_ticket_batch"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-submit-claim"
+description = "Enables the submit_claim command without any pre-configured scope."
+commands.allow = ["submit_claim"]
+
+[[permission]]
+identifier = "deny-submit-claim"
+description = "Denies the submit_claim command without any pre-configured scope."
+commands.deny = ["submit_claim"]

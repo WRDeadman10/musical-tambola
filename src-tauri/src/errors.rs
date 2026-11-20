@@ -61,6 +61,23 @@ impl AppError {
     }
 }
 
+pub fn validate_window_label(label: &str) -> Result<(), AppError> {
+    if label != "main" {
+        return Err(AppError::new(
+            "WINDOW_NOT_AUTHORIZED",
+            format!(
+                "Window '{}' is not authorized to execute this command",
+                label
+            ),
+        ));
+    }
+    Ok(())
+}
+
+pub fn require_main_window(window: &tauri::Window) -> Result<(), AppError> {
+    validate_window_label(window.label())
+}
+
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}]: {}", self.code, self.message)
@@ -192,5 +209,62 @@ mod tests {
             "Cannot change game format while game is active",
         );
         assert_eq!(locked_err.code, "FORMAT_LOCKED_GAME_ACTIVE");
+    }
+
+    #[test]
+    fn test_require_main_window_guard() {
+        assert!(validate_window_label("main").is_ok());
+        let err: AppError = validate_window_label("presentation").unwrap_err();
+        assert_eq!(err.code, "WINDOW_NOT_AUTHORIZED");
+        assert!(err.message.contains("presentation"));
+    }
+
+    #[test]
+    fn test_presentation_capability_file_no_mutating_commands() {
+        let cap_path: std::path::PathBuf = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("capabilities")
+            .join("presentation.json");
+        let content: String = std::fs::read_to_string(&cap_path).expect("Read presentation.json");
+        let json: serde_json::Value =
+            serde_json::from_str(&content).expect("Parse presentation.json");
+
+        let perms = json
+            .get("permissions")
+            .and_then(|p| p.as_array())
+            .expect("permissions array");
+
+        let allowed_expected = [
+            "core:event:default",
+            "allow-get-game",
+            "allow-get-active-game",
+            "allow-get-presentation-state",
+            "allow-get-app-info",
+            "allow-list-media",
+        ];
+
+        for perm in perms {
+            let perm_str: &str = perm.as_str().expect("permission string");
+            assert!(
+                allowed_expected.contains(&perm_str),
+                "Unexpected permission in presentation.json: {}",
+                perm_str
+            );
+            assert!(!perm_str.contains("save"));
+            assert!(!perm_str.contains("clear"));
+            assert!(!perm_str.contains("draw"));
+            assert!(!perm_str.contains("create"));
+            assert!(!perm_str.contains("end"));
+            assert!(!perm_str.contains("pause"));
+            assert!(!perm_str.contains("resume"));
+            assert!(!perm_str.contains("delete"));
+            assert!(!perm_str.contains("submit"));
+            assert!(!perm_str.contains("apply"));
+            assert!(!perm_str.contains("set-app-setting"));
+            assert!(!perm_str.contains("set-game-format"));
+            assert!(!perm_str.contains("presentation-command"));
+            assert!(!perm_str.contains("open-presentation"));
+            assert!(!perm_str.contains("close-presentation"));
+            assert!(!perm_str.contains("next-item"));
+        }
     }
 }

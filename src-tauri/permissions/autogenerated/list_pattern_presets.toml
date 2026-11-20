@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-pattern-presets"
+description = "Enables the list_pattern_presets command without any pre-configured scope."
+commands.allow = ["list_pattern_presets"]
+
+[[permission]]
+identifier = "deny-list-pattern-presets"
+description = "Denies the list_pattern_presets command without any pre-configured scope."
+commands.deny = ["list_pattern_presets"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-game-claims"
+description = "Enables the list_game_claims command without any pre-configured scope."
+commands.allow = ["list_game_claims"]
+
+[[permission]]
+identifier = "deny-list-game-claims"
+description = "Denies the list_game_claims command without any pre-configured scope."
+commands.deny = ["list_game_claims"]

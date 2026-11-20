@@ -5,7 +5,9 @@ use crate::errors::AppError;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::sync::{Mutex, MutexGuard};
-use tauri::{AppHandle, Emitter, Manager, Monitor, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::{
+    AppHandle, Emitter, Manager, Monitor, State, WebviewUrl, WebviewWindowBuilder, Window,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -142,16 +144,52 @@ pub fn list_displays(app: AppHandle) -> Result<Vec<DisplayInfoDto>, AppError> {
 }
 
 #[tauri::command]
-pub fn open_presentation(display_index: Option<usize>, app: AppHandle) -> Result<(), AppError> {
+pub fn open_presentation(
+    display_index: Option<usize>,
+    window: Window,
+    app: AppHandle,
+    state: State<'_, DbState>,
+) -> Result<(), AppError> {
+    crate::errors::require_main_window(&window)?;
+
+    let target_idx: usize = match display_index {
+        Some(idx) => {
+            let conn: MutexGuard<'_, Connection> =
+                state.conn.lock().map_err(|_| AppError::lock_error())?;
+            let _ = crate::commands::app_info::set_app_setting_internal(
+                &conn,
+                "presentation_display",
+                &idx.to_string(),
+            );
+            idx
+        }
+        None => {
+            let conn: MutexGuard<'_, Connection> =
+                state.conn.lock().map_err(|_| AppError::lock_error())?;
+            conn.query_row(
+                "SELECT value FROM app_settings WHERE key = ?1;",
+                params!["presentation_display"],
+                |r: &rusqlite::Row| r.get::<_, String>(0),
+            )
+            .ok()
+            .and_then(|v: String| v.parse::<usize>().ok())
+            .unwrap_or(0)
+        }
+    };
+
+    let monitors: Vec<Monitor> = app.available_monitors().unwrap_or_default();
+    let target_monitor: Option<Monitor> = monitors.get(target_idx).cloned();
+
     if let Some(existing_window) = app.get_webview_window("presentation") {
+        if let Some(ref mon) = target_monitor {
+            let pos: tauri::Position = tauri::Position::Physical(*mon.position());
+            let _ = existing_window.set_position(pos);
+            let _ = existing_window.set_fullscreen(true);
+        }
         let _ = existing_window.show();
         let _ = existing_window.set_focus();
         return Ok(());
     }
-
-    let monitors: Vec<Monitor> = app.available_monitors().unwrap_or_default();
-    let target_monitor: Option<Monitor> =
-        display_index.and_then(|idx: usize| monitors.get(idx).cloned());
 
     let mut builder: WebviewWindowBuilder<'_, tauri::Wry, AppHandle> =
         WebviewWindowBuilder::new(&app, "presentation", WebviewUrl::App("/present".into()))
@@ -159,9 +197,9 @@ pub fn open_presentation(display_index: Option<usize>, app: AppHandle) -> Result
             .decorations(false)
             .resizable(true);
 
-    if let Some(mon) = target_monitor {
-        let pos = mon.position();
-        let size = mon.size();
+    if let Some(ref mon) = target_monitor {
+        let pos: &tauri::PhysicalPosition<i32> = mon.position();
+        let size: &tauri::PhysicalSize<u32> = mon.size();
         builder = builder
             .position(pos.x as f64, pos.y as f64)
             .inner_size(size.width as f64, size.height as f64)
@@ -170,20 +208,25 @@ pub fn open_presentation(display_index: Option<usize>, app: AppHandle) -> Result
         builder = builder.inner_size(1280.0, 720.0);
     }
 
-    builder.build().map_err(|e| {
+    let win = builder.build().map_err(|e: tauri::Error| {
         AppError::new(
             "WINDOW_CREATION_FAILED",
             format!("Failed to create presentation window: {}", e),
         )
     })?;
 
+    if target_monitor.is_some() {
+        let _ = win.set_fullscreen(true);
+    }
+
     Ok(())
 }
 
 #[tauri::command]
-pub fn close_presentation(app: AppHandle) -> Result<(), AppError> {
+pub fn close_presentation(window: Window, app: AppHandle) -> Result<(), AppError> {
+    crate::errors::require_main_window(&window)?;
     if let Some(win) = app.get_webview_window("presentation") {
-        win.close().map_err(|e| {
+        win.close().map_err(|e: tauri::Error| {
             AppError::new(
                 "WINDOW_CLOSE_FAILED",
                 format!("Failed to close presentation window: {}", e),
@@ -202,9 +245,11 @@ pub fn presentation_status(app: AppHandle) -> Result<bool, AppError> {
 pub fn presentation_command(
     command: String,
     payload: serde_json::Value,
+    window: Window,
     state: State<'_, PresentationStateManaged>,
     app: AppHandle,
 ) -> Result<(), AppError> {
+    crate::errors::require_main_window(&window)?;
     {
         let mut inner: MutexGuard<'_, PresentationInnerState> =
             state.inner.lock().map_err(|_| AppError::lock_error())?;
@@ -286,8 +331,10 @@ pub fn get_presentation_state(
 #[tauri::command]
 pub fn get_next_item(
     game_id: i64,
+    window: Window,
     state: State<'_, DbState>,
 ) -> Result<Option<NextItemDto>, AppError> {
+    crate::errors::require_main_window(&window)?;
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
 
     let (draw_seq_json, current_pos): (String, u32) = conn
@@ -526,5 +573,37 @@ mod tests {
         assert!(json_str.contains("\"showNumber\":false"));
         assert!(json_str.contains("\"countdown\":{\"seconds\":5,\"state\":\"RUNNING\"}"));
         assert!(json_str.contains("\"volume\":0.8"));
+    }
+
+    #[test]
+    fn test_presentation_display_setting_persistence() {
+        let conn: Connection = Connection::open_in_memory().unwrap();
+        conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
+        run_migrations(&conn).unwrap();
+
+        let initial_disp: usize = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = ?1;",
+                params!["presentation_display"],
+                |r: &rusqlite::Row| r.get::<_, String>(0),
+            )
+            .ok()
+            .and_then(|v: String| v.parse::<usize>().ok())
+            .unwrap_or(0);
+        assert_eq!(initial_disp, 0);
+
+        crate::commands::app_info::set_app_setting_internal(&conn, "presentation_display", "2")
+            .unwrap();
+
+        let persisted_disp: usize = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = ?1;",
+                params!["presentation_display"],
+                |r: &rusqlite::Row| r.get::<_, String>(0),
+            )
+            .ok()
+            .and_then(|v: String| v.parse::<usize>().ok())
+            .unwrap_or(0);
+        assert_eq!(persisted_disp, 2);
     }
 }

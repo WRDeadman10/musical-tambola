@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-delete-ticket-batch"
+description = "Enables the delete_ticket_batch command without any pre-configured scope."
+commands.allow = ["delete_ticket_batch"]
+
+[[permission]]
+identifier = "deny-delete-ticket-batch"
+description = "Denies the delete_ticket_batch command without any pre-configured scope."
+commands.deny = ["delete_ticket_batch"]

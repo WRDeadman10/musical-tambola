@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-winners"
+description = "Enables the list_winners command without any pre-configured scope."
+commands.allow = ["list_winners"]
+
+[[permission]]
+identifier = "deny-list-winners"
+description = "Denies the list_winners command without any pre-configured scope."
+commands.deny = ["list_winners"]

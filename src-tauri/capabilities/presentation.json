@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "presentation-capability",
+  "description": "Read-only capability for the presentation display window",
+  "windows": ["presentation"],
+  "permissions": [
+    "core:event:default",
+    "allow-get-game",
+    "allow-get-active-game",
+    "allow-get-presentation-state",
+    "allow-get-app-info",
+    "allow-list-media"
+  ]
+}

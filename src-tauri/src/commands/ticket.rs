@@ -22,8 +22,10 @@ pub async fn generate_ticket_batch(
     count: u32,
     format: Option<GameFormat>,
     song_count: Option<u32>,
+    window: tauri::Window,
     app_handle: AppHandle,
 ) -> Result<TicketBatch, AppError> {
+    crate::errors::require_main_window(&window)?;
     if !(1..=10_000).contains(&count) {
         return Err(AppError::new(
             "BATCH_COUNT_INVALID",
@@ -113,7 +115,12 @@ pub fn search_tickets(
 }
 
 #[tauri::command]
-pub fn delete_ticket_batch(batch_id: i64, state: State<'_, DbState>) -> Result<(), AppError> {
+pub fn delete_ticket_batch(
+    batch_id: i64,
+    window: tauri::Window,
+    state: State<'_, DbState>,
+) -> Result<(), AppError> {
+    crate::errors::require_main_window(&window)?;
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
 
     TicketRepository::delete_batch(&conn, batch_id).map_err(|e| {

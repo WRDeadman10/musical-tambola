@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-end-game"
+description = "Enables the end_game command without any pre-configured scope."
+commands.allow = ["end_game"]
+
+[[permission]]
+identifier = "deny-end-game"
+description = "Denies the end_game command without any pre-configured scope."
+commands.deny = ["end_game"]

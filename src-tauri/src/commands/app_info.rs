@@ -14,6 +14,7 @@ pub enum AppSettingKey {
     VideoAutoplay,
     ShowInternalNumbers,
     UseGujaratiNumerals,
+    PresentationDisplay,
 }
 
 impl FromStr for AppSettingKey {
@@ -27,6 +28,7 @@ impl FromStr for AppSettingKey {
             "video_autoplay" => Ok(Self::VideoAutoplay),
             "show_internal_numbers" => Ok(Self::ShowInternalNumbers),
             "use_gujarati_numerals" => Ok(Self::UseGujaratiNumerals),
+            "presentation_display" => Ok(Self::PresentationDisplay),
             _ => {
                 log::warn!("Rejected invalid app setting key: '{}'", s);
                 Err(AppError::new(
@@ -175,6 +177,18 @@ pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey,
                 .with_param("value", value));
             }
         }
+        AppSettingKey::PresentationDisplay => {
+            let disp_res = value.parse::<usize>();
+            if disp_res.is_err() {
+                log::warn!("Invalid presentation display setting value: '{}'", value);
+                return Err(AppError::new(
+                    "SETTING_INVALID_VALUE",
+                    "Presentation display must be a non-negative integer",
+                )
+                .with_param("key", key_str)
+                .with_param("value", value));
+            }
+        }
     }
 
     Ok(key)
@@ -301,8 +315,10 @@ pub fn get_app_info(state: State<'_, DbState>) -> Result<AppInfo, AppError> {
 pub fn set_app_setting(
     key: String,
     value: String,
+    window: tauri::Window,
     state: State<'_, DbState>,
 ) -> Result<(), AppError> {
+    crate::errors::require_main_window(&window)?;
     let conn = state
         .conn
         .lock()
@@ -329,6 +345,10 @@ mod tests {
         assert!(validate_app_setting("default_video_volume", "80").is_ok());
         assert!(validate_app_setting("video_autoplay", "true").is_ok());
         assert!(validate_app_setting("show_internal_numbers", "false").is_ok());
+        assert!(validate_app_setting("presentation_display", "0").is_ok());
+        assert!(validate_app_setting("presentation_display", "1").is_ok());
+        assert!(validate_app_setting("presentation_display", "-1").is_err());
+        assert!(validate_app_setting("presentation_display", "invalid").is_err());
 
         // Removed / forbidden settings
         assert!(validate_app_setting("sound_volume", "50").is_err());

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-claim-history"
+description = "Enables the list_claim_history command without any pre-configured scope."
+commands.allow = ["list_claim_history"]
+
+[[permission]]
+identifier = "deny-list-claim-history"
+description = "Denies the list_claim_history command without any pre-configured scope."
+commands.deny = ["list_claim_history"]

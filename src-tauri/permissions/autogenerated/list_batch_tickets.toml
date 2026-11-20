@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-batch-tickets"
+description = "Enables the list_batch_tickets command without any pre-configured scope."
+commands.allow = ["list_batch_tickets"]
+
+[[permission]]
+identifier = "deny-list-batch-tickets"
+description = "Denies the list_batch_tickets command without any pre-configured scope."
+commands.deny = ["list_batch_tickets"]

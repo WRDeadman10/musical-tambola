@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-search-tickets"
+description = "Enables the search_tickets command without any pre-configured scope."
+commands.allow = ["search_tickets"]
+
+[[permission]]
+identifier = "deny-search-tickets"
+description = "Denies the search_tickets command without any pre-configured scope."
+commands.deny = ["search_tickets"]

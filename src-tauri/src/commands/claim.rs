@@ -11,8 +11,10 @@ pub fn submit_claim(
     game_id: i64,
     scheme_id: i64,
     ticket_code: String,
+    window: tauri::Window,
     state: State<'_, DbState>,
 ) -> Result<ClaimResult, AppError> {
+    crate::errors::require_main_window(&window)?;
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
 

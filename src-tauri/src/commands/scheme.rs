@@ -18,8 +18,10 @@ pub fn list_schemes(state: State<'_, DbState>) -> Result<Vec<PrizeScheme>, AppEr
 #[tauri::command]
 pub fn save_scheme(
     input: SaveSchemeInput,
+    window: tauri::Window,
     state: State<'_, DbState>,
 ) -> Result<PrizeScheme, AppError> {
+    crate::errors::require_main_window(&window)?;
     if !(1..=100).contains(&input.max_winners) {
         return Err(AppError::new(
             "SCHEME_INVALID_CAPACITY",
@@ -60,8 +62,10 @@ pub fn save_scheme(
 pub fn set_scheme_active(
     id: i64,
     is_active: bool,
+    window: tauri::Window,
     state: State<'_, DbState>,
 ) -> Result<PrizeScheme, AppError> {
+    crate::errors::require_main_window(&window)?;
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
 
     SchemeRepository::set_active(&conn, id, is_active).map_err(|e| {

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-preflight-media"
+description = "Enables the preflight_media command without any pre-configured scope."
+commands.allow = ["preflight_media"]
+
+[[permission]]
+identifier = "deny-preflight-media"
+description = "Denies the preflight_media command without any pre-configured scope."
+commands.deny = ["preflight_media"]
