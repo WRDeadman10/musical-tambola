@@ -170,8 +170,9 @@
 | T8-B01 | End-to-end acceptance integration test | DONE | AG (A) | `tests/acceptance.rs`: 90 media, 100 tickets, full game flow, claims, crash recovery |
 | T8-B02 | Headless smoke CLI flag (`--smoke-test`) | DONE | AG (A) | `src-tauri/src/smoke.rs`: verifies AppData DB resolution, migrations, sentinel check |
 | T8-B03 | AppInfo command settings expansion | DONE | AG (A) | `commands/app_info.rs`: exposes default_video_volume, video_autoplay, show_internal_numbers |
-| T8-B04 | Standalone release build & packaging | DONE | AG (A) | `src-tauri/target/release/media-tambola.exe` (8.25 MB) verified |
-| T8-B05 | Backend verification & test suites | DONE | AG (A) | 57/57 Cargo tests pass (56 unit + 1 integration), clean fmt and clippy |
+| T8-B04 | Standalone release build & NSIS installer packaging | DONE | AG (A) | `media-tambola.exe` (8.00 MB) and `Media Tambola_1.0.0_x64-setup.exe` (3.18 MiB, 3,334,549 bytes) produced |
+| T8-B05 | Backend verification & test suites | DONE | AG (A) | 63/63 Cargo tests pass (62 unit + 1 integration), clean fmt and clippy |
+| T8-B06 | Error modernization & command conversion (BT-19) | DONE | AG (A) | Migration 0005, AppError envelope, all commands converted, zero raw DB leaks |
 
 ### Track 2: Frontend & E2E (Assignee: Codex — Implementer #2)
 
