@@ -1,7 +1,147 @@
-use crate::domain::tambola::ticket_generator::Ticket;
+use crate::domain::tambola::ticket_generator::{SongGridTicket, Ticket};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum PatternKind {
+    Mask,
+    EarlyN,
+    FullHouse,
+}
+
+impl PatternKind {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Mask => "MASK",
+            Self::EarlyN => "EARLY_N",
+            Self::FullHouse => "FULL_HOUSE",
+        }
+    }
+}
+
+impl FromStr for PatternKind {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim().to_uppercase().as_str() {
+            "MASK" => Ok(Self::Mask),
+            "EARLY_N" => Ok(Self::EarlyN),
+            "FULL_HOUSE" => Ok(Self::FullHouse),
+            other => Err(format!("Unknown pattern kind: '{}'", other)),
+        }
+    }
+}
+
+pub type PatternMask = [[bool; 5]; 3];
+pub type LogicalTicketCells = [[u8; 5]; 3];
+
+pub fn ticket_to_logical_cells(ticket: &Ticket) -> LogicalTicketCells {
+    let mut logical: LogicalTicketCells = [[0; 5]; 3];
+    for (r, row) in ticket.cells.iter().enumerate() {
+        let mut c: usize = 0;
+        for cell_opt in row {
+            if let Some(n) = *cell_opt {
+                if c < 5 {
+                    logical[r][c] = n;
+                    c += 1;
+                }
+            }
+        }
+    }
+    logical
+}
+
+pub fn song_grid_to_logical_cells(ticket: &SongGridTicket) -> LogicalTicketCells {
+    ticket.cells
+}
+
+pub struct GenericPatternEvaluator;
+
+impl GenericPatternEvaluator {
+    pub fn evaluate(
+        cells: &LogicalTicketCells,
+        pattern_kind: PatternKind,
+        mask: &PatternMask,
+        early_n: Option<u32>,
+        call_position_by_number: &HashMap<u8, u32>,
+    ) -> QualificationResult {
+        match pattern_kind {
+            PatternKind::Mask => {
+                let mut max_pos: u32 = 0;
+                let mut masked_count: usize = 0;
+
+                for (r, row) in mask.iter().enumerate() {
+                    for (c, &is_masked) in row.iter().enumerate() {
+                        if is_masked {
+                            masked_count += 1;
+                            let num: u8 = cells[r][c];
+                            match call_position_by_number.get(&num) {
+                                Some(&pos) => {
+                                    if pos > max_pos {
+                                        max_pos = pos;
+                                    }
+                                }
+                                None => return QualificationResult::not_qualified(),
+                            }
+                        }
+                    }
+                }
+
+                if masked_count == 0 {
+                    return QualificationResult::not_qualified();
+                }
+
+                QualificationResult::qualified(max_pos)
+            }
+            PatternKind::EarlyN => {
+                let n: usize = early_n.unwrap_or(5) as usize;
+                if n == 0 || n > 15 {
+                    return QualificationResult::not_qualified();
+                }
+
+                let mut called_positions: Vec<u32> = Vec::with_capacity(15);
+                for row in cells {
+                    for &num in row {
+                        if num > 0 {
+                            if let Some(&pos) = call_position_by_number.get(&num) {
+                                called_positions.push(pos);
+                            }
+                        }
+                    }
+                }
+
+                if called_positions.len() < n {
+                    return QualificationResult::not_qualified();
+                }
+
+                called_positions.sort_unstable();
+                QualificationResult::qualified(called_positions[n - 1])
+            }
+            PatternKind::FullHouse => {
+                let mut max_pos: u32 = 0;
+                for row in cells {
+                    for &num in row {
+                        if num == 0 {
+                            return QualificationResult::not_qualified();
+                        }
+                        match call_position_by_number.get(&num) {
+                            Some(&pos) => {
+                                if pos > max_pos {
+                                    max_pos = pos;
+                                }
+                            }
+                            None => return QualificationResult::not_qualified(),
+                        }
+                    }
+                }
+
+                QualificationResult::qualified(max_pos)
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -357,6 +497,10 @@ pub struct PrizeScheme {
     pub name: String,
     pub description: String,
     pub scheme_type: SchemeType,
+    pub pattern_kind: PatternKind,
+    pub mask: PatternMask,
+    pub early_n: Option<u32>,
+    pub is_full_house: bool,
     pub max_winners: u32,
     pub is_active: bool,
     pub created_at: String,
@@ -369,7 +513,11 @@ pub struct SaveSchemeInput {
     pub id: Option<i64>,
     pub name: String,
     pub description: String,
-    pub scheme_type: SchemeType,
+    pub scheme_type: Option<SchemeType>,
+    pub pattern_kind: Option<PatternKind>,
+    pub mask: Option<PatternMask>,
+    pub early_n: Option<u32>,
+    pub is_full_house: Option<bool>,
     pub max_winners: u32,
     pub is_active: bool,
 }
@@ -380,6 +528,206 @@ pub struct SchemeTypeInfo {
     pub scheme_type: SchemeType,
     pub is_full_house: bool,
     pub rule_description: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PatternPreset {
+    pub name: String,
+    pub description: String,
+    pub pattern_kind: PatternKind,
+    pub mask: PatternMask,
+    pub early_n: Option<u32>,
+    pub is_full_house: bool,
+}
+
+pub fn list_pattern_presets() -> Vec<PatternPreset> {
+    vec![
+        PatternPreset {
+            name: "Early 5".to_string(),
+            description: "Any 5 numbers on the ticket are called.".to_string(),
+            pattern_kind: PatternKind::EarlyN,
+            mask: [[false; 5]; 3],
+            early_n: Some(5),
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Early 7".to_string(),
+            description: "Any 7 numbers on the ticket are called.".to_string(),
+            pattern_kind: PatternKind::EarlyN,
+            mask: [[false; 5]; 3],
+            early_n: Some(7),
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Early 10".to_string(),
+            description: "Any 10 numbers on the ticket are called.".to_string(),
+            pattern_kind: PatternKind::EarlyN,
+            mask: [[false; 5]; 3],
+            early_n: Some(10),
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Four Corners".to_string(),
+            description: "The 4 outermost corners of the ticket.".to_string(),
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [true, false, false, false, true],
+                [false, false, false, false, false],
+                [true, false, false, false, true],
+            ],
+            early_n: None,
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Top Line".to_string(),
+            description: "All 5 numbers in Row 1 are struck.".to_string(),
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [true, true, true, true, true],
+                [false, false, false, false, false],
+                [false, false, false, false, false],
+            ],
+            early_n: None,
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Middle Line".to_string(),
+            description: "All 5 numbers in Row 2 are struck.".to_string(),
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [false, false, false, false, false],
+                [true, true, true, true, true],
+                [false, false, false, false, false],
+            ],
+            early_n: None,
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Bottom Line".to_string(),
+            description: "All 5 numbers in Row 3 are struck.".to_string(),
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [false, false, false, false, false],
+                [false, false, false, false, false],
+                [true, true, true, true, true],
+            ],
+            early_n: None,
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Pattern H".to_string(),
+            description: "Columns 1 and 5 all rows, plus middle row.".to_string(),
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [true, false, false, false, true],
+                [true, true, true, true, true],
+                [true, false, false, false, true],
+            ],
+            early_n: None,
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Pattern Plus".to_string(),
+            description: "Middle row and middle column.".to_string(),
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [false, false, true, false, false],
+                [true, true, true, true, true],
+                [false, false, true, false, false],
+            ],
+            early_n: None,
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Pattern V".to_string(),
+            description: "V-shaped pattern across the grid.".to_string(),
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [true, false, false, false, true],
+                [false, true, false, true, false],
+                [false, false, true, false, false],
+            ],
+            early_n: None,
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Pattern A".to_string(),
+            description: "A-shaped pattern across the grid.".to_string(),
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [false, false, true, false, false],
+                [true, true, true, true, true],
+                [true, false, false, false, true],
+            ],
+            early_n: None,
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Photo Frame".to_string(),
+            description: "Outer border cells (photo frame).".to_string(),
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [true, true, true, true, true],
+                [true, false, false, false, true],
+                [true, true, true, true, true],
+            ],
+            early_n: None,
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Breakfast".to_string(),
+            description: "Logical columns 1 and 2 (left two columns).".to_string(),
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [true, true, false, false, false],
+                [true, true, false, false, false],
+                [true, true, false, false, false],
+            ],
+            early_n: None,
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Lunch".to_string(),
+            description: "Logical column 3 (center column).".to_string(),
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [false, false, true, false, false],
+                [false, false, true, false, false],
+                [false, false, true, false, false],
+            ],
+            early_n: None,
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Dinner".to_string(),
+            description: "Logical columns 4 and 5 (right two columns).".to_string(),
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [false, false, false, true, true],
+                [false, false, false, true, true],
+                [false, false, false, true, true],
+            ],
+            early_n: None,
+            is_full_house: false,
+        },
+        PatternPreset {
+            name: "Full House".to_string(),
+            description: "All 15 numbers on the ticket are struck.".to_string(),
+            pattern_kind: PatternKind::FullHouse,
+            mask: [[true; 5]; 3],
+            early_n: None,
+            is_full_house: true,
+        },
+        PatternPreset {
+            name: "Full House 2".to_string(),
+            description: "Second Full House award (all 15 numbers).".to_string(),
+            pattern_kind: PatternKind::FullHouse,
+            mask: [[true; 5]; 3],
+            early_n: None,
+            is_full_house: true,
+        },
+    ]
 }
 
 #[cfg(test)]
@@ -646,5 +994,115 @@ mod tests {
         let res: QualificationResult = fh_eval.evaluate(&ticket, &call_pos);
         assert!(res.is_qualified);
         assert_eq!(res.qualification_position, Some(15));
+    }
+
+    #[test]
+    fn test_generic_pattern_evaluator_presets_classic90_and_song_grid() {
+        use crate::domain::tambola::ticket_generator::{
+            generate_song_grid_ticket, generate_ticket,
+        };
+
+        let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(1234);
+        let classic_ticket: Ticket = generate_ticket(&mut rng).unwrap();
+        let classic_cells: LogicalTicketCells = ticket_to_logical_cells(&classic_ticket);
+
+        let song_grid_ticket = generate_song_grid_ticket(45, &mut rng).unwrap();
+        let song_grid_cells: LogicalTicketCells = song_grid_to_logical_cells(&song_grid_ticket);
+
+        let grids: [(&str, LogicalTicketCells); 2] =
+            [("classic", classic_cells), ("song_grid", song_grid_cells)];
+
+        let presets: Vec<PatternPreset> = list_pattern_presets();
+
+        for (_label, cells) in grids {
+            // Flatten all 15 cells in order
+            let mut flat_numbers: Vec<u8> = Vec::with_capacity(15);
+            for row in &cells {
+                for &num in row {
+                    assert!(num > 0, "Cell number must be positive");
+                    flat_numbers.push(num);
+                }
+            }
+            assert_eq!(flat_numbers.len(), 15);
+
+            let all_draw_positions: HashMap<u8, u32> = positions_from_draws(&flat_numbers);
+
+            for preset in &presets {
+                let res: QualificationResult = GenericPatternEvaluator::evaluate(
+                    &cells,
+                    preset.pattern_kind,
+                    &preset.mask,
+                    preset.early_n,
+                    &all_draw_positions,
+                );
+
+                assert!(
+                    res.is_qualified,
+                    "Preset '{}' must qualify when all numbers are drawn",
+                    preset.name
+                );
+                assert!(res.qualification_position.is_some());
+            }
+
+            // Test Early 7 partial draw: only first 6 numbers drawn -> not qualified
+            let partial_6: HashMap<u8, u32> = positions_from_draws(&flat_numbers[..6]);
+            let early_7_preset = presets.iter().find(|p| p.name == "Early 7").unwrap();
+            let res_early_7: QualificationResult = GenericPatternEvaluator::evaluate(
+                &cells,
+                early_7_preset.pattern_kind,
+                &early_7_preset.mask,
+                early_7_preset.early_n,
+                &partial_6,
+            );
+            assert!(
+                !res_early_7.is_qualified,
+                "Early 7 with 6 drawn numbers must not qualify"
+            );
+
+            // With 7th number drawn -> qualifies at pos 7
+            let partial_7: HashMap<u8, u32> = positions_from_draws(&flat_numbers[..7]);
+            let res_early_7_ok: QualificationResult = GenericPatternEvaluator::evaluate(
+                &cells,
+                early_7_preset.pattern_kind,
+                &early_7_preset.mask,
+                early_7_preset.early_n,
+                &partial_7,
+            );
+            assert!(res_early_7_ok.is_qualified);
+            assert_eq!(res_early_7_ok.qualification_position, Some(7));
+
+            // Test Breakfast (columns 0 and 1): 6 numbers total
+            let breakfast_preset = presets.iter().find(|p| p.name == "Breakfast").unwrap();
+            let breakfast_nums: Vec<u8> = vec![
+                cells[0][0],
+                cells[0][1],
+                cells[1][0],
+                cells[1][1],
+                cells[2][0],
+                cells[2][1],
+            ];
+            // Draw 5 of the 6 -> not qualified
+            let partial_breakfast: HashMap<u8, u32> = positions_from_draws(&breakfast_nums[..5]);
+            let res_bf_fail: QualificationResult = GenericPatternEvaluator::evaluate(
+                &cells,
+                breakfast_preset.pattern_kind,
+                &breakfast_preset.mask,
+                breakfast_preset.early_n,
+                &partial_breakfast,
+            );
+            assert!(!res_bf_fail.is_qualified);
+
+            // Draw all 6 -> qualifies at pos 6
+            let full_breakfast: HashMap<u8, u32> = positions_from_draws(&breakfast_nums);
+            let res_bf_ok: QualificationResult = GenericPatternEvaluator::evaluate(
+                &cells,
+                breakfast_preset.pattern_kind,
+                &breakfast_preset.mask,
+                breakfast_preset.early_n,
+                &full_breakfast,
+            );
+            assert!(res_bf_ok.is_qualified);
+            assert_eq!(res_bf_ok.qualification_position, Some(6));
+        }
     }
 }

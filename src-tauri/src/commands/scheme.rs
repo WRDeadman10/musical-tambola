@@ -1,6 +1,8 @@
 use crate::db::repositories::scheme::SchemeRepository;
 use crate::db::DbState;
-use crate::domain::schemes::{PrizeScheme, SaveSchemeInput, SchemeType, SchemeTypeInfo};
+use crate::domain::schemes::{
+    PatternPreset, PrizeScheme, SaveSchemeInput, SchemeType, SchemeTypeInfo,
+};
 use crate::errors::AppError;
 use rusqlite::Connection;
 use std::sync::MutexGuard;
@@ -109,4 +111,9 @@ pub fn list_scheme_types() -> Vec<SchemeTypeInfo> {
             rule_description: SchemeType::FullHouse.rule_description().to_string(),
         },
     ]
+}
+
+#[tauri::command]
+pub fn list_pattern_presets() -> Vec<PatternPreset> {
+    crate::domain::schemes::list_pattern_presets()
 }

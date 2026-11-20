@@ -17,7 +17,9 @@ use commands::media::{
     pick_media_file, pick_media_folder, save_media, save_media_poster, scan_media_folder,
     validate_all_media, validate_media,
 };
-use commands::scheme::{list_scheme_types, list_schemes, save_scheme, set_scheme_active};
+use commands::scheme::{
+    list_pattern_presets, list_scheme_types, list_schemes, save_scheme, set_scheme_active,
+};
 use commands::ticket::{
     delete_ticket_batch, generate_ticket_batch, get_ticket, list_batch_tickets,
     list_ticket_batches, search_tickets,
@@ -83,6 +85,7 @@ pub fn run() {
             save_scheme,
             set_scheme_active,
             list_scheme_types,
+            list_pattern_presets,
             preflight_media,
             create_game,
             get_active_game,

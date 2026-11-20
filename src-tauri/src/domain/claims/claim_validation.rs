@@ -1,5 +1,7 @@
 use crate::domain::game::GameStatus;
-use crate::domain::schemes::{SchemeRegistry, SchemeType};
+use crate::domain::schemes::{
+    GenericPatternEvaluator, LogicalTicketCells, PatternKind, PatternMask, SchemeType,
+};
 use crate::domain::tambola::ticket_generator::Ticket;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -100,6 +102,10 @@ pub struct GameSchemeSnapshot {
     pub scheme_id: i64,
     pub scheme_name: String,
     pub scheme_type: SchemeType,
+    pub pattern_kind: PatternKind,
+    pub mask: PatternMask,
+    pub early_n: Option<u32>,
+    pub is_full_house: bool,
     pub max_winners: u32,
 }
 
@@ -119,12 +125,12 @@ pub fn normalize_ticket_code(raw: &str) -> String {
     }
 }
 
-/// Pure decision function evaluating claim validity against spec rules §9, §10, §11, §12.
+/// Pure decision function evaluating claim validity against pattern rules.
 #[allow(clippy::too_many_arguments)]
 pub fn evaluate_claim(
     game_status: Option<GameStatus>,
     current_draw_position: u32,
-    ticket: Option<&Ticket>,
+    cells: Option<&LogicalTicketCells>,
     is_ticket_in_game: bool,
     scheme_snapshot: Option<&GameSchemeSnapshot>,
     call_position_by_number: &HashMap<u8, u32>,
@@ -154,8 +160,8 @@ pub fn evaluate_claim(
     }
 
     // 2. Ticket unknown -> TICKET_NOT_FOUND; not in this game -> TICKET_NOT_IN_GAME.
-    let ticket_ref: &Ticket = match ticket {
-        Some(t) => t,
+    let cells_ref: &LogicalTicketCells = match cells {
+        Some(c) => c,
         None => {
             return ClaimDecision::Reject {
                 code: ClaimRejectionCode::TicketNotFound,
@@ -182,12 +188,14 @@ pub fn evaluate_claim(
         }
     };
 
-    // 4. Evaluate via SchemeRegistry. Not qualified -> NOT_COMPLETED.
-    let registry: SchemeRegistry = SchemeRegistry::new();
-    let evaluator: &dyn crate::domain::schemes::SchemeEvaluator =
-        registry.get(scheme_ref.scheme_type);
-    let qual: crate::domain::schemes::QualificationResult =
-        evaluator.evaluate(ticket_ref, call_position_by_number);
+    // 4. Evaluate via GenericPatternEvaluator. Not qualified -> NOT_COMPLETED.
+    let qual: crate::domain::schemes::QualificationResult = GenericPatternEvaluator::evaluate(
+        cells_ref,
+        scheme_ref.pattern_kind,
+        &scheme_ref.mask,
+        scheme_ref.early_n,
+        call_position_by_number,
+    );
 
     if !qual.is_qualified {
         return ClaimDecision::Reject {
@@ -238,7 +246,7 @@ pub fn evaluate_claim(
         };
     }
 
-    // 7. Ticket already won FULL_HOUSE -> ALREADY_WON_FULL_HOUSE.
+    // 7. Ticket already won any FULL_HOUSE -> ALREADY_WON_FULL_HOUSE.
     if ticket_existing_wins.iter().any(|w| w.is_full_house) {
         return ClaimDecision::Reject {
             code: ClaimRejectionCode::AlreadyWonFullHouse,
@@ -247,9 +255,7 @@ pub fn evaluate_claim(
     }
 
     // 8. The claimed scheme is not Full House and the ticket already won a non-FH scheme -> ONLY_FULL_HOUSE_ELIGIBLE.
-    if !scheme_ref.scheme_type.is_full_house()
-        && ticket_existing_wins.iter().any(|w| !w.is_full_house)
-    {
+    if !scheme_ref.is_full_house && ticket_existing_wins.iter().any(|w| !w.is_full_house) {
         return ClaimDecision::Reject {
             code: ClaimRejectionCode::OnlyFullHouseEligible,
             qualification_position: Some(qual_pos),
@@ -269,6 +275,31 @@ pub fn evaluate_claim(
         qualification_position: qual_pos,
         winner_position: accepted_winner_count + 1,
     }
+}
+
+/// Convenience wrapper for classic Ticket evaluation
+#[allow(clippy::too_many_arguments)]
+pub fn evaluate_claim_ticket(
+    game_status: Option<GameStatus>,
+    current_draw_position: u32,
+    ticket: Option<&Ticket>,
+    is_ticket_in_game: bool,
+    scheme_snapshot: Option<&GameSchemeSnapshot>,
+    call_position_by_number: &HashMap<u8, u32>,
+    ticket_existing_wins: &[TicketExistingWin],
+    accepted_winner_count: u32,
+) -> ClaimDecision {
+    let cells = ticket.map(crate::domain::schemes::ticket_to_logical_cells);
+    evaluate_claim(
+        game_status,
+        current_draw_position,
+        cells.as_ref(),
+        is_ticket_in_game,
+        scheme_snapshot,
+        call_position_by_number,
+        ticket_existing_wins,
+        accepted_winner_count,
+    )
 }
 
 #[cfg(test)]
@@ -321,18 +352,34 @@ mod tests {
             scheme_id: 1,
             scheme_name: "Early Five".to_string(),
             scheme_type: SchemeType::EarlyFive,
+            pattern_kind: PatternKind::EarlyN,
+            mask: [[false; 5]; 3],
+            early_n: Some(5),
+            is_full_house: false,
             max_winners: 1,
         };
         let scheme_top: GameSchemeSnapshot = GameSchemeSnapshot {
             scheme_id: 3,
             scheme_name: "Top Line".to_string(),
             scheme_type: SchemeType::TopLine,
+            pattern_kind: PatternKind::Mask,
+            mask: [
+                [true, true, true, true, true],
+                [false, false, false, false, false],
+                [false, false, false, false, false],
+            ],
+            early_n: None,
+            is_full_house: false,
             max_winners: 1,
         };
         let scheme_fh: GameSchemeSnapshot = GameSchemeSnapshot {
             scheme_id: 6,
             scheme_name: "Full House".to_string(),
             scheme_type: SchemeType::FullHouse,
+            pattern_kind: PatternKind::FullHouse,
+            mask: [[true; 5]; 3],
+            early_n: None,
+            is_full_house: true,
             max_winners: 1,
         };
 
@@ -345,7 +392,7 @@ mod tests {
         calls.insert(82, 5); // 5th number called at position 5
 
         // 1. No game
-        let res = evaluate_claim(
+        let res = evaluate_claim_ticket(
             None,
             5,
             Some(&ticket),
@@ -364,7 +411,7 @@ mod tests {
         );
 
         // 1b. Game ended
-        let res = evaluate_claim(
+        let res = evaluate_claim_ticket(
             Some(GameStatus::Ended),
             5,
             Some(&ticket),
@@ -383,7 +430,7 @@ mod tests {
         );
 
         // 1c. Game paused accepts claims!
-        let res_paused = evaluate_claim(
+        let res_paused = evaluate_claim_ticket(
             Some(GameStatus::Paused),
             5,
             Some(&ticket),
@@ -402,7 +449,7 @@ mod tests {
         );
 
         // 2. Ticket not found
-        let res = evaluate_claim(
+        let res = evaluate_claim_ticket(
             Some(GameStatus::Active),
             5,
             None,
@@ -421,7 +468,7 @@ mod tests {
         );
 
         // 2b. Ticket not in game
-        let res = evaluate_claim(
+        let res = evaluate_claim_ticket(
             Some(GameStatus::Active),
             5,
             Some(&ticket),
@@ -440,7 +487,7 @@ mod tests {
         );
 
         // 3. Scheme not in game
-        let res = evaluate_claim(
+        let res = evaluate_claim_ticket(
             Some(GameStatus::Active),
             5,
             Some(&ticket),
@@ -464,7 +511,7 @@ mod tests {
         partial_calls.insert(16, 2);
         partial_calls.insert(40, 3);
         partial_calls.insert(57, 4);
-        let res = evaluate_claim(
+        let res = evaluate_claim_ticket(
             Some(GameStatus::Active),
             4,
             Some(&ticket),
@@ -483,7 +530,7 @@ mod tests {
         );
 
         // 5. Late claim: completed at pos 5, current position is 6
-        let res = evaluate_claim(
+        let res = evaluate_claim_ticket(
             Some(GameStatus::Active),
             6,
             Some(&ticket),
@@ -506,7 +553,7 @@ mod tests {
             scheme_id: 1,
             is_full_house: false,
         }];
-        let res = evaluate_claim(
+        let res = evaluate_claim_ticket(
             Some(GameStatus::Active),
             5,
             Some(&ticket),
@@ -529,7 +576,7 @@ mod tests {
             scheme_id: 6,
             is_full_house: true,
         }];
-        let res = evaluate_claim(
+        let res = evaluate_claim_ticket(
             Some(GameStatus::Active),
             5,
             Some(&ticket),
@@ -548,7 +595,7 @@ mod tests {
         );
 
         // 8. Only Full House eligible (already won Early Five, claiming Top Line)
-        let res = evaluate_claim(
+        let res = evaluate_claim_ticket(
             Some(GameStatus::Active),
             5,
             Some(&ticket),
@@ -573,7 +620,7 @@ mod tests {
         for (i, &num) in all_nums.iter().enumerate() {
             fh_calls.insert(num, (i + 1) as u32);
         }
-        let res_fh_allowed = evaluate_claim(
+        let res_fh_allowed = evaluate_claim_ticket(
             Some(GameStatus::Active),
             15,
             Some(&ticket),
@@ -592,7 +639,7 @@ mod tests {
         );
 
         // 9. Winner limit reached
-        let res = evaluate_claim(
+        let res = evaluate_claim_ticket(
             Some(GameStatus::Active),
             5,
             Some(&ticket),
@@ -611,7 +658,7 @@ mod tests {
         );
 
         // 10. Valid Accept
-        let res_accept = evaluate_claim(
+        let res_accept = evaluate_claim_ticket(
             Some(GameStatus::Active),
             5,
             Some(&ticket),

@@ -132,12 +132,16 @@ mod tests {
 
     #[test]
     fn test_scheme_command_error_codes() {
-        use crate::domain::schemes::{SaveSchemeInput, SchemeType};
+        use crate::domain::schemes::{PatternKind, SaveSchemeInput, SchemeType};
         let bad_input = SaveSchemeInput {
             id: None,
             name: "Invalid Scheme".to_string(),
             description: "".to_string(),
-            scheme_type: SchemeType::EarlyFive,
+            scheme_type: Some(SchemeType::EarlyFive),
+            pattern_kind: Some(PatternKind::EarlyN),
+            mask: None,
+            early_n: Some(5),
+            is_full_house: Some(false),
             max_winners: 101,
             is_active: true,
         };

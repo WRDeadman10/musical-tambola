@@ -31,6 +31,11 @@ const MIGRATIONS: &[(i32, &str, &str)] = &[
         "0006_game_formats",
         include_str!("../../migrations/0006_game_formats.sql"),
     ),
+    (
+        7,
+        "0007_pattern_engine",
+        include_str!("../../migrations/0007_pattern_engine.sql"),
+    ),
 ];
 
 pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
@@ -111,7 +116,7 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let applied_version: i32 = run_migrations(&conn).expect("Migrations failed");
-        assert_eq!(applied_version, 6);
+        assert_eq!(applied_version, 7);
 
         let tables = [
             "app_settings",
@@ -138,10 +143,13 @@ mod tests {
             assert_eq!(count, 1, "Table {} must exist", table);
         }
 
-        // Verify 6 seeded prize schemes
+        // Verify 6 default active schemes + 11 presets = 17 prize schemes
         let mut scheme_stmt = conn.prepare("SELECT COUNT(*) FROM prize_schemes").unwrap();
         let scheme_count: i64 = scheme_stmt.query_row([], |r| r.get(0)).unwrap();
-        assert_eq!(scheme_count, 6, "Must seed 6 default prize schemes");
+        assert_eq!(
+            scheme_count, 17,
+            "Must seed 6 default prize schemes plus 11 inactive presets"
+        );
     }
 
     #[test]
@@ -150,10 +158,10 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let v1: i32 = run_migrations(&conn).expect("First migration run failed");
-        assert_eq!(v1, 6);
+        assert_eq!(v1, 7);
 
         let v2: i32 = run_migrations(&conn).expect("Second migration run failed");
-        assert_eq!(v2, 6);
+        assert_eq!(v2, 7);
     }
 
     #[test]
@@ -338,7 +346,7 @@ mod tests {
     fn test_migration_0006_game_formats_columns() {
         let conn: Connection = Connection::open_in_memory().unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 6);
+        assert_eq!(applied, 7);
 
         // Verify columns on ticket_batches
         conn.execute(
@@ -382,5 +390,45 @@ mod tests {
             )
             .unwrap();
         assert_eq!(active_song_count, "45");
+    }
+
+    #[test]
+    fn test_migration_0007_pattern_engine_columns() {
+        let conn: Connection = Connection::open_in_memory().unwrap();
+        conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
+        let applied: i32 = run_migrations(&conn).unwrap();
+        assert_eq!(applied, 7);
+
+        // Verify prize_schemes backfilled and presets seeded
+        let full_house_row: (String, String, bool) = conn
+            .query_row(
+                "SELECT pattern_kind, mask_json, is_full_house FROM prize_schemes WHERE scheme_type = 'FULL_HOUSE' LIMIT 1;",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!(full_house_row.0, "FULL_HOUSE");
+        assert!(full_house_row.1.contains("true"));
+        assert!(full_house_row.2);
+
+        let early_five_row: (String, u32) = conn
+            .query_row(
+                "SELECT pattern_kind, early_n FROM prize_schemes WHERE scheme_type = 'EARLY_FIVE' LIMIT 1;",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(early_five_row.0, "EARLY_N");
+        assert_eq!(early_five_row.1, 5);
+
+        // Verify presets exist and inactive
+        let preset_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM prize_schemes WHERE is_active = 0;",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert!(preset_count >= 11);
     }
 }

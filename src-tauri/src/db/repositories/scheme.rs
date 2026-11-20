@@ -1,4 +1,4 @@
-use crate::domain::schemes::{PrizeScheme, SaveSchemeInput, SchemeType};
+use crate::domain::schemes::{PatternKind, PatternMask, PrizeScheme, SaveSchemeInput, SchemeType};
 use rusqlite::{params, Connection, OptionalExtension};
 use std::str::FromStr;
 
@@ -8,7 +8,8 @@ impl SchemeRepository {
     pub fn list(conn: &Connection) -> Result<Vec<PrizeScheme>, String> {
         let mut stmt: rusqlite::Statement<'_> = conn
             .prepare(
-                "SELECT id, name, description, scheme_type, max_winners, is_active, created_at, updated_at
+                "SELECT id, name, description, scheme_type, max_winners, is_active, created_at, updated_at,
+                        pattern_kind, mask_json, early_n, is_full_house
                  FROM prize_schemes ORDER BY display_order ASC, id ASC;",
             )
             .map_err(|e: rusqlite::Error| format!("Failed to prepare list schemes: {}", e))?;
@@ -23,6 +24,10 @@ impl SchemeRepository {
                 let is_active: bool = r.get(5)?;
                 let created_at: String = r.get(6)?;
                 let updated_at: String = r.get(7)?;
+                let pkind_str: String = r.get(8)?;
+                let mask_json: Option<String> = r.get(9)?;
+                let early_n: Option<u32> = r.get(10)?;
+                let is_full_house: bool = r.get(11)?;
 
                 let scheme_type: SchemeType =
                     SchemeType::from_str(&scheme_type_str).map_err(|e| {
@@ -31,12 +36,21 @@ impl SchemeRepository {
                             e,
                         )))
                     })?;
+                let pattern_kind: PatternKind =
+                    PatternKind::from_str(&pkind_str).unwrap_or(PatternKind::Mask);
+                let mask: PatternMask = mask_json
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or([[true; 5]; 3]);
 
                 Ok(PrizeScheme {
                     id,
                     name,
                     description,
                     scheme_type,
+                    pattern_kind,
+                    mask,
+                    early_n,
+                    is_full_house,
                     max_winners,
                     is_active,
                     created_at,
@@ -56,7 +70,8 @@ impl SchemeRepository {
     pub fn get_by_id(conn: &Connection, id: i64) -> Result<PrizeScheme, String> {
         let mut stmt: rusqlite::Statement<'_> = conn
             .prepare(
-                "SELECT id, name, description, scheme_type, max_winners, is_active, created_at, updated_at
+                "SELECT id, name, description, scheme_type, max_winners, is_active, created_at, updated_at,
+                        pattern_kind, mask_json, early_n, is_full_house
                  FROM prize_schemes WHERE id = ?1;",
             )
             .map_err(|e: rusqlite::Error| format!("Prepare query failed: {}", e))?;
@@ -71,6 +86,10 @@ impl SchemeRepository {
                 let is_active: bool = r.get(5)?;
                 let created_at: String = r.get(6)?;
                 let updated_at: String = r.get(7)?;
+                let pkind_str: String = r.get(8)?;
+                let mask_json: Option<String> = r.get(9)?;
+                let early_n: Option<u32> = r.get(10)?;
+                let is_full_house: bool = r.get(11)?;
 
                 let scheme_type: SchemeType =
                     SchemeType::from_str(&scheme_type_str).map_err(|e| {
@@ -79,12 +98,21 @@ impl SchemeRepository {
                             e,
                         )))
                     })?;
+                let pattern_kind: PatternKind =
+                    PatternKind::from_str(&pkind_str).unwrap_or(PatternKind::Mask);
+                let mask: PatternMask = mask_json
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or([[true; 5]; 3]);
 
                 Ok(PrizeScheme {
                     id,
                     name,
                     description,
                     scheme_type,
+                    pattern_kind,
+                    mask,
+                    early_n,
+                    is_full_house,
                     max_winners,
                     is_active,
                     created_at,
@@ -111,6 +139,54 @@ impl SchemeRepository {
         if !(1..=100).contains(&input.max_winners) {
             return Err("Max winners must be between 1 and 100".to_string());
         }
+
+        let pattern_kind: PatternKind = input.pattern_kind.unwrap_or(match input.scheme_type {
+            Some(SchemeType::EarlyFive) => PatternKind::EarlyN,
+            Some(SchemeType::FullHouse) => PatternKind::FullHouse,
+            _ => PatternKind::Mask,
+        });
+
+        let is_full_house: bool = input
+            .is_full_house
+            .unwrap_or(matches!(pattern_kind, PatternKind::FullHouse));
+
+        let early_n: Option<u32> = if pattern_kind == PatternKind::EarlyN {
+            Some(input.early_n.unwrap_or(5))
+        } else {
+            None
+        };
+
+        let mask: PatternMask = input.mask.unwrap_or(match pattern_kind {
+            PatternKind::FullHouse => [[true; 5]; 3],
+            PatternKind::EarlyN => [[false; 5]; 3],
+            PatternKind::Mask => [[true; 5]; 3],
+        });
+
+        // Validation per spec
+        if pattern_kind == PatternKind::Mask {
+            let marked: usize = mask.iter().flatten().filter(|&&b| b).count();
+            if marked == 0 {
+                return Err("A pattern mask requires at least 1 cell to be marked".to_string());
+            }
+        } else if pattern_kind == PatternKind::EarlyN {
+            let n: u32 = early_n.unwrap_or(0);
+            if !(1..=15).contains(&n) {
+                return Err("Early N must be between 1 and 15".to_string());
+            }
+        }
+
+        let scheme_type: SchemeType = input.scheme_type.unwrap_or_else(|| {
+            if is_full_house {
+                SchemeType::FullHouse
+            } else if pattern_kind == PatternKind::EarlyN {
+                SchemeType::EarlyFive
+            } else {
+                SchemeType::TopLine
+            }
+        });
+
+        let mask_json: String = serde_json::to_string(&mask)
+            .map_err(|e| format!("Failed to serialize pattern mask: {}", e))?;
 
         // Case-insensitive name uniqueness check
         let existing_id: Option<i64> = conn
@@ -141,14 +217,22 @@ impl SchemeRepository {
                             scheme_type = ?3,
                             max_winners = ?4,
                             is_active = ?5,
+                            pattern_kind = ?6,
+                            mask_json = ?7,
+                            early_n = ?8,
+                            is_full_house = ?9,
                             updated_at = CURRENT_TIMESTAMP
-                         WHERE id = ?6;",
+                         WHERE id = ?10;",
                         params![
                             trimmed_name,
                             trimmed_desc,
-                            input.scheme_type.as_str(),
+                            scheme_type.as_str(),
                             input.max_winners,
                             input.is_active,
+                            pattern_kind.as_str(),
+                            mask_json,
+                            early_n,
+                            is_full_house,
                             id
                         ],
                     )
@@ -170,15 +254,20 @@ impl SchemeRepository {
 
                 conn.execute(
                     "INSERT INTO prize_schemes (
-                        name, description, scheme_type, rule_config_json, max_winners, is_active, display_order, updated_at
-                    ) VALUES (?1, ?2, ?3, '{}', ?4, ?5, ?6, CURRENT_TIMESTAMP);",
+                        name, description, scheme_type, rule_config_json, max_winners, is_active, display_order,
+                        pattern_kind, mask_json, early_n, is_full_house, updated_at
+                    ) VALUES (?1, ?2, ?3, '{}', ?4, ?5, ?6, ?7, ?8, ?9, ?10, CURRENT_TIMESTAMP);",
                     params![
                         trimmed_name,
                         trimmed_desc,
-                        input.scheme_type.as_str(),
+                        scheme_type.as_str(),
                         input.max_winners,
                         input.is_active,
-                        next_order
+                        next_order,
+                        pattern_kind.as_str(),
+                        mask_json,
+                        early_n,
+                        is_full_house,
                     ],
                 )
                 .map_err(|e: rusqlite::Error| format!("Failed to insert scheme: {}", e))?;
@@ -218,7 +307,9 @@ mod tests {
         run_migrations(&conn).unwrap();
 
         let schemes: Vec<PrizeScheme> = SchemeRepository::list(&conn).unwrap();
-        assert_eq!(schemes.len(), 6);
+        assert_eq!(schemes.len(), 17);
+        let active_count: usize = schemes.iter().filter(|s| s.is_active).count();
+        assert_eq!(active_count, 6);
         assert_eq!(schemes[0].name, "Early Five");
         assert_eq!(schemes[0].scheme_type, SchemeType::EarlyFive);
         assert!(schemes[0].is_active);
@@ -234,7 +325,11 @@ mod tests {
             id: None,
             name: "top line".to_string(),
             description: "duplicate".to_string(),
-            scheme_type: SchemeType::TopLine,
+            scheme_type: Some(SchemeType::TopLine),
+            pattern_kind: Some(crate::domain::schemes::PatternKind::Mask),
+            mask: Some([[true, true, true, true, true], [false; 5], [false; 5]]),
+            early_n: None,
+            is_full_house: Some(false),
             max_winners: 1,
             is_active: true,
         };
@@ -247,7 +342,11 @@ mod tests {
             id: None,
             name: "   ".to_string(),
             description: "empty".to_string(),
-            scheme_type: SchemeType::TopLine,
+            scheme_type: Some(SchemeType::TopLine),
+            pattern_kind: Some(crate::domain::schemes::PatternKind::Mask),
+            mask: Some([[true, true, true, true, true], [false; 5], [false; 5]]),
+            early_n: None,
+            is_full_house: Some(false),
             max_winners: 1,
             is_active: true,
         };
@@ -258,7 +357,11 @@ mod tests {
             id: None,
             name: "Custom Scheme".to_string(),
             description: "".to_string(),
-            scheme_type: SchemeType::TopLine,
+            scheme_type: Some(SchemeType::TopLine),
+            pattern_kind: Some(crate::domain::schemes::PatternKind::Mask),
+            mask: Some([[true, true, true, true, true], [false; 5], [false; 5]]),
+            early_n: None,
+            is_full_house: Some(false),
             max_winners: 0,
             is_active: true,
         };
@@ -269,7 +372,15 @@ mod tests {
             id: None,
             name: "Corner King".to_string(),
             description: "Custom corner rule".to_string(),
-            scheme_type: SchemeType::FourCorners,
+            scheme_type: Some(SchemeType::FourCorners),
+            pattern_kind: Some(crate::domain::schemes::PatternKind::Mask),
+            mask: Some([
+                [true, false, false, false, true],
+                [false, false, false, false, false],
+                [true, false, false, false, true],
+            ]),
+            early_n: None,
+            is_full_house: Some(false),
             max_winners: 2,
             is_active: true,
         };
@@ -282,7 +393,15 @@ mod tests {
             id: Some(saved.id),
             name: "Corner King Updated".to_string(),
             description: "Updated description".to_string(),
-            scheme_type: SchemeType::FourCorners,
+            scheme_type: Some(SchemeType::FourCorners),
+            pattern_kind: Some(crate::domain::schemes::PatternKind::Mask),
+            mask: Some([
+                [true, false, false, false, true],
+                [false, false, false, false, false],
+                [true, false, false, false, true],
+            ]),
+            early_n: None,
+            is_full_house: Some(false),
             max_winners: 3,
             is_active: false,
         };

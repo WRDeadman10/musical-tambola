@@ -233,8 +233,13 @@ impl GameRepository {
 
         // 11. Snapshot active prize schemes
         tx.execute(
-            "INSERT INTO game_schemes (game_id, scheme_id, name, scheme_type, rule_config_json, max_winners)
-             SELECT ?1, id, name, scheme_type, rule_config_json, max_winners FROM prize_schemes WHERE is_active = 1
+            "INSERT INTO game_schemes (
+                game_id, scheme_id, name, scheme_type, rule_config_json, max_winners,
+                pattern_kind, mask_json, early_n, is_full_house
+             )
+             SELECT ?1, id, name, scheme_type, rule_config_json, max_winners,
+                    pattern_kind, mask_json, early_n, is_full_house
+             FROM prize_schemes WHERE is_active = 1
              ORDER BY display_order ASC, id ASC;",
             params![game_id],
         )
@@ -578,7 +583,8 @@ impl GameRepository {
         let mut schemes_stmt = conn
             .prepare(
                 "SELECT s.scheme_id, s.name, s.scheme_type, s.max_winners,
-                        (SELECT COUNT(*) FROM winners w WHERE w.game_id = s.game_id AND w.scheme_id = s.scheme_id)
+                        (SELECT COUNT(*) FROM winners w WHERE w.game_id = s.game_id AND w.scheme_id = s.scheme_id),
+                        s.is_full_house
                  FROM game_schemes s
                  WHERE s.game_id = ?1
                  ORDER BY s.id ASC;",
@@ -592,6 +598,7 @@ impl GameRepository {
                 let scheme_type_str: String = r.get(2)?;
                 let max_winners: u32 = r.get(3)?;
                 let winners_count: u32 = r.get(4)?;
+                let is_full_house: bool = r.get(5)?;
 
                 let scheme_type: SchemeType =
                     SchemeType::from_str(&scheme_type_str).map_err(|e| {
@@ -600,8 +607,6 @@ impl GameRepository {
                             e,
                         )))
                     })?;
-
-                let is_full_house: bool = scheme_type == SchemeType::FullHouse;
 
                 Ok(GameSchemeState {
                     scheme_id,
