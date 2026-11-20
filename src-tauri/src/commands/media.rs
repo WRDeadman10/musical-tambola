@@ -15,6 +15,14 @@ struct ProgressPayload {
     total: usize,
 }
 
+type ValidationTaskResult = (
+    u8,
+    ValidationStatus,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+);
+
 #[tauri::command]
 pub fn list_media(state: State<'_, DbState>) -> Result<Vec<MediaSlot>, String> {
     let conn: MutexGuard<'_, Connection> = state
@@ -65,14 +73,26 @@ pub async fn validate_media(number: u8, state: State<'_, DbState>) -> Result<Med
         MediaRepository::get_by_number(&conn, number)?
     };
 
-    let (status, message): (ValidationStatus, Option<String>) = validate_slot(&slot).await;
+    let (status, message, code, params_json): (
+        ValidationStatus,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    ) = validate_slot(&slot).await;
 
     let conn: MutexGuard<'_, Connection> = state
         .conn
         .lock()
         .map_err(|_| "Failed to acquire database lock".to_string())?;
 
-    MediaRepository::update_validation_status(&conn, number, status, message.as_deref())
+    MediaRepository::update_validation_status(
+        &conn,
+        number,
+        status,
+        message.as_deref(),
+        code.as_deref(),
+        params_json.as_deref(),
+    )
 }
 
 #[tauri::command]
@@ -93,21 +113,20 @@ pub async fn validate_all_media(
 
     // Limit concurrency to 4 simultaneous checks
     let semaphore: Arc<tokio::sync::Semaphore> = Arc::new(tokio::sync::Semaphore::new(4));
-    let mut handles: Vec<tokio::task::JoinHandle<(u8, ValidationStatus, Option<String>)>> =
-        Vec::with_capacity(total);
+    let mut handles: Vec<tokio::task::JoinHandle<ValidationTaskResult>> = Vec::with_capacity(total);
 
     for slot in slots {
         let sem: Arc<tokio::sync::Semaphore> = semaphore.clone();
         handles.push(tokio::spawn(async move {
             let _permit = sem.acquire().await.unwrap();
-            let (status, msg): (ValidationStatus, Option<String>) = validate_slot(&slot).await;
-            (slot.number, status, msg)
+            let (status, msg, code, params_json) = validate_slot(&slot).await;
+            (slot.number, status, msg, code, params_json)
         }));
     }
 
     let mut done_count: usize = 0;
     for handle in handles {
-        if let Ok((number, status, msg)) = handle.await {
+        if let Ok((number, status, msg, code, params_json)) = handle.await {
             done_count += 1;
             let _ = app_handle.emit(
                 "media-validation-progress",
@@ -122,9 +141,14 @@ pub async fn validate_all_media(
                 .lock()
                 .map_err(|_| "Failed to acquire database lock".to_string())?;
 
-            if let Ok(updated) =
-                MediaRepository::update_validation_status(&conn, number, status, msg.as_deref())
-            {
+            if let Ok(updated) = MediaRepository::update_validation_status(
+                &conn,
+                number,
+                status,
+                msg.as_deref(),
+                code.as_deref(),
+                params_json.as_deref(),
+            ) {
                 updated_slots.push(updated);
             }
         }

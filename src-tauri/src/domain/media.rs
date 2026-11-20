@@ -119,6 +119,8 @@ pub struct MediaSlot {
     pub thumbnail_source: Option<String>,
     pub validation_status: ValidationStatus,
     pub validation_message: Option<String>,
+    pub validation_code: Option<String>,
+    pub validation_params: Option<serde_json::Value>,
     pub last_validated_at: Option<String>,
 }
 
@@ -138,6 +140,8 @@ pub struct SaveMediaInput {
 pub struct MediaValidationIssue {
     pub number: u8,
     pub message: String,
+    pub validation_code: Option<String>,
+    pub validation_params: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

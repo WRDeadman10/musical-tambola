@@ -112,14 +112,22 @@ async fn test_end_to_end_acceptance_workflow() {
     // Run validate_all over all 90 slots and assert 90 valid
     for num in 1..=90 {
         let slot = MediaRepository::get_by_number(&conn, num).unwrap();
-        let (status, err) = validate_slot(&slot).await;
+        let (status, err, code, params_json) = validate_slot(&slot).await;
         assert_eq!(
             status,
             ValidationStatus::Valid,
             "Slot {} must validate successfully",
             num
         );
-        MediaRepository::update_validation_status(&conn, num, status, err.as_deref()).unwrap();
+        MediaRepository::update_validation_status(
+            &conn,
+            num,
+            status,
+            err.as_deref(),
+            code.as_deref(),
+            params_json.as_deref(),
+        )
+        .unwrap();
     }
 
     let all_slots = MediaRepository::list_all(&conn).unwrap();

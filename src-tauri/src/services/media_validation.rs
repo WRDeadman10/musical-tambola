@@ -279,13 +279,55 @@ pub async fn validate_remote_media_with_timeout(
     Ok(())
 }
 
-pub async fn validate_slot(slot: &MediaSlot) -> (ValidationStatus, Option<String>) {
+pub fn error_to_code(err: &str) -> (&'static str, Option<String>) {
+    if err.contains("was not found") || err.contains("cannot be read") {
+        ("MEDIA_FILE_NOT_FOUND", None)
+    } else if err.contains("Extension") && err.contains("is not allowed") {
+        ("MEDIA_EXTENSION_NOT_ALLOWED", None)
+    } else if err.contains("Type mismatch") {
+        ("MEDIA_TYPE_MISMATCH", None)
+    } else if err.contains("HTML web page") {
+        ("MEDIA_REMOTE_HTML", None)
+    } else if err.contains("timed out") {
+        ("MEDIA_REMOTE_TIMEOUT", None)
+    } else if err.contains("HTTP ") {
+        if let Some(pos) = err.find("HTTP ") {
+            let status: String = err[pos + 5..]
+                .chars()
+                .take_while(|c: &char| c.is_ascii_digit())
+                .collect();
+            if !status.is_empty() {
+                (
+                    "MEDIA_REMOTE_HTTP_STATUS",
+                    Some(format!("{{\"status\":{}}}", status)),
+                )
+            } else {
+                ("MEDIA_REMOTE_HTTP_STATUS", None)
+            }
+        } else {
+            ("MEDIA_REMOTE_HTTP_STATUS", None)
+        }
+    } else if err.contains("connection failed") {
+        ("MEDIA_REMOTE_CONNECTION_FAILED", None)
+    } else {
+        ("MEDIA_UNSUPPORTED_FORMAT", None)
+    }
+}
+
+pub async fn validate_slot(
+    slot: &MediaSlot,
+) -> (
+    ValidationStatus,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+) {
     if !slot.configured
         || slot.source.is_none()
         || slot.media_type.is_none()
         || slot.source_type.is_none()
     {
-        return (ValidationStatus::NotTested, None);
+        return (ValidationStatus::NotTested, None, None, None);
     }
 
     let source: &String = slot.source.as_ref().unwrap();
@@ -298,8 +340,16 @@ pub async fn validate_slot(slot: &MediaSlot) -> (ValidationStatus, Option<String
     };
 
     match res {
-        Ok(()) => (ValidationStatus::Valid, None),
-        Err(err) => (ValidationStatus::Invalid, Some(err)),
+        Ok(()) => (ValidationStatus::Valid, None, None, None),
+        Err(err) => {
+            let (code, params_json) = error_to_code(&err);
+            (
+                ValidationStatus::Invalid,
+                Some(err),
+                Some(code.to_string()),
+                params_json,
+            )
+        }
     }
 }
 
@@ -320,6 +370,8 @@ pub fn summarize_report(slots: &[MediaSlot]) -> MediaValidationReport {
                             .validation_message
                             .clone()
                             .unwrap_or_else(|| "Validation failed".to_string()),
+                        validation_code: slot.validation_code.clone(),
+                        validation_params: slot.validation_params.clone(),
                     });
                 }
                 _ => {
@@ -327,6 +379,8 @@ pub fn summarize_report(slots: &[MediaSlot]) -> MediaValidationReport {
                     issues.push(MediaValidationIssue {
                         number: slot.number,
                         message: "Slot has not been tested or verified".to_string(),
+                        validation_code: None,
+                        validation_params: None,
                     });
                 }
             }
@@ -335,6 +389,8 @@ pub fn summarize_report(slots: &[MediaSlot]) -> MediaValidationReport {
             issues.push(MediaValidationIssue {
                 number: slot.number,
                 message: "Slot is unconfigured".to_string(),
+                validation_code: None,
+                validation_params: None,
             });
         }
     }

@@ -12,7 +12,7 @@ impl MediaRepository {
         let mut stmt: rusqlite::Statement<'_> = conn
             .prepare(
                 "SELECT number, media_type, source_type, path_or_url, poster_path, title_gujarati,
-                        is_valid, validation_error, last_validated_at
+                        is_valid, validation_error, last_validated_at, validation_code, validation_params_json
                  FROM media_assets ORDER BY number ASC;",
             )
             .map_err(|e: rusqlite::Error| format!("Failed to prepare list_all query: {}", e))?;
@@ -28,6 +28,11 @@ impl MediaRepository {
                 let is_valid: bool = row.get(6)?;
                 let validation_error: Option<String> = row.get(7)?;
                 let last_validated_at: Option<String> = row.get(8)?;
+                let validation_code: Option<String> = row.get(9)?;
+                let validation_params_json: Option<String> = row.get(10)?;
+                let validation_params: Option<serde_json::Value> = validation_params_json
+                    .as_deref()
+                    .and_then(|s| serde_json::from_str(s).ok());
 
                 let media_type: Option<MediaType> = MediaType::from_str(&media_type_str).ok();
                 let source_type: Option<SourceType> = SourceType::from_str(&source_type_str).ok();
@@ -52,6 +57,8 @@ impl MediaRepository {
                         thumbnail_source: poster_path,
                         validation_status,
                         validation_message: validation_error,
+                        validation_code,
+                        validation_params,
                         last_validated_at,
                     },
                 ))
@@ -78,6 +85,8 @@ impl MediaRepository {
                     thumbnail_source: None,
                     validation_status: ValidationStatus::NotTested,
                     validation_message: None,
+                    validation_code: None,
+                    validation_params: None,
                     last_validated_at: None,
                 });
             }
@@ -94,7 +103,7 @@ impl MediaRepository {
         let mut stmt: rusqlite::Statement<'_> = conn
             .prepare(
                 "SELECT media_type, source_type, path_or_url, poster_path, title_gujarati,
-                        is_valid, validation_error, last_validated_at
+                        is_valid, validation_error, last_validated_at, validation_code, validation_params_json
                  FROM media_assets WHERE number = ?1;",
             )
             .map_err(|e: rusqlite::Error| format!("Prepare query failed: {}", e))?;
@@ -109,6 +118,11 @@ impl MediaRepository {
                 let is_valid: bool = row.get(5)?;
                 let validation_error: Option<String> = row.get(6)?;
                 let last_validated_at: Option<String> = row.get(7)?;
+                let validation_code: Option<String> = row.get(8)?;
+                let validation_params_json: Option<String> = row.get(9)?;
+                let validation_params: Option<serde_json::Value> = validation_params_json
+                    .as_deref()
+                    .and_then(|s| serde_json::from_str(s).ok());
 
                 let media_type: Option<MediaType> = MediaType::from_str(&media_type_str).ok();
                 let source_type: Option<SourceType> = SourceType::from_str(&source_type_str).ok();
@@ -131,6 +145,8 @@ impl MediaRepository {
                     thumbnail_source: poster_path,
                     validation_status,
                     validation_message: validation_error,
+                    validation_code,
+                    validation_params,
                     last_validated_at,
                 })
             })
@@ -147,6 +163,8 @@ impl MediaRepository {
             thumbnail_source: None,
             validation_status: ValidationStatus::NotTested,
             validation_message: None,
+            validation_code: None,
+            validation_params: None,
             last_validated_at: None,
         }))
     }
@@ -157,8 +175,9 @@ impl MediaRepository {
         conn.execute(
             "INSERT INTO media_assets (
                 number, media_type, source_type, path_or_url, poster_path,
-                title_gujarati, is_valid, validation_error, last_validated_at, updated_at
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, NULL, NULL, CURRENT_TIMESTAMP)
+                title_gujarati, is_valid, validation_error, last_validated_at,
+                validation_code, validation_params_json, updated_at
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP)
             ON CONFLICT(number) DO UPDATE SET
                 media_type = excluded.media_type,
                 source_type = excluded.source_type,
@@ -167,6 +186,8 @@ impl MediaRepository {
                 title_gujarati = excluded.title_gujarati,
                 is_valid = 0,
                 validation_error = NULL,
+                validation_code = NULL,
+                validation_params_json = NULL,
                 last_validated_at = NULL,
                 updated_at = CURRENT_TIMESTAMP;",
             params![
@@ -204,6 +225,8 @@ impl MediaRepository {
             thumbnail_source: None,
             validation_status: ValidationStatus::NotTested,
             validation_message: None,
+            validation_code: None,
+            validation_params: None,
             last_validated_at: None,
         })
     }
@@ -213,6 +236,8 @@ impl MediaRepository {
         number: u8,
         status: ValidationStatus,
         message: Option<&str>,
+        code: Option<&str>,
+        params_json: Option<&str>,
     ) -> Result<MediaSlot, String> {
         let is_valid: bool = matches!(status, ValidationStatus::Valid);
 
@@ -220,10 +245,12 @@ impl MediaRepository {
             "UPDATE media_assets SET
                 is_valid = ?1,
                 validation_error = ?2,
+                validation_code = ?3,
+                validation_params_json = ?4,
                 last_validated_at = CURRENT_TIMESTAMP,
                 updated_at = CURRENT_TIMESTAMP
-             WHERE number = ?3;",
-            params![is_valid, message, number],
+             WHERE number = ?5;",
+            params![is_valid, message, code, params_json, number],
         )
         .map_err(|e: rusqlite::Error| format!("Failed to update validation status: {}", e))?;
 
@@ -288,8 +315,15 @@ mod tests {
         };
 
         MediaRepository::upsert(&conn, &input).unwrap();
-        MediaRepository::update_validation_status(&conn, 10, ValidationStatus::Valid, None)
-            .unwrap();
+        MediaRepository::update_validation_status(
+            &conn,
+            10,
+            ValidationStatus::Valid,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
 
         let slot_valid: MediaSlot = MediaRepository::get_by_number(&conn, 10).unwrap();
         assert_eq!(slot_valid.validation_status, ValidationStatus::Valid);
