@@ -533,7 +533,10 @@ pub struct SchemeTypeInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PatternPreset {
+    pub key: String,
     pub name: String,
+    pub name_en: String,
+    pub name_gu: String,
     pub description: String,
     pub pattern_kind: PatternKind,
     pub mask: PatternMask,
@@ -544,7 +547,10 @@ pub struct PatternPreset {
 pub fn list_pattern_presets() -> Vec<PatternPreset> {
     vec![
         PatternPreset {
+            key: "EARLY_5".to_string(),
             name: "Early 5".to_string(),
+            name_en: "Early 5".to_string(),
+            name_gu: "અર્લી ૫".to_string(),
             description: "Any 5 numbers on the ticket are called.".to_string(),
             pattern_kind: PatternKind::EarlyN,
             mask: [[false; 5]; 3],
@@ -552,7 +558,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "EARLY_7".to_string(),
             name: "Early 7".to_string(),
+            name_en: "Early 7".to_string(),
+            name_gu: "અર્લી ૭".to_string(),
             description: "Any 7 numbers on the ticket are called.".to_string(),
             pattern_kind: PatternKind::EarlyN,
             mask: [[false; 5]; 3],
@@ -560,7 +569,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "EARLY_10".to_string(),
             name: "Early 10".to_string(),
+            name_en: "Early 10".to_string(),
+            name_gu: "અર્લી ૧૦".to_string(),
             description: "Any 10 numbers on the ticket are called.".to_string(),
             pattern_kind: PatternKind::EarlyN,
             mask: [[false; 5]; 3],
@@ -568,7 +580,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "FOUR_CORNERS".to_string(),
             name: "Four Corners".to_string(),
+            name_en: "Four Corners".to_string(),
+            name_gu: "ચાર ખૂણા".to_string(),
             description: "The 4 outermost corners of the ticket.".to_string(),
             pattern_kind: PatternKind::Mask,
             mask: [
@@ -580,7 +595,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "TOP_LINE".to_string(),
             name: "Top Line".to_string(),
+            name_en: "Top Line".to_string(),
+            name_gu: "ટોપ લાઇન".to_string(),
             description: "All 5 numbers in Row 1 are struck.".to_string(),
             pattern_kind: PatternKind::Mask,
             mask: [
@@ -592,7 +610,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "MIDDLE_LINE".to_string(),
             name: "Middle Line".to_string(),
+            name_en: "Middle Line".to_string(),
+            name_gu: "મિડલ લાઇન".to_string(),
             description: "All 5 numbers in Row 2 are struck.".to_string(),
             pattern_kind: PatternKind::Mask,
             mask: [
@@ -604,7 +625,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "BOTTOM_LINE".to_string(),
             name: "Bottom Line".to_string(),
+            name_en: "Bottom Line".to_string(),
+            name_gu: "બોટમ લાઇન".to_string(),
             description: "All 5 numbers in Row 3 are struck.".to_string(),
             pattern_kind: PatternKind::Mask,
             mask: [
@@ -616,7 +640,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "PATTERN_H".to_string(),
             name: "Pattern H".to_string(),
+            name_en: "Pattern H".to_string(),
+            name_gu: "પેટર્ન H".to_string(),
             description: "Columns 1 and 5 all rows, plus middle row.".to_string(),
             pattern_kind: PatternKind::Mask,
             mask: [
@@ -628,7 +655,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "PATTERN_PLUS".to_string(),
             name: "Pattern Plus".to_string(),
+            name_en: "Pattern Plus".to_string(),
+            name_gu: "પેટર્ન પ્લસ".to_string(),
             description: "Middle row and middle column.".to_string(),
             pattern_kind: PatternKind::Mask,
             mask: [
@@ -640,7 +670,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "PATTERN_V".to_string(),
             name: "Pattern V".to_string(),
+            name_en: "Pattern V".to_string(),
+            name_gu: "પેટર્ન V".to_string(),
             description: "V-shaped pattern across the grid.".to_string(),
             pattern_kind: PatternKind::Mask,
             mask: [
@@ -652,7 +685,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "PATTERN_A".to_string(),
             name: "Pattern A".to_string(),
+            name_en: "Pattern A".to_string(),
+            name_gu: "પેટર્ન A".to_string(),
             description: "A-shaped pattern across the grid.".to_string(),
             pattern_kind: PatternKind::Mask,
             mask: [
@@ -664,7 +700,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "PHOTO_FRAME".to_string(),
             name: "Photo Frame".to_string(),
+            name_en: "Photo Frame".to_string(),
+            name_gu: "ફોટો ફ્રેમ".to_string(),
             description: "Outer border cells (photo frame).".to_string(),
             pattern_kind: PatternKind::Mask,
             mask: [
@@ -676,7 +715,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "BREAKFAST".to_string(),
             name: "Breakfast".to_string(),
+            name_en: "Breakfast".to_string(),
+            name_gu: "બ્રેકફાસ્ટ".to_string(),
             description: "Logical columns 1 and 2 (left two columns).".to_string(),
             pattern_kind: PatternKind::Mask,
             mask: [
@@ -688,7 +730,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "LUNCH".to_string(),
             name: "Lunch".to_string(),
+            name_en: "Lunch".to_string(),
+            name_gu: "લંચ".to_string(),
             description: "Logical column 3 (center column).".to_string(),
             pattern_kind: PatternKind::Mask,
             mask: [
@@ -700,7 +745,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "DINNER".to_string(),
             name: "Dinner".to_string(),
+            name_en: "Dinner".to_string(),
+            name_gu: "ડિનર".to_string(),
             description: "Logical columns 4 and 5 (right two columns).".to_string(),
             pattern_kind: PatternKind::Mask,
             mask: [
@@ -712,7 +760,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: false,
         },
         PatternPreset {
+            key: "FULL_HOUSE".to_string(),
             name: "Full House".to_string(),
+            name_en: "Full House".to_string(),
+            name_gu: "ફુલ હાઉસ".to_string(),
             description: "All 15 numbers on the ticket are struck.".to_string(),
             pattern_kind: PatternKind::FullHouse,
             mask: [[true; 5]; 3],
@@ -720,7 +771,10 @@ pub fn list_pattern_presets() -> Vec<PatternPreset> {
             is_full_house: true,
         },
         PatternPreset {
+            key: "FULL_HOUSE_2".to_string(),
             name: "Full House 2".to_string(),
+            name_en: "Full House 2".to_string(),
+            name_gu: "ફુલ હાઉસ ૨".to_string(),
             description: "Second Full House award (all 15 numbers).".to_string(),
             pattern_kind: PatternKind::FullHouse,
             mask: [[true; 5]; 3],
