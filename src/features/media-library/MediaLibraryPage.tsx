@@ -41,8 +41,10 @@ import {
     SourceType,
     ValidationStatus,
 } from "../../types/media";
-import { filterMediaSlots, getMediaDisplaySource, getMediaThumbnailSource, MediaFilter } from "./mediaFilters";
+import { filterMediaSlots, getMediaThumbnailSource, MediaFilter } from "./mediaFilters";
 import { useAppStore } from "../../stores/appStore";
+import { MediaPreviewDialog as ExtractedMediaPreviewDialog } from "./MediaPreviewDialog";
+import { RemoveMediaDialog as ExtractedRemoveMediaDialog } from "./RemoveMediaDialog";
 
 const windowsPathPattern: RegExp = /^(?:[A-Za-z]:[\\/]|\\\\).+/;
 
@@ -292,40 +294,6 @@ function MediaEditorDialog({ slot, onClose, onSaved }: MediaEditorDialogProps): 
     );
 }
 
-interface PreviewDialogProps {
-    slot: MediaSlot;
-    onClose: () => void;
-}
-
-function PreviewDialog({ slot, onClose }: PreviewDialogProps): React.JSX.Element {
-    const displaySource: string | null = getMediaDisplaySource(slot);
-    const thumbnailSource: string | null = getMediaThumbnailSource(slot);
-    return (
-        <Modal onClose={onClose} title={`${slot.number} — ${slot.title ?? ""}`}>
-            <div className="flex min-h-72 items-center justify-center overflow-hidden rounded-lg bg-zinc-950">
-                {!slot.configured || displaySource === null ? (
-                    <div className="text-sm text-zinc-500">No media configured</div>
-                ) : slot.mediaType === "VIDEO" ? (
-                    <video className="max-h-[60vh] max-w-full" controls preload="metadata" poster={thumbnailSource ?? undefined} src={displaySource} onError={(event: React.SyntheticEvent<HTMLVideoElement>) => { event.currentTarget.load(); }} />
-                ) : (
-                    <img className="max-h-[60vh] max-w-full object-contain" src={displaySource} alt={slot.title ?? `Media ${slot.number}`} />
-                )}
-            </div>
-        </Modal>
-    );
-}
-
-interface RemoveDialogProps {
-    slot: MediaSlot;
-    onCancel: () => void;
-    onConfirm: () => void;
-}
-
-function RemoveDialog({ slot, onCancel, onConfirm }: RemoveDialogProps): React.JSX.Element {
-    const t = useAppStore((state) => state.t);
-    return <Modal onClose={onCancel} title={t("media.removeDialog.title")}><p className="text-sm text-zinc-300">{t("media.removeDialog.description")} ({slot.number})</p><div className="mt-6 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onCancel}>{t("common.cancel")}</Button><Button type="button" variant="destructive" onClick={onConfirm}>{t("media.actions.remove")}</Button></div></Modal>;
-}
-
 interface ModalProps {
     title: string;
     onClose: () => void;
@@ -564,8 +532,8 @@ export const MediaLibraryPage: React.FC = () => {
 
             {toast !== null && <div className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-200 shadow-xl"><CheckCircle2 className="h-4 w-4 text-emerald-400" />{toast}</div>}
             {editingSlot !== null && <MediaEditorDialog slot={editingSlot.configured ? editingSlot : null} onClose={() => setEditingSlot(null)} onSaved={updateSlot} />}
-            {previewSlot !== null && <PreviewDialog slot={previewSlot} onClose={() => setPreviewSlot(null)} />}
-            {removingSlot !== null && <RemoveDialog slot={removingSlot} onCancel={() => setRemovingSlot(null)} onConfirm={() => void handleClear(removingSlot)} />}
+            {previewSlot !== null && <ExtractedMediaPreviewDialog slot={previewSlot} onClose={() => setPreviewSlot(null)} />}
+            {removingSlot !== null && <ExtractedRemoveMediaDialog slot={removingSlot} onCancel={() => setRemovingSlot(null)} onConfirm={() => void handleClear(removingSlot)} />}
         </div>
     );
 };

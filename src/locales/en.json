@@ -6,6 +6,8 @@
   "nav": {
     "dashboard": "Dashboard",
     "mediaLibrary": "Media Library",
+    "ticketGenerator": "Ticket Generator",
+    "ticketBatches": "Ticket Batches",
     "tickets": "Tickets",
     "schemes": "Winning Schemes",
     "gameController": "Game Screen",
@@ -50,6 +52,22 @@
     "active": "Active",
     "inactive": "Inactive",
     "ready": "Ready"
+  },
+  "tickets": {
+    "generatorTitle": "Ticket Generator",
+    "generatorSubtitle": "Create randomized Tambola ticket batches.",
+    "generatorReady": "Generate a new batch of tickets.",
+    "generate": "Generate tickets",
+    "batchName": "Batch name",
+    "count": "Number of tickets",
+    "progress": "Generating tickets",
+    "batchesTitle": "Ticket Batches",
+    "open": "Open",
+    "delete": "Delete",
+    "confirmDelete": "Delete this ticket batch?",
+    "search": "Search ticket code",
+    "previous": "Previous",
+    "next": "Next"
   },
   "media": {
     "title": "Media Library",

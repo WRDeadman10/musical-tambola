@@ -4,6 +4,8 @@ import { Sidebar } from "./components/layout/Sidebar";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
 import { MediaLibraryPage } from "./features/media-library/MediaLibraryPage";
+import { TicketGeneratorPage } from "./features/ticket-generator/TicketGeneratorPage";
+import { TicketBatchesPage } from "./features/ticket-batches/TicketBatchesPage";
 
 export const App: React.FC = () => {
     return (
@@ -15,6 +17,8 @@ export const App: React.FC = () => {
                         <Route path="/" element={<DashboardPage />} />
                         <Route path="/settings" element={<SettingsPage />} />
                         <Route path="/media" element={<MediaLibraryPage />} />
+                        <Route path="/tickets/generate" element={<TicketGeneratorPage />} />
+                        <Route path="/tickets" element={<TicketBatchesPage />} />
                     </Routes>
                 </main>
             </div>

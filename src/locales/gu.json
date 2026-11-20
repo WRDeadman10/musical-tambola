@@ -6,6 +6,8 @@
   "nav": {
     "dashboard": "ડેશબોર્ડ",
     "mediaLibrary": "મીડિયા લાયબ્રેરી",
+    "ticketGenerator": "ટિકિટ જનરેટર",
+    "ticketBatches": "ટિકિટ બેચ",
     "tickets": "ટિકિટ્સ",
     "schemes": "વિનિંગ સ્કીમ્સ",
     "gameController": "ગેમ સ્ક્રીન",
@@ -50,6 +52,22 @@
     "active": "સક્રિય",
     "inactive": "નિષ્ક્રિય",
     "ready": "તૈયાર"
+  },
+  "tickets": {
+    "generatorTitle": "ટિકિટ જનરેટર",
+    "generatorSubtitle": "રેન્ડમાઇઝ્ડ તંબોલા ટિકિટ બેચ બનાવો.",
+    "generatorReady": "ટિકિટનો નવો બેચ બનાવો.",
+    "generate": "ટિકિટ બનાવો",
+    "batchName": "બેચનું નામ",
+    "count": "ટિકિટોની સંખ્યા",
+    "progress": "ટિકિટ બનાવાઈ રહી છે",
+    "batchesTitle": "ટિકિટ બેચ",
+    "open": "ખોલો",
+    "delete": "કાઢી નાખો",
+    "confirmDelete": "આ ટિકિટ બેચ કાઢી નાખવો છે?",
+    "search": "ટિકિટ કોડ શોધો",
+    "previous": "પહેલાં",
+    "next": "આગળ"
   },
   "media": {
     "title": "મીડિયા લાયબ્રેરી",
