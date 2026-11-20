@@ -7,6 +7,7 @@ import {
     RefreshCw,
     Search,
     Upload,
+    FolderOpen,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
@@ -21,6 +22,9 @@ import { MediaTable } from "./MediaTable";
 import { useMediaLibrary } from "./useMediaLibrary";
 import { toErrorMessage } from "../../lib/api/errors";
 import { ValidationReportPanel } from "./ValidationReportPanel";
+import { MediaFolderImportDialog } from "./MediaFolderImportDialog";
+import { MediaPosterDialog } from "./MediaPosterDialog";
+import { generateMissingPosters } from "./posterGeneration";
 
 export { mediaFormSchema } from "./MediaEditDialog";
 
@@ -70,6 +74,11 @@ export const MediaLibraryPage: React.FC = () => {
     const [isValidating, setIsValidating] = useState<boolean>(false);
     const [highlightedNumber, setHighlightedNumber] = useState<number | null>(null);
     const [toast, setToast] = useState<string | null>(null);
+    const [folderImportOpen, setFolderImportOpen] = useState<boolean>(false);
+    const [posterSlot, setPosterSlot] = useState<MediaSlot | null>(null);
+    const [posterProgress, setPosterProgress] = useState<{ done: number; total: number } | null>(
+        null,
+    );
     const rowRefs = useRef<Map<number, HTMLTableRowElement>>(
         new Map<number, HTMLTableRowElement>(),
     );
@@ -129,6 +138,33 @@ export const MediaLibraryPage: React.FC = () => {
             setIsValidating(false);
         }
     };
+    const handleFolderApplied = async (applied: MediaSlot[]): Promise<void> => {
+        setSlots((current: MediaSlot[]) =>
+            current.map(
+                (slot: MediaSlot) => applied.find((value) => value.number === slot.number) ?? slot,
+            ),
+        );
+        setPosterProgress({
+            done: 0,
+            total: applied.filter(
+                (slot) => slot.mediaType === "VIDEO" && slot.thumbnailSource === null,
+            ).length,
+        });
+        try {
+            await generateMissingPosters(
+                applied,
+                (done: number, total: number) => {
+                    setPosterProgress({ done, total });
+                },
+                () => setToast(t("media.poster.corsFailure")),
+            );
+            await refreshSlots();
+        } catch (caught: unknown) {
+            setToast(toErrorMessage(caught, t));
+        } finally {
+            setPosterProgress(null);
+        }
+    };
     const jumpToIssue = (number: number): void => {
         const row: HTMLTableRowElement | undefined = rowRefs.current.get(number);
         if (row !== undefined) {
@@ -147,6 +183,10 @@ export const MediaLibraryPage: React.FC = () => {
                     <p className="mt-1 text-sm text-zinc-400">{t("media.subtitle")}</p>
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setFolderImportOpen(true)}>
+                        <FolderOpen className="h-4 w-4" />
+                        {t("media.folder.import")}
+                    </Button>
                     <Button
                         variant="outline"
                         onClick={() => void handleValidateAll()}
@@ -213,6 +253,24 @@ export const MediaLibraryPage: React.FC = () => {
                     </div>
                 </div>
             )}
+            {posterProgress !== null && (
+                <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-zinc-400">
+                        <span>{t("media.poster.progress")}</span>
+                        <span>
+                            {posterProgress.done} / {posterProgress.total}
+                        </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+                        <div
+                            className="h-full bg-emerald-500 transition-all"
+                            style={{
+                                width: `${posterProgress.total > 0 ? (posterProgress.done / posterProgress.total) * 100 : 100}%`,
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
             <Card>
                 <CardContent className="p-4">
                     <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -260,6 +318,7 @@ export const MediaLibraryPage: React.FC = () => {
                     onPreview={setPreviewSlot}
                     onValidate={(slot: MediaSlot) => void handleValidate(slot)}
                     onRemove={setRemovingSlot}
+                    onPoster={setPosterSlot}
                     setRowRef={(number: number, row: HTMLTableRowElement | null) => {
                         if (row !== null) rowRefs.current.set(number, row);
                     }}
@@ -285,6 +344,19 @@ export const MediaLibraryPage: React.FC = () => {
                     slot={removingSlot}
                     onCancel={() => setRemovingSlot(null)}
                     onConfirm={() => void handleClear()}
+                />
+            )}
+            {folderImportOpen && (
+                <MediaFolderImportDialog
+                    onClose={() => setFolderImportOpen(false)}
+                    onApplied={handleFolderApplied}
+                />
+            )}
+            {posterSlot !== null && (
+                <MediaPosterDialog
+                    slot={posterSlot}
+                    onClose={() => setPosterSlot(null)}
+                    onSaved={updateSlot}
                 />
             )}
         </div>

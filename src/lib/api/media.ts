@@ -5,6 +5,9 @@ import {
     MediaValidationProgress,
     MediaValidationReport,
     SaveMediaInput,
+    MediaFolderOrder,
+    MediaFolderScanResult,
+    MediaAssignment,
 } from "../../types/media";
 export { toErrorMessage } from "./errors";
 
@@ -34,6 +37,36 @@ export async function validateAllMedia(): Promise<MediaValidationReport> {
 
 export async function pickMediaFile(kind: "IMAGE" | "VIDEO"): Promise<string | null> {
     return await invoke<string | null>("pick_media_file", { kind });
+}
+
+export async function pickMediaFolder(): Promise<string | null> {
+    return await invoke<string | null>("pick_media_folder");
+}
+
+export async function scanMediaFolder(
+    rootPath: string,
+    order: MediaFolderOrder,
+    recursive: boolean,
+    seed?: number,
+): Promise<MediaFolderScanResult> {
+    return await invoke<MediaFolderScanResult>("scan_media_folder", {
+        rootPath,
+        order,
+        recursive,
+        ...(seed === undefined ? {} : { seed }),
+    });
+}
+
+export async function applyMediaAssignments(assignments: MediaAssignment[]): Promise<MediaSlot[]> {
+    return await invoke<MediaSlot[]>("apply_media_assignments", { assignments });
+}
+
+export async function saveMediaPoster(number: number, imageBytes: number[]): Promise<MediaSlot> {
+    return await invoke<MediaSlot>("save_media_poster", { number, imageBytes });
+}
+
+export async function clearMediaPoster(number: number): Promise<MediaSlot> {
+    return await invoke<MediaSlot>("clear_media_poster", { number });
 }
 
 export async function listenToMediaValidationProgress(

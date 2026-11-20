@@ -167,7 +167,41 @@
             "validate": "Validate media",
             "validateAll": "Validate all",
             "remove": "Remove media",
-            "browse": "Browse"
+            "browse": "Browse",
+            "poster": "Edit poster"
+        },
+        "folder": {
+            "import": "Import from folder",
+            "title": "Import media folder",
+            "root": "Root folder",
+            "choose": "Choose root folder",
+            "order": "File order",
+            "orders": {
+                "number": "Number order",
+                "asc": "A→Z",
+                "desc": "Z→A",
+                "random": "Random"
+            },
+            "reshuffle": "Re-shuffle",
+            "recursive": "Include subfolders",
+            "scan": "Scan folder",
+            "slot": "Slot",
+            "file": "File",
+            "type": "Type",
+            "missing": "Missing slots",
+            "extra": "Unassigned files",
+            "apply": "Apply assignments"
+        },
+        "poster": {
+            "title": "Edit poster",
+            "noVideo": "This slot has no video source.",
+            "frame": "Frame position",
+            "useFrame": "Use this frame",
+            "upload": "Upload image",
+            "reset": "Reset to auto",
+            "progress": "Generating video posters",
+            "loadFailed": "Preview unavailable. The media could not be loaded, possibly due to CORS.",
+            "corsFailure": "Poster generation skipped because the video could not be loaded."
         },
         "dialog": {
             "addTitle": "Add media configuration",
@@ -274,6 +308,25 @@
         "LOCK_ERROR": "Failed to acquire the database lock.",
         "DATABASE_ERROR": "A database error occurred while executing the transaction.",
         "UNKNOWN_ERROR": "An unexpected error occurred."
+    },
+    "presentation": {
+        "idle": "Media Tambola",
+        "projector": "Projector",
+        "display": "Display",
+        "open": "Open",
+        "close": "Close",
+        "connected": "Connected",
+        "notConnected": "Not connected",
+        "noDisplays": "No displays detected",
+        "showAnswer": "Show answer",
+        "hideAnswer": "Hide answer",
+        "showNumber": "Show number",
+        "hideNumber": "Hide number",
+        "enableSplash": "Enable splash",
+        "disableSplash": "Disable splash",
+        "announce": "Announce prize",
+        "nextUp": "Next up",
+        "upcomingItem": "Upcoming item"
     },
     "game": {
         "title": "Game Controller",

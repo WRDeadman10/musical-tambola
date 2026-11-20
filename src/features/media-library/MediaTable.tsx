@@ -8,6 +8,7 @@ import {
     Trash2,
     Upload,
     Video,
+    Wand2,
 } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -26,6 +27,7 @@ interface MediaTableProps {
     onPreview: (slot: MediaSlot) => void;
     onValidate: (slot: MediaSlot) => void;
     onRemove: (slot: MediaSlot) => void;
+    onPoster?: (slot: MediaSlot) => void;
     setRowRef: (number: number, row: HTMLTableRowElement | null) => void;
 }
 
@@ -73,6 +75,7 @@ export function MediaTable({
     onPreview,
     onValidate,
     onRemove,
+    onPoster,
     setRowRef,
 }: MediaTableProps): React.JSX.Element {
     return (
@@ -199,6 +202,16 @@ export function MediaTable({
                                             >
                                                 <CheckCircle2 className="h-4 w-4" />
                                             </Button>
+                                            {onPoster !== undefined && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    aria-label={translate("media.actions.poster")}
+                                                    onClick={() => onPoster(slot)}
+                                                >
+                                                    <Wand2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
                                             <Button
                                                 variant="ghost"
                                                 size="icon"

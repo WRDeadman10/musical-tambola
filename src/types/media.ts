@@ -44,3 +44,26 @@ export interface MediaValidationProgress {
     done: number;
     total: number;
 }
+
+export type MediaFolderOrder = "NUMBER" | "ASC" | "DESC" | "RANDOM";
+
+export interface ScannedMediaFile {
+    path: string;
+    fileName: string;
+    mediaType: MediaType;
+    sizeBytes: number;
+}
+
+export interface MediaAssignment {
+    number: number;
+    path: string;
+    mediaType: MediaType;
+    title?: string;
+}
+
+export interface MediaFolderScanResult {
+    files: ScannedMediaFile[];
+    assignments: Array<{ number: number; path: string }>;
+    unassigned: string[];
+    missingNumbers: number[];
+}
