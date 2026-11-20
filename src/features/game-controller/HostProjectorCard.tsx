@@ -8,6 +8,7 @@ import {
     presentationCommand,
     presentationStatus,
     listenToPresentationAutoplayBlocked,
+    listenToPresentationSuggested,
 } from "../../lib/api/presentation";
 import { DisplayInfo } from "../../types/presentation";
 import { GameState } from "../../types/game";
@@ -33,11 +34,22 @@ export function HostProjectorCard({
             Number(useAppStore.getState().appInfo?.settings?.default_video_volume ?? 50),
     );
     const [autoplayBlocked, setAutoplayBlocked] = useState<number | null>(null);
+    const [suggestedDisplay, setSuggestedDisplay] = useState<number | null>(null);
+    const [suggestionDismissed, setSuggestionDismissed] = useState<boolean>(
+        sessionStorage.getItem("presentation-suggestion-dismissed") === "1",
+    );
     useEffect(() => {
         void listDisplays()
             .then((nextDisplays) => {
                 setDisplays(nextDisplays);
-                if (nextDisplays[0] !== undefined) setSelectedDisplay(nextDisplays[0].index);
+                const saved: number = Number(
+                    useAppStore.getState().appInfo?.settings?.presentation_display,
+                );
+                const preferred: DisplayInfo | undefined = nextDisplays.find(
+                    (display) => display.index === saved,
+                );
+                if (preferred !== undefined) setSelectedDisplay(preferred.index);
+                else if (nextDisplays[0] !== undefined) setSelectedDisplay(nextDisplays[0].index);
             })
             .catch(() => setDisplays([]));
         void presentationStatus()
@@ -49,7 +61,16 @@ export function HostProjectorCard({
                 stop = cleanup;
             })
             .catch(() => undefined);
-        return () => stop?.();
+        let stopSuggestion: (() => void) | null = null;
+        void listenToPresentationSuggested(setSuggestedDisplay)
+            .then((cleanup) => {
+                stopSuggestion = cleanup;
+            })
+            .catch(() => undefined);
+        return () => {
+            stop?.();
+            stopSuggestion?.();
+        };
     }, []);
     const send = async (command: string, payload: Record<string, unknown> = {}): Promise<void> => {
         await presentationCommand(command, payload);
@@ -161,6 +182,30 @@ export function HostProjectorCard({
                         onClick={() => void send("PLAY", { number: autoplayBlocked })}
                     >
                         {t("presentation.retryPlayback")}
+                    </Button>
+                </div>
+            )}
+            {suggestedDisplay !== null && !suggestionDismissed && (
+                <div role="status" className="flex items-center gap-2 text-sm text-sky-300">
+                    <span>{t("presentation.secondScreenDetected")}</span>
+                    <Button
+                        type="button"
+                        onClick={() => {
+                            setSelectedDisplay(suggestedDisplay);
+                            void openPresentation(suggestedDisplay);
+                        }}
+                    >
+                        {t("presentation.open")}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                            sessionStorage.setItem("presentation-suggestion-dismissed", "1");
+                            setSuggestionDismissed(true);
+                        }}
+                    >
+                        {t("presentation.notNow")}
                     </Button>
                 </div>
             )}

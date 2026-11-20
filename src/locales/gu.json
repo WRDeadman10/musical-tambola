@@ -361,7 +361,9 @@
         "upcomingItem": "આગળની આઇટમ",
         "volume": "વોલ્યુમ",
         "autoplayBlocked": "આઇટમ {{number}} માટે આપમેળે ચલાવવું અટકાવાયું.",
-        "retryPlayback": "ફરી ચલાવો"
+        "retryPlayback": "ફરી ચલાવો",
+        "secondScreenDetected": "બીજી સ્ક્રીન મળી: ત્યાં પ્રોજેક્ટર ખોલવો છે?",
+        "notNow": "હમણાં નહીં"
     },
     "game": {
         "title": "ગેમ કંટ્રોલર",

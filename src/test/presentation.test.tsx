@@ -19,6 +19,7 @@ const api = vi.hoisted(() => ({
     presentationStatus: vi.fn(),
     emitPresentationAutoplayBlocked: vi.fn(),
     listenToPresentationAutoplayBlocked: vi.fn(),
+    listenToPresentationSuggested: vi.fn(),
 }));
 
 vi.mock("../lib/api/presentation", () => api);
@@ -62,11 +63,13 @@ const state: PresentationState = {
     volume: 1,
 };
 let commandHandler: ((value: { command: string; payload: Record<string, unknown> }) => void) | null;
+let suggestionHandler: ((displayIndex: number) => void) | null;
 
 beforeEach(() => {
     vi.clearAllMocks();
     useAppStore.setState({ language: "en" });
     commandHandler = null;
+    suggestionHandler = null;
     api.getPresentationState.mockResolvedValue(state);
     api.listenToGameStateChanged.mockResolvedValue(vi.fn());
     api.listenToPresentationCommand.mockImplementation(async (callback) => {
@@ -77,6 +80,11 @@ beforeEach(() => {
     api.presentationStatus.mockResolvedValue(false);
     api.getNextItem.mockResolvedValue({ title: "Next song" });
     api.listenToPresentationAutoplayBlocked.mockResolvedValue(vi.fn());
+    api.listenToPresentationSuggested.mockResolvedValue(vi.fn());
+    api.listenToPresentationSuggested.mockImplementation(async (callback) => {
+        suggestionHandler = callback;
+        return vi.fn();
+    });
 });
 
 describe("projector presentation", () => {
@@ -144,6 +152,21 @@ describe("projector presentation", () => {
         render(<HostProjectorCard state={game} acceptedClaim={null} />);
         fireEvent.click(await screen.findByRole("button", { name: "Upcoming item" }));
         expect(await screen.findByText("Next song")).toBeTruthy();
+    });
+    it("presentation suggested toast opens projector on display", async () => {
+        render(<HostProjectorCard state={game} acceptedClaim={null} />);
+        suggestionHandler?.(3);
+        expect(await screen.findByText(/Second screen detected/)).toBeTruthy();
+        const openButtons = screen.getAllByRole("button", { name: "Open" });
+        fireEvent.click(openButtons[openButtons.length - 1]);
+        expect(api.openPresentation).toHaveBeenCalledWith(3);
+    });
+    it("not now suppresses for session", async () => {
+        render(<HostProjectorCard state={game} acceptedClaim={null} />);
+        suggestionHandler?.(3);
+        expect(await screen.findByText(/Second screen detected/)).toBeTruthy();
+        fireEvent.click(screen.getByRole("button", { name: "Not now" }));
+        expect(screen.queryByText(/Second screen detected/)).toBeNull();
     });
     it("projector never shows play button on autoplay failure", () => {
         const videoState: PresentationState = {

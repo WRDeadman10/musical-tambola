@@ -361,7 +361,9 @@
         "upcomingItem": "Upcoming item",
         "volume": "Volume",
         "autoplayBlocked": "Autoplay was blocked for item {{number}}.",
-        "retryPlayback": "Retry playback"
+        "retryPlayback": "Retry playback",
+        "secondScreenDetected": "Second screen detected: open the projector there?",
+        "notNow": "Not now"
     },
     "game": {
         "title": "Game Controller",

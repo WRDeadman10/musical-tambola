@@ -63,3 +63,11 @@ export async function listenToPresentationAutoplayBlocked(
         callback(event.payload.number),
     );
 }
+
+export async function listenToPresentationSuggested(
+    callback: (displayIndex: number) => void,
+): Promise<UnlistenFn> {
+    return await listen<{ displayIndex: number }>("presentation-suggested", (event) =>
+        callback(event.payload.displayIndex),
+    );
+}
