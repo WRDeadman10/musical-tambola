@@ -17,6 +17,10 @@ use commands::media::{
     pick_media_file, pick_media_folder, save_media, save_media_poster, scan_media_folder,
     validate_all_media, validate_media,
 };
+use commands::presentation::{
+    close_presentation, get_next_item, get_presentation_state, list_displays, open_presentation,
+    presentation_command, presentation_status, PresentationStateManaged,
+};
 use commands::scheme::{
     list_pattern_presets, list_scheme_types, list_schemes, save_scheme, set_scheme_active,
 };
@@ -57,12 +61,20 @@ pub fn run() {
                 conn: Mutex::new(conn),
                 db_path,
             });
+            app.manage(PresentationStateManaged::default());
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             get_app_info,
             set_app_setting,
+            list_displays,
+            open_presentation,
+            close_presentation,
+            presentation_status,
+            presentation_command,
+            get_presentation_state,
+            get_next_item,
             list_media,
             get_media,
             save_media,

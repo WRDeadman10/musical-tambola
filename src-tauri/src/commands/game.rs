@@ -8,7 +8,7 @@ use crate::domain::random::OsRngSource;
 use crate::errors::AppError;
 use rusqlite::{params, Connection};
 use std::sync::MutexGuard;
-use tauri::{AppHandle, State, Window};
+use tauri::{AppHandle, Emitter, State, Window};
 
 #[tauri::command]
 pub async fn preflight_media(
@@ -19,49 +19,57 @@ pub async fn preflight_media(
 }
 
 #[tauri::command]
-pub fn create_game(batch_id: i64, state: State<'_, DbState>) -> Result<GameState, AppError> {
+pub fn create_game(
+    batch_id: i64,
+    app: AppHandle,
+    state: State<'_, DbState>,
+) -> Result<GameState, AppError> {
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
 
     let mut rng: OsRngSource = OsRngSource;
-    GameRepository::create_game(&mut conn, batch_id, &mut rng).map_err(|e| {
-        if e.contains("Cannot create a new game while another is ACTIVE or PAUSED") {
-            AppError::new(
-                "GAME_ALREADY_ACTIVE",
-                "Another game session is already active or paused",
-            )
-        } else if e.contains("Cannot start game: only") {
-            // parse valid count
-            let parts: Vec<&str> = e.split_whitespace().collect();
-            let count_str = parts.get(4).unwrap_or(&"0");
-            AppError::new(
-                "GAME_MEDIA_INVALID",
-                format!(
+    let res: GameState =
+        GameRepository::create_game(&mut conn, batch_id, &mut rng).map_err(|e| {
+            if e.contains("Cannot create a new game while another is ACTIVE or PAUSED") {
+                AppError::new(
+                    "GAME_ALREADY_ACTIVE",
+                    "Another game session is already active or paused",
+                )
+            } else if e.contains("Cannot start game: only") {
+                // parse valid count
+                let parts: Vec<&str> = e.split_whitespace().collect();
+                let count_str = parts.get(4).unwrap_or(&"0");
+                AppError::new(
+                    "GAME_MEDIA_INVALID",
+                    format!(
                     "Cannot start game: fewer than 90 media items are validated (only {} valid)",
                     count_str
                 ),
-            )
-            .with_param("validCount", count_str.to_string())
-        } else if e.contains("Cannot start game without at least one active prize scheme") {
-            AppError::new(
-                "GAME_NO_ACTIVE_SCHEMES",
-                "Cannot start game: no active prize schemes configured",
-            )
-        } else if e.contains("BATCH_FORMAT_MISMATCH") {
-            AppError::new(
-                "BATCH_FORMAT_MISMATCH",
-                "Selected ticket batch format or song count does not match active game format",
-            )
-        } else if e.contains("not found") {
-            AppError::new(
-                "BATCH_NOT_FOUND",
-                format!("Ticket batch was not found: {}", batch_id),
-            )
-            .with_param("batchId", batch_id.to_string())
-        } else {
-            AppError::database_error(e)
-        }
-    })
+                )
+                .with_param("validCount", count_str.to_string())
+            } else if e.contains("Cannot start game without at least one active prize scheme") {
+                AppError::new(
+                    "GAME_NO_ACTIVE_SCHEMES",
+                    "Cannot start game: no active prize schemes configured",
+                )
+            } else if e.contains("BATCH_FORMAT_MISMATCH") {
+                AppError::new(
+                    "BATCH_FORMAT_MISMATCH",
+                    "Selected ticket batch format or song count does not match active game format",
+                )
+            } else if e.contains("not found") {
+                AppError::new(
+                    "BATCH_NOT_FOUND",
+                    format!("Ticket batch was not found: {}", batch_id),
+                )
+                .with_param("batchId", batch_id.to_string())
+            } else {
+                AppError::database_error(e)
+            }
+        })?;
+
+    let _ = app.emit("game-state-changed", &res);
+    Ok(res)
 }
 
 #[tauri::command]
@@ -92,45 +100,54 @@ pub fn get_game(game_id: i64, state: State<'_, DbState>) -> Result<GameState, Ap
 pub fn draw_next(
     game_id: i64,
     expected_position: u32,
+    app: AppHandle,
     state: State<'_, DbState>,
 ) -> Result<GameState, AppError> {
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
 
-    GameRepository::draw_next(&mut conn, game_id, expected_position).map_err(|e| {
-        if e.contains("All 90 numbers have already been drawn") {
-            AppError::new(
-                "GAME_ALREADY_COMPLETED",
-                "All 90 numbers have already been drawn for this game session",
-            )
-        } else if e.contains("BATCH_FORMAT_MISMATCH") {
-            AppError::new(
-                "BATCH_FORMAT_MISMATCH",
-                "Selected ticket batch format or song count does not match active game format",
-            )
-        } else if e.contains("not found") {
-            AppError::new(
-                "GAME_NOT_FOUND",
-                format!("Game session was not found: {}", game_id),
-            )
-            .with_param("gameId", game_id.to_string())
-        } else if e.contains("not active") {
-            AppError::new(
-                "GAME_NOT_ACTIVE",
-                "There is no active game session to perform this action",
-            )
-        } else {
-            AppError::database_error(e)
-        }
-    })
+    let res: GameState =
+        GameRepository::draw_next(&mut conn, game_id, expected_position).map_err(|e| {
+            if e.contains("All 90 numbers have already been drawn") {
+                AppError::new(
+                    "GAME_ALREADY_COMPLETED",
+                    "All 90 numbers have already been drawn for this game session",
+                )
+            } else if e.contains("BATCH_FORMAT_MISMATCH") {
+                AppError::new(
+                    "BATCH_FORMAT_MISMATCH",
+                    "Selected ticket batch format or song count does not match active game format",
+                )
+            } else if e.contains("not found") {
+                AppError::new(
+                    "GAME_NOT_FOUND",
+                    format!("Game session was not found: {}", game_id),
+                )
+                .with_param("gameId", game_id.to_string())
+            } else if e.contains("not active") {
+                AppError::new(
+                    "GAME_NOT_ACTIVE",
+                    "There is no active game session to perform this action",
+                )
+            } else {
+                AppError::database_error(e)
+            }
+        })?;
+
+    let _ = app.emit("game-state-changed", &res);
+    Ok(res)
 }
 
 #[tauri::command]
-pub fn pause_game(game_id: i64, state: State<'_, DbState>) -> Result<GameState, AppError> {
+pub fn pause_game(
+    game_id: i64,
+    app: AppHandle,
+    state: State<'_, DbState>,
+) -> Result<GameState, AppError> {
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
 
-    GameRepository::pause_game(&mut conn, game_id).map_err(|e| {
+    let res: GameState = GameRepository::pause_game(&mut conn, game_id).map_err(|e| {
         if e.contains("not found") {
             AppError::new(
                 "GAME_NOT_FOUND",
@@ -140,15 +157,22 @@ pub fn pause_game(game_id: i64, state: State<'_, DbState>) -> Result<GameState, 
         } else {
             AppError::database_error(e)
         }
-    })
+    })?;
+
+    let _ = app.emit("game-state-changed", &res);
+    Ok(res)
 }
 
 #[tauri::command]
-pub fn resume_game(game_id: i64, state: State<'_, DbState>) -> Result<GameState, AppError> {
+pub fn resume_game(
+    game_id: i64,
+    app: AppHandle,
+    state: State<'_, DbState>,
+) -> Result<GameState, AppError> {
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
 
-    GameRepository::resume_game(&mut conn, game_id).map_err(|e| {
+    let res: GameState = GameRepository::resume_game(&mut conn, game_id).map_err(|e| {
         if e.contains("not found") {
             AppError::new(
                 "GAME_NOT_FOUND",
@@ -158,15 +182,22 @@ pub fn resume_game(game_id: i64, state: State<'_, DbState>) -> Result<GameState,
         } else {
             AppError::database_error(e)
         }
-    })
+    })?;
+
+    let _ = app.emit("game-state-changed", &res);
+    Ok(res)
 }
 
 #[tauri::command]
-pub fn end_game(game_id: i64, state: State<'_, DbState>) -> Result<GameState, AppError> {
+pub fn end_game(
+    game_id: i64,
+    app: AppHandle,
+    state: State<'_, DbState>,
+) -> Result<GameState, AppError> {
     let mut conn: MutexGuard<'_, Connection> =
         state.conn.lock().map_err(|_| AppError::lock_error())?;
 
-    GameRepository::end_game(&mut conn, game_id).map_err(|e| {
+    let res: GameState = GameRepository::end_game(&mut conn, game_id).map_err(|e| {
         if e.contains("not found") {
             AppError::new(
                 "GAME_NOT_FOUND",
@@ -176,7 +207,10 @@ pub fn end_game(game_id: i64, state: State<'_, DbState>) -> Result<GameState, Ap
         } else {
             AppError::database_error(e)
         }
-    })
+    })?;
+
+    let _ = app.emit("game-state-changed", &res);
+    Ok(res)
 }
 
 #[tauri::command]
