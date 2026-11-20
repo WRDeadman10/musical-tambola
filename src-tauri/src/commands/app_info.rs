@@ -1,5 +1,6 @@
 use crate::db::migrations::get_schema_version;
 use crate::db::DbState;
+use crate::errors::AppError;
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -12,10 +13,11 @@ pub enum AppSettingKey {
     DefaultVideoVolume,
     VideoAutoplay,
     ShowInternalNumbers,
+    UseGujaratiNumerals,
 }
 
 impl FromStr for AppSettingKey {
-    type Err = String;
+    type Err = AppError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -24,26 +26,41 @@ impl FromStr for AppSettingKey {
             "default_video_volume" => Ok(Self::DefaultVideoVolume),
             "video_autoplay" => Ok(Self::VideoAutoplay),
             "show_internal_numbers" => Ok(Self::ShowInternalNumbers),
+            "use_gujarati_numerals" => Ok(Self::UseGujaratiNumerals),
             _ => {
                 log::warn!("Rejected invalid app setting key: '{}'", s);
-                Err(format!("Unsupported or unrecognized setting key: '{}'", s))
+                Err(AppError::new(
+                    "SETTING_NOT_ALLOWLISTED",
+                    format!("Unsupported or unrecognized setting key: '{}'", s),
+                )
+                .with_param("key", s))
             }
         }
     }
 }
 
-pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey, String> {
+pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey, AppError> {
     if key_str.trim().is_empty() {
         log::warn!("Rejected empty setting key");
-        return Err("Setting key cannot be empty".to_string());
+        return Err(AppError::new(
+            "SETTING_NOT_ALLOWLISTED",
+            "Setting key cannot be empty",
+        ));
     }
     if key_str.len() > 256 {
         log::warn!("Rejected oversized setting key (length: {})", key_str.len());
-        return Err("Setting key exceeds maximum length of 256 characters".to_string());
+        return Err(AppError::new(
+            "SETTING_NOT_ALLOWLISTED",
+            "Setting key exceeds maximum length of 256 characters",
+        ));
     }
     if value.trim().is_empty() {
         log::warn!("Rejected empty setting value for key '{}'", key_str);
-        return Err(format!("Setting value for '{}' cannot be empty", key_str));
+        return Err(AppError::new(
+            "SETTING_INVALID_VALUE",
+            format!("Setting value for '{}' cannot be empty", key_str),
+        )
+        .with_param("key", key_str));
     }
     if value.len() > 256 {
         log::warn!(
@@ -51,7 +68,11 @@ pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey,
             key_str,
             value.len()
         );
-        return Err("Setting value exceeds maximum length of 256 characters".to_string());
+        return Err(AppError::new(
+            "SETTING_INVALID_VALUE",
+            "Setting value exceeds maximum length of 256 characters",
+        )
+        .with_param("key", key_str));
     }
 
     let key: AppSettingKey = AppSettingKey::from_str(key_str)?;
@@ -60,38 +81,64 @@ pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey,
         AppSettingKey::Language => {
             if value != "en" && value != "gu" {
                 log::warn!("Invalid language setting value: '{}'", value);
-                return Err(format!(
-                    "Invalid value '{}' for 'language'. Allowed values are 'en' or 'gu'.",
-                    value
-                ));
+                return Err(AppError::new(
+                    "SETTING_INVALID_VALUE",
+                    format!(
+                        "Invalid value '{}' for 'language'. Allowed values are 'en' or 'gu'.",
+                        value
+                    ),
+                )
+                .with_param("key", key_str)
+                .with_param("value", value));
             }
         }
         AppSettingKey::Theme => {
             if value != "dark" && value != "light" && value != "system" {
                 log::warn!("Invalid theme setting value: '{}'", value);
-                return Err(format!(
-                    "Invalid value '{}' for 'theme'. Allowed values are 'dark', 'light', or 'system'.",
-                    value
-                ));
+                return Err(AppError::new(
+                    "SETTING_INVALID_VALUE",
+                    format!(
+                        "Invalid value '{}' for 'theme'. Allowed values are 'dark', 'light', or 'system'.",
+                        value
+                    ),
+                )
+                .with_param("key", key_str)
+                .with_param("value", value));
             }
         }
         AppSettingKey::DefaultVideoVolume => {
-            let vol: u8 = value.parse::<u8>().map_err(|_| {
+            let vol_res = value.parse::<u8>();
+            if vol_res.is_err() {
                 log::warn!("Non-numeric volume setting value: '{}'", value);
-                "Volume must be an integer between 0 and 100".to_string()
-            })?;
+                return Err(AppError::new(
+                    "SETTING_INVALID_VALUE",
+                    "Volume must be an integer between 0 and 100",
+                )
+                .with_param("key", key_str)
+                .with_param("value", value));
+            }
+            let vol: u8 = vol_res.unwrap();
             if vol > 100 {
                 log::warn!("Volume out of range: {}", vol);
-                return Err("Volume must not exceed 100".to_string());
+                return Err(
+                    AppError::new("SETTING_INVALID_VALUE", "Volume must not exceed 100")
+                        .with_param("key", key_str)
+                        .with_param("value", value),
+                );
             }
         }
         AppSettingKey::VideoAutoplay => {
             if value != "true" && value != "false" {
                 log::warn!("Invalid boolean setting value for autoplay: '{}'", value);
-                return Err(format!(
-                    "Invalid boolean value '{}' for autoplay setting. Allowed values are 'true' or 'false'.",
-                    value
-                ));
+                return Err(AppError::new(
+                    "SETTING_INVALID_VALUE",
+                    format!(
+                        "Invalid boolean value '{}' for autoplay setting. Allowed values are 'true' or 'false'.",
+                        value
+                    ),
+                )
+                .with_param("key", key_str)
+                .with_param("value", value));
             }
         }
         AppSettingKey::ShowInternalNumbers => {
@@ -100,10 +147,32 @@ pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey,
                     "Invalid boolean setting value for show numbers: '{}'",
                     value
                 );
-                return Err(format!(
-                    "Invalid boolean value '{}' for show numbers setting. Allowed values are 'true' or 'false'.",
+                return Err(AppError::new(
+                    "SETTING_INVALID_VALUE",
+                    format!(
+                        "Invalid boolean value '{}' for show numbers setting. Allowed values are 'true' or 'false'.",
+                        value
+                    ),
+                )
+                .with_param("key", key_str)
+                .with_param("value", value));
+            }
+        }
+        AppSettingKey::UseGujaratiNumerals => {
+            if value != "true" && value != "false" {
+                log::warn!(
+                    "Invalid boolean setting value for use gujarati numerals: '{}'",
                     value
-                ));
+                );
+                return Err(AppError::new(
+                    "SETTING_INVALID_VALUE",
+                    format!(
+                        "Invalid boolean value '{}' for use_gujarati_numerals setting. Allowed values are 'true' or 'false'.",
+                        value
+                    ),
+                )
+                .with_param("key", key_str)
+                .with_param("value", value));
             }
         }
     }
@@ -115,7 +184,7 @@ pub fn set_app_setting_internal(
     conn: &rusqlite::Connection,
     key: &str,
     value: &str,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     validate_app_setting(key, value)?;
 
     conn.execute(
@@ -123,7 +192,13 @@ pub fn set_app_setting_internal(
          ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP;",
         params![key, value],
     )
-    .map_err(|e: rusqlite::Error| format!("Failed to update app setting: {}", e))?;
+    .map_err(|e: rusqlite::Error| {
+        AppError::with_detail(
+            "DATABASE_ERROR",
+            "Failed to update app setting",
+            e.to_string(),
+        )
+    })?;
 
     Ok(())
 }
@@ -140,16 +215,19 @@ pub struct AppInfo {
     pub default_video_volume: String,
     pub video_autoplay: String,
     pub show_internal_numbers: String,
+    pub use_gujarati_numerals: String,
 }
 
 #[tauri::command]
-pub fn get_app_info(state: State<'_, DbState>) -> Result<AppInfo, String> {
+pub fn get_app_info(state: State<'_, DbState>) -> Result<AppInfo, AppError> {
     let conn = state
         .conn
         .lock()
-        .map_err(|_| "Failed to acquire database lock".to_string())?;
+        .map_err(|_| AppError::new("LOCK_ERROR", "Failed to acquire database lock"))?;
 
-    let schema_version: i32 = get_schema_version(&conn)?;
+    let schema_version: i32 = get_schema_version(&conn).map_err(|e| {
+        AppError::with_detail("DATABASE_ERROR", "Failed to query schema version", e)
+    })?;
 
     let language: String = conn
         .query_row(
@@ -191,6 +269,14 @@ pub fn get_app_info(state: State<'_, DbState>) -> Result<AppInfo, String> {
         )
         .unwrap_or_else(|_| "false".to_string());
 
+    let use_gujarati_numerals: String = conn
+        .query_row(
+            "SELECT value FROM app_settings WHERE key = 'use_gujarati_numerals';",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| "false".to_string());
+
     let info: AppInfo = AppInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
         data_dir: state
@@ -205,6 +291,7 @@ pub fn get_app_info(state: State<'_, DbState>) -> Result<AppInfo, String> {
         default_video_volume,
         video_autoplay,
         show_internal_numbers,
+        use_gujarati_numerals,
     };
 
     Ok(info)
@@ -215,11 +302,11 @@ pub fn set_app_setting(
     key: String,
     value: String,
     state: State<'_, DbState>,
-) -> Result<(), String> {
+) -> Result<(), AppError> {
     let conn = state
         .conn
         .lock()
-        .map_err(|_| "Failed to acquire database lock".to_string())?;
+        .map_err(|_| AppError::new("LOCK_ERROR", "Failed to acquire database lock"))?;
 
     set_app_setting_internal(&conn, &key, &value)
 }

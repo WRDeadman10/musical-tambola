@@ -21,6 +21,11 @@ const MIGRATIONS: &[(i32, &str, &str)] = &[
         "0004_history_indexes",
         include_str!("../../migrations/0004_history_indexes.sql"),
     ),
+    (
+        5,
+        "0005_media_validation_codes",
+        include_str!("../../migrations/0005_media_validation_codes.sql"),
+    ),
 ];
 
 pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
@@ -101,7 +106,7 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let applied_version: i32 = run_migrations(&conn).expect("Migrations failed");
-        assert_eq!(applied_version, 4);
+        assert_eq!(applied_version, 5);
 
         let tables = [
             "app_settings",
@@ -140,10 +145,10 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let v1: i32 = run_migrations(&conn).expect("First migration run failed");
-        assert_eq!(v1, 4);
+        assert_eq!(v1, 5);
 
         let v2: i32 = run_migrations(&conn).expect("Second migration run failed");
-        assert_eq!(v2, 4);
+        assert_eq!(v2, 5);
     }
 
     #[test]

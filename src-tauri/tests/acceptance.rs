@@ -6,14 +6,48 @@ use media_tambola_lib::db::repositories::media::MediaRepository;
 use media_tambola_lib::db::repositories::ticket::TicketRepository;
 use media_tambola_lib::domain::claims::claim_validation::ClaimRejectionCode;
 use media_tambola_lib::domain::game::GameStatus;
-use media_tambola_lib::domain::media::{MediaType, SaveMediaInput, SourceType};
+use media_tambola_lib::domain::media::{MediaType, SaveMediaInput, SourceType, ValidationStatus};
 use media_tambola_lib::domain::random::DeterministicRandomSource;
 use media_tambola_lib::domain::tambola::ticket_generator::Ticket;
+use media_tambola_lib::services::media_validation::validate_slot;
 use rusqlite::params;
 use std::collections::HashSet;
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Write};
+use std::net::TcpListener;
 use std::path::PathBuf;
+use std::sync::mpsc;
+use std::thread;
+
+fn spawn_mock_media_server() -> (String, mpsc::Sender<()>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let port: u16 = listener.local_addr().unwrap().port();
+    let (tx, rx) = mpsc::channel::<()>();
+    listener.set_nonblocking(true).unwrap();
+
+    thread::spawn(move || loop {
+        if rx.try_recv().is_ok() {
+            break;
+        }
+        if let Ok((mut stream, _)) = listener.accept() {
+            let mut buf = [0u8; 1024];
+            let _ = stream.read(&mut buf);
+            let jpeg_bytes: [u8; 12] = [
+                0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01,
+            ];
+            let response: String = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: image/jpeg\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                    jpeg_bytes.len()
+                );
+            let _ = stream.write_all(response.as_bytes());
+            let _ = stream.write_all(&jpeg_bytes);
+            let _ = stream.flush();
+        }
+        thread::sleep(std::time::Duration::from_millis(10));
+    });
+
+    (format!("http://127.0.0.1:{}/remote.jpg", port), tx)
+}
 
 fn dto_to_ticket(cells_vec: &[media_tambola_lib::domain::tambola::TicketCell]) -> Ticket {
     let mut cells: [[Option<u8>; 9]; 3] = [[None; 9]; 3];
@@ -27,29 +61,6 @@ fn dto_to_ticket(cells_vec: &[media_tambola_lib::domain::tambola::TicketCell]) -
     Ticket { cells }
 }
 
-fn build_valid_permutation(first_num: u8, priority_nums: &[u8]) -> Vec<u8> {
-    let mut seq: Vec<u8> = Vec::with_capacity(90);
-    let mut used: [bool; 91] = [false; 91];
-
-    seq.push(first_num);
-    used[first_num as usize] = true;
-
-    for &n in priority_nums {
-        if (1..=90).contains(&n) && !used[n as usize] {
-            seq.push(n);
-            used[n as usize] = true;
-        }
-    }
-
-    for n in 1..=90 {
-        if !used[n as usize] {
-            seq.push(n);
-            used[n as usize] = true;
-        }
-    }
-    seq
-}
-
 #[tokio::test]
 async fn test_end_to_end_acceptance_workflow() {
     let temp_dir = tempfile::tempdir().unwrap();
@@ -57,7 +68,9 @@ async fn test_end_to_end_acceptance_workflow() {
     let media_dir: PathBuf = temp_dir.path().join("media_files");
     fs::create_dir_all(&media_dir).unwrap();
 
-    // 1. Create a minimal dummy image file with valid JPEG magic bytes
+    // 1. Local mock media server for remote validation + local dummy JPEG file
+    let (remote_url, server_shutdown) = spawn_mock_media_server();
+
     let dummy_jpg = media_dir.join("sample.jpg");
     let mut f = fs::File::create(&dummy_jpg).unwrap();
     f.write_all(&[
@@ -67,8 +80,8 @@ async fn test_end_to_end_acceptance_workflow() {
 
     let mut conn = initialize_database(&db_path).unwrap();
 
-    // Populate all 90 media slots
-    for num in 1..=90 {
+    // 2. Populate 90 media slots (slots 1..89 local file, slot 90 remote URL)
+    for num in 1..=89 {
         MediaRepository::upsert(
             &conn,
             &SaveMediaInput {
@@ -81,15 +94,42 @@ async fn test_end_to_end_acceptance_workflow() {
             },
         )
         .unwrap();
-
-        conn.execute(
-            "UPDATE media_assets SET is_valid = 1, last_validated_at = CURRENT_TIMESTAMP WHERE number = ?1;",
-            params![num],
-        )
-        .unwrap();
     }
 
-    // 2. Generate 100 tickets and assert unique codes and hashes
+    MediaRepository::upsert(
+        &conn,
+        &SaveMediaInput {
+            number: 90,
+            media_type: MediaType::Image,
+            source_type: SourceType::Remote,
+            source: remote_url.clone(),
+            thumbnail_source: None,
+            title: "રિમોટ વસ્તુ 90".to_string(),
+        },
+    )
+    .unwrap();
+
+    // Run validate_all over all 90 slots and assert 90 valid
+    for num in 1..=90 {
+        let slot = MediaRepository::get_by_number(&conn, num).unwrap();
+        let (status, err) = validate_slot(&slot).await;
+        assert_eq!(
+            status,
+            ValidationStatus::Valid,
+            "Slot {} must validate successfully",
+            num
+        );
+        MediaRepository::update_validation_status(&conn, num, status, err.as_deref()).unwrap();
+    }
+
+    let all_slots = MediaRepository::list_all(&conn).unwrap();
+    let valid_count = all_slots
+        .iter()
+        .filter(|s| s.validation_status == ValidationStatus::Valid)
+        .count();
+    assert_eq!(valid_count, 90, "All 90 media items must be validated");
+
+    // 3. Generate 100 tickets and assert unique codes and hashes
     let mut rng = DeterministicRandomSource::new(101);
     let batch =
         TicketRepository::generate_batch(&mut conn, "Acceptance Batch", 100, &mut rng, |_, _| {})
@@ -108,7 +148,7 @@ async fn test_end_to_end_acceptance_workflow() {
         );
     }
 
-    // 3. Configure schemes: ensure Early Five and Full House are active with max_winners = 1
+    // 4. Configure schemes: Early Five (max_winners=1), Top Line, Full House (max_winners=1)
     let early_five_id: i64 = conn
         .query_row(
             "SELECT id FROM prize_schemes WHERE scheme_type = 'EARLY_FIVE';",
@@ -123,6 +163,13 @@ async fn test_end_to_end_acceptance_workflow() {
             |r| r.get(0),
         )
         .unwrap();
+    let bottom_line_id: i64 = conn
+        .query_row(
+            "SELECT id FROM prize_schemes WHERE scheme_type = 'BOTTOM_LINE';",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
     let full_house_id: i64 = conn
         .query_row(
             "SELECT id FROM prize_schemes WHERE scheme_type = 'FULL_HOUSE';",
@@ -131,71 +178,130 @@ async fn test_end_to_end_acceptance_workflow() {
         )
         .unwrap();
 
-    // 4. Create Game: position 1 drawn; Next; no duplicate numbers
-    let mut game_rng = DeterministicRandomSource::new(202);
-    let game = GameRepository::create_game(&mut conn, batch.id, &mut game_rng).unwrap();
-    let game_id: i64 = game.game.id;
-    assert_eq!(game.game.current_draw_position, 1);
-    assert!(game.current.is_some());
-
-    // Arrange draw sequence so top row of ticket 1 completes at p5, all 15 numbers at p15
+    // 5. Construct draw sequence for simultaneous qualification & winner limit assertion
     let t1_dto = TicketRepository::get_ticket(&conn, "T-000001").unwrap();
     let t1: Ticket = dto_to_ticket(&t1_dto.cells);
-    let t1_top: Vec<u8> = t1.cells[0].iter().filter_map(|&c| c).collect();
+    let mut t1_numbers: Vec<u8> = Vec::new();
+    for row in &t1.cells {
+        for n in row.iter().flatten() {
+            t1_numbers.push(*n);
+        }
+    }
+    let t1_set: HashSet<u8> = t1_numbers.iter().cloned().collect();
+    let t1_top_set: HashSet<u8> = t1.cells[0].iter().filter_map(|&c| c).collect();
+    assert_eq!(t1_top_set.len(), 5);
+
+    // Find a second ticket in the batch sharing at least 1 number with Ticket 1's top row
+    let mut second_ticket_code = String::new();
+    let mut shared_num = 0u8;
+    let mut tk_numbers: Vec<u8> = Vec::new();
+    for ticket in &tickets_page.items {
+        if ticket.code == "T-000001" {
+            continue;
+        }
+        let tk_ticket = dto_to_ticket(&ticket.cells);
+        let mut cur_nums = Vec::new();
+        for row in &tk_ticket.cells {
+            for n in row.iter().flatten() {
+                cur_nums.push(*n);
+            }
+        }
+        let tk_set: HashSet<u8> = cur_nums.iter().cloned().collect();
+        let overlap: Vec<u8> = t1_top_set.intersection(&tk_set).cloned().collect();
+        if !overlap.is_empty() {
+            second_ticket_code = ticket.code.clone();
+            shared_num = overlap[0];
+            tk_numbers = cur_nums;
+            break;
+        }
+    }
+    assert!(!second_ticket_code.is_empty());
+    assert!(shared_num > 0);
+
+    // The other 4 numbers of T1's top row
+    let t1_unique_4: Vec<u8> = t1_top_set
+        .iter()
+        .cloned()
+        .filter(|&n| n != shared_num)
+        .collect();
+    assert_eq!(t1_unique_4.len(), 4);
+
+    // Pick 4 unique numbers from Tk (not in T1, not shared)
+    let tk_unique_4: Vec<u8> = tk_numbers
+        .iter()
+        .cloned()
+        .filter(|&n| n != shared_num && !t1_set.contains(&n))
+        .take(4)
+        .collect();
+    assert_eq!(tk_unique_4.len(), 4);
+
+    // Remaining 10 numbers of Ticket 1
+    let drawn_so_far: HashSet<u8> = t1_unique_4
+        .iter()
+        .chain(tk_unique_4.iter())
+        .chain(std::iter::once(&shared_num))
+        .cloned()
+        .collect();
+
     let t1_mid: Vec<u8> = t1.cells[1].iter().filter_map(|&c| c).collect();
     let t1_bot: Vec<u8> = t1.cells[2].iter().filter_map(|&c| c).collect();
 
-    let mut t1_priority: Vec<u8> = Vec::new();
-    t1_priority.extend_from_slice(&t1_top);
-    t1_priority.extend_from_slice(&t1_mid);
-    t1_priority.extend_from_slice(&t1_bot);
-
-    let g_first: u8 = game.current.unwrap().number;
-    let seq: Vec<u8> = build_valid_permutation(g_first, &t1_priority);
-
-    // Verify all 90 distinct numbers
-    let mut seq_set = HashSet::new();
-    for &n in &seq {
-        assert!(
-            seq_set.insert(n),
-            "Draw sequence must contain unique numbers"
-        );
+    let mut t1_remaining: Vec<u8> = Vec::new();
+    for n in t1_mid {
+        if !drawn_so_far.contains(&n) {
+            t1_remaining.push(n);
+        }
     }
-    assert_eq!(seq_set.len(), 90);
+    for n in t1_bot {
+        if !drawn_so_far.contains(&n) {
+            t1_remaining.push(n);
+        }
+    }
+    assert_eq!(t1_remaining.len(), 10);
+
+    // Assemble deterministic 90-number draw sequence:
+    // Positions 1..4: t1_unique_4 (4 numbers)
+    // Positions 5..8: tk_unique_4 (4 numbers)
+    // Position 9: shared_num (T1 reaches 5 at pos 9, Tk reaches 5 at pos 9)
+    // Positions 10..19: t1_remaining (T1 reaches 15 at pos 19)
+    // Positions 20..90: all remaining numbers 1..90
+    let mut planned_seq: Vec<u8> = Vec::with_capacity(90);
+    planned_seq.extend_from_slice(&t1_unique_4);
+    planned_seq.extend_from_slice(&tk_unique_4);
+    planned_seq.push(shared_num);
+    planned_seq.extend_from_slice(&t1_remaining);
+
+    let mut used_in_planned: HashSet<u8> = planned_seq.iter().cloned().collect();
+    for n in 1..=90 {
+        if !used_in_planned.contains(&n) {
+            planned_seq.push(n);
+            used_in_planned.insert(n);
+        }
+    }
+    assert_eq!(planned_seq.len(), 90);
+
+    // 6. Create Game: inject planned draw sequence
+    let mut game_rng = DeterministicRandomSource::new(202);
+    let game = GameRepository::create_game(&mut conn, batch.id, &mut game_rng).unwrap();
+    let game_id: i64 = game.game.id;
 
     conn.execute(
         "UPDATE games SET draw_sequence_json = ?1 WHERE id = ?2;",
-        params![serde_json::to_string(&seq).unwrap(), game_id],
+        params![serde_json::to_string(&planned_seq).unwrap(), game_id],
+    )
+    .unwrap();
+    conn.execute(
+        "UPDATE game_calls SET number = ?1 WHERE game_id = ?2 AND draw_position = 1;",
+        params![planned_seq[0], game_id],
     )
     .unwrap();
 
-    let mut p5: u32 = 0;
-    let mut p15: u32 = 0;
-    let mut t1_top_cnt: u32 = 0;
-    let mut t1_all_cnt: u32 = 0;
-    for (idx, &n) in seq.iter().enumerate() {
-        if t1_top.contains(&n) {
-            t1_top_cnt += 1;
-            if t1_top_cnt == 5 && p5 == 0 {
-                p5 = (idx + 1) as u32;
-            }
-        }
-        if t1_priority.contains(&n) {
-            t1_all_cnt += 1;
-            if t1_all_cnt == 15 {
-                p15 = (idx + 1) as u32;
-                break;
-            }
-        }
-    }
-
-    // Draw up to p5
-    for p in 1..p5 {
+    // 7. Advance draws to position 9 (both T1 and Tk qualify for Early Five at pos 9)
+    for p in 1..9 {
         GameRepository::draw_next(&mut conn, game_id, p).unwrap();
     }
 
-    // 5. Claims testing:
-    // a) Incomplete rejected
+    // a) Incomplete claim rejected
     let res_inc =
         ClaimRepository::submit_claim(&mut conn, game_id, full_house_id, "T-000001").unwrap();
     assert_eq!(res_inc.status, "REJECTED");
@@ -204,13 +310,24 @@ async fn test_end_to_end_acceptance_workflow() {
         Some(ClaimRejectionCode::NotCompleted)
     );
 
-    // b) Correct accepted (Early Five at p5)
-    let res_ef =
+    // b) First Early Five claim accepted (T-000001)
+    let res_ef1 =
         ClaimRepository::submit_claim(&mut conn, game_id, early_five_id, "T-000001").unwrap();
-    assert_eq!(res_ef.status, "ACCEPTED");
-    assert_eq!(res_ef.winner_position, Some(1));
+    assert_eq!(res_ef1.status, "ACCEPTED");
+    assert_eq!(res_ef1.winner_position, Some(1));
 
-    // c) Non-FH restriction: attempting Top Line at p5 on same ticket is rejected as ONLY_FULL_HOUSE_ELIGIBLE
+    // c) Second Early Five claim at same draw position rejected: WinnerLimitReached (max_winners = 1)
+    let res_ef2 =
+        ClaimRepository::submit_claim(&mut conn, game_id, early_five_id, &second_ticket_code)
+            .unwrap();
+    assert_eq!(res_ef2.status, "REJECTED");
+    assert_eq!(
+        res_ef2.rejection_code,
+        Some(ClaimRejectionCode::WinnerLimitReached),
+        "Second ticket at same draw position must receive WinnerLimitReached"
+    );
+
+    // d) Non-FH restriction: attempting Top Line on T-000001 is rejected as ONLY_FULL_HOUSE_ELIGIBLE
     let res_tl =
         ClaimRepository::submit_claim(&mut conn, game_id, top_line_id, "T-000001").unwrap();
     assert_eq!(res_tl.status, "REJECTED");
@@ -219,70 +336,69 @@ async fn test_end_to_end_acceptance_workflow() {
         Some(ClaimRejectionCode::OnlyFullHouseEligible)
     );
 
-    // d) Repeated claim rejected
-    let res_ef_dup =
-        ClaimRepository::submit_claim(&mut conn, game_id, early_five_id, "T-000001").unwrap();
-    assert_eq!(res_ef_dup.status, "REJECTED");
-    assert_eq!(
-        res_ef_dup.rejection_code,
-        Some(ClaimRejectionCode::AlreadyWonScheme)
-    );
-
-    // e) Advance draw by 1 -> late claim rejected
-    GameRepository::draw_next(&mut conn, game_id, p5).unwrap();
+    // 8. Advance draw by 1 -> position 10: late claim rejected
+    GameRepository::draw_next(&mut conn, game_id, 9).unwrap();
     let res_late =
         ClaimRepository::submit_claim(&mut conn, game_id, early_five_id, "T-000001").unwrap();
     assert_eq!(res_late.status, "REJECTED");
     assert_eq!(res_late.rejection_code, Some(ClaimRejectionCode::LateClaim));
 
-    // Draw up to p15
-    for p in (p5 + 1)..p15 {
+    // 9. Draw up to position 19: Ticket 1 completes Full House
+    for p in 10..19 {
         GameRepository::draw_next(&mut conn, game_id, p).unwrap();
     }
 
-    // f) FH allowed after a non-FH win
+    // e) Full House accepted after non-FH win
     let res_fh =
         ClaimRepository::submit_claim(&mut conn, game_id, full_house_id, "T-000001").unwrap();
     assert_eq!(res_fh.status, "ACCEPTED");
     assert_eq!(res_fh.winner_position, Some(1));
 
-    // g) Nothing after FH: subsequent claim for any scheme qualifying at p15 rejected with AlreadyWonFullHouse
+    // f) Post-Full-House guard: claiming a DIFFERENT scheme (Bottom Line, qualifying at pos 19)
+    // after winning Full House returns ALREADY_WON_FULL_HOUSE (Step 7 of evaluate_claim)
     let res_post_fh =
-        ClaimRepository::submit_claim(&mut conn, game_id, full_house_id, "T-000001").unwrap();
+        ClaimRepository::submit_claim(&mut conn, game_id, bottom_line_id, "T-000001").unwrap();
     assert_eq!(res_post_fh.status, "REJECTED");
     assert_eq!(
         res_post_fh.rejection_code,
-        Some(ClaimRejectionCode::AlreadyWonScheme)
+        Some(ClaimRejectionCode::AlreadyWonFullHouse),
+        "Claiming another scheme after winning Full House must be rejected with AlreadyWonFullHouse"
     );
 
-    // Also verify scheme with max_winners = 1 rejects subsequent valid claim
-    let t2_dto = TicketRepository::get_ticket(&conn, "T-000002").unwrap();
-    let t2: Ticket = dto_to_ticket(&t2_dto.cells);
-    let mut t2_all = Vec::new();
-    for row in &t2.cells {
-        for n in row.iter().flatten() {
-            t2_all.push(*n);
-        }
-    }
-    // If ticket 2 claims full house when max winners reached -> WINNER_LIMIT_REACHED
-    // (verified in capacity unit tests)
-
-    // 6. DROP the connection and reopen the file: active game recovers
+    // 10. Crash simulation: drop database connection and reopen
     drop(conn);
 
     let mut conn2 = initialize_database(&db_path).unwrap();
     let active_game = GameRepository::get_active_game(&conn2)
         .unwrap()
-        .expect("Active game must recover");
+        .expect("Active game must recover after database drop/reopen");
     assert_eq!(active_game.game.id, game_id);
-    assert_eq!(active_game.game.current_draw_position, p15);
+    assert_eq!(active_game.game.current_draw_position, 19);
     assert_eq!(active_game.game.status, GameStatus::Active);
 
-    // Winners and claims preserved across reopen
+    // Assert that persisted claims rows (both accepted and rejected) are completely intact
     let claims = ClaimRepository::list_game_claims(&conn2, game_id).unwrap();
-    assert!(claims.len() >= 5);
+    assert_eq!(claims.len(), 7, "All 7 claim submissions must be preserved");
 
-    // 7. End game, start a new one: fresh eligibility & history intact
+    let accepted_claims: Vec<_> = claims.iter().filter(|c| c.status == "ACCEPTED").collect();
+    assert_eq!(accepted_claims.len(), 2);
+    assert_eq!(accepted_claims[0].winner_position, Some(1));
+    assert_eq!(accepted_claims[1].winner_position, Some(1));
+
+    let rejected_claims: Vec<_> = claims.iter().filter(|c| c.status == "REJECTED").collect();
+    assert_eq!(rejected_claims.len(), 5);
+
+    let rejected_codes: HashSet<_> = rejected_claims
+        .iter()
+        .filter_map(|c| c.rejection_code)
+        .collect();
+    assert!(rejected_codes.contains(&ClaimRejectionCode::NotCompleted));
+    assert!(rejected_codes.contains(&ClaimRejectionCode::WinnerLimitReached));
+    assert!(rejected_codes.contains(&ClaimRejectionCode::OnlyFullHouseEligible));
+    assert!(rejected_codes.contains(&ClaimRejectionCode::LateClaim));
+    assert!(rejected_codes.contains(&ClaimRejectionCode::AlreadyWonFullHouse));
+
+    // 11. End game, start a fresh game: fresh state & historical records preserved
     GameRepository::end_game(&mut conn2, game_id).unwrap();
 
     let mut g2_rng = DeterministicRandomSource::new(303);
@@ -290,8 +406,9 @@ async fn test_end_to_end_acceptance_workflow() {
     assert_eq!(g2.game.status, GameStatus::Active);
     assert_ne!(g2.game.id, game_id);
 
-    // History contains previous game and winners
     let history_stats = HistoryRepository::get_dashboard_stats(&conn2).unwrap();
     assert_eq!(history_stats.games_played, 1);
     assert_eq!(history_stats.recent_winners.len(), 2);
+
+    let _ = server_shutdown.send(());
 }
