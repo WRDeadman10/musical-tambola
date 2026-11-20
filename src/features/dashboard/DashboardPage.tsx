@@ -94,12 +94,16 @@ export const DashboardPage: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="text-lg font-semibold text-zinc-300">
-                            {stats?.activeGame === null || stats === null
+                            {stats?.activeGame === null ||
+                            stats?.activeGame === undefined ||
+                            stats === null
                                 ? t("dashboard.noActiveGame")
                                 : stats.activeGame.name}
                         </div>
                         <CardDescription className="mt-2">
-                            {stats?.activeGame === null || stats === null
+                            {stats?.activeGame === null ||
+                            stats?.activeGame === undefined ||
+                            stats === null
                                 ? t("common.ready")
                                 : stats.activeGame.status}
                         </CardDescription>

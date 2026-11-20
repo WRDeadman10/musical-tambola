@@ -72,9 +72,12 @@ export function useHistory(): HistoryState {
                         ? await listWinners(filters)
                         : await listClaimHistory(filters);
                 if (!cancelled) {
-                    if (tab === "winners") setWinners(result.items as WinnerHistoryEntry[]);
-                    else setClaims(result.items as ClaimHistoryEntry[]);
-                    setTotal(result.total);
+                    if (tab === "winners") {
+                        setWinners((result.items ?? []) as WinnerHistoryEntry[]);
+                    } else {
+                        setClaims((result.items ?? []) as ClaimHistoryEntry[]);
+                    }
+                    setTotal(result.total ?? 0);
                 }
             } catch (loadError: unknown) {
                 if (!cancelled)
@@ -104,7 +107,7 @@ export function useHistory(): HistoryState {
                     limit: pageSize,
                     offset: 0,
                 });
-                if (!cancelled) setTicketClaims(result.items);
+                if (!cancelled) setTicketClaims(result.items ?? []);
             } catch (loadError: unknown) {
                 if (!cancelled)
                     setTicketClaimsError(
