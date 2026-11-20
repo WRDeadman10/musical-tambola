@@ -1,4 +1,4 @@
-# Media Tambola (મ્યુઝિકલ તંબોલા)
+# Media Tambola (મ્યુઝિકલ તંબોલા) — v1.0.1
 
 Production-grade, offline-first desktop application for running multimedia Tambola (Housie / Bingo) games with songs, video clips, and audio tracks. Built with **Tauri 2.x (Rust)** and **React + TypeScript + Tailwind CSS**.
 
@@ -11,31 +11,59 @@ Production-grade, offline-first desktop application for running multimedia Tambo
 - **Visual Studio Build Tools**: 2019 or newer with the **C++ build tools** workload (for MSVC link and Rust native bindings)
 - **WebView2 Runtime**: Evergreen WebView2 runtime (pre-installed by default on Windows 10 / 11)
 - **OS**: Windows 10/11 x64
+- **Displays**: Single screen or Dual Screen (recommended: Operator laptop + secondary HDMI/Wireless Projector)
 
 ---
 
-## 2. Architecture & Design Highlights
+## 2. Key Architecture & Features (v1.0.1)
 
-1. **Rust Game-Authoritative Engine (`src-tauri/src/domain/`)**:
-   - Ticket generation (90 numbers, 3x9 grid, exactly 5 numbers per row, column-sorted, deterministic seeding, monotonic unique alphanumeric ticket codes).
-   - Fisher-Yates cryptographic draw engine (`rand::rngs::OsRng`) guaranteeing all 90 numbers drawn without replacement.
-   - Scheme evaluator registry supporting Early Five, Top / Middle / Bottom Lines, Four Corners, Star, Full House (1st, 2nd, 3rd), and custom schemes.
-   - Atomic claim verification within SQLite transactions: checks ticket code, qualification number against current draw call, pattern completeness, game state guards (active or paused), and winner capacity.
+### Dual Game Formats: Classic 90 & Song Grid
+- **Classic 90 (`CLASSIC_90`)**: Traditional 90-number Tambola on 3×9 ticket grids (5 numbers per row, 15 numbers total).
+- **Song Grid (`SONG_GRID`)**: Fast-paced Musical Tambola on 3×5 grids (15 numbers total) with customizable pool sizes from 20 to 45 songs (default: 45).
+- Format selection locks tickets, media slots, and pattern schemes with validation badges and automatic batch compatibility filtering.
 
-2. **Custom Media Streaming Protocol (`media://<number>`)**:
-   - Custom Tauri URI scheme handler in Rust with zero direct renderer filesystem access.
-   - Resolves media slot (1–90) from SQLite database, verifies file existence, sniffs magic bytes/MIME types, and supports standard HTTP 206 `Range` byte-streaming for video scrubbing and audio seeking.
+### Dual-Window Presentation System (Two-Screen Setup)
+- **Host Control Panel** on the primary screen for the operator: 3-column layout, large NEXT button, draw history, quick-claim validation desk, and lucky draw launcher.
+- **Presentation Window** on the secondary screen / projector:
+  - Fullscreen borderless display targeting external monitors automatically.
+  - Multi-monitor detection prompts the operator with a one-click display launcher and persists display preferences.
+  - Read-only ACL capability security (`capabilities/presentation.json`): zero mutating commands available to the presentation window.
+  - Live scenes: idle event poster, media playback, answer banner, number badge, scrolling ticker strip, countdown overlay, and winner announcements.
 
-3. **Data Storage & Crash Resilience**:
-   - Single-file SQLite database via `rusqlite` (bundled feature) with WAL mode enabled.
-   - Production Database Path: `%APPDATA%\com.mediatambola.app\data\tambola.sqlite`.
-   - Never deletes historic game records, drawn numbers, tickets, or winning claims.
-   - Full crash recovery: mid-game process terminations or drops safely resume from persisted database state upon restart.
+### Pattern Engine & Preset Gallery
+- Custom 3×5 pattern masks supporting custom combinations:
+  - Presets: **Pattern H**, **Photo Frame**, **Plus**, **V**, **A**, **Breakfast**, **Top/Middle/Bottom Line**, **Four Corners**, and **Early N** (5, 7, 10).
+  - Multiple **Full House** tiers (1st, 2nd, 3rd) with strict winner exclusion.
+  - Interactive visual mask editor with real-time ticket evaluator preview.
 
-4. **Bilingual Typography & UI**:
-   - Full English and Gujarati localization (`en.json`, `gu.json`) with bundled **Noto Sans Gujarati** font.
-   - Dark, Light, and System themes.
-   - Accessible claim desk, live ticket grid, master call board, and analytics dashboard.
+### Media Manager, Folder Scan & Poster Engine
+- Manual 90-slot manager or automated folder importer with ascending, descending, number, or randomized ordering (capped at 5,000 files with symlink traversal protection).
+- Video frame extraction generating auto-posters with SHA-8 hashing under `%APPDATA%/posters/`.
+- Local magic-byte sniff validation and custom byte-streaming URI scheme (`media://`).
+
+### Universal Song Title Import
+- High-performance spreadsheet and text file importer powered by `calamine 0.38` and `csv 1.3`.
+- Supports **CSV, XLSX, XLS, and ODS** formats.
+- Two-stage import pipeline: non-mutating preview with slot range (1–90), duplicate detection, length validation, and `outOfFormatRange` warnings, followed by transactional database commit.
+
+### Ticket Printing & Custom Visual Templates
+- Fixed 1800×900 printable template canvas supporting custom background images.
+- Strict 2:1 aspect ratio, image format, and ≤5 MB size checks with SHA-256 deduplicated storage under `%APPDATA%/templates/`.
+- Range filtering and pagination for printing tickets on thermal, inkjet, or laser printers.
+
+### Autonomous Lucky Draw
+- Standalone raffle draw engine supporting both `NAMES` (custom guest list) and `TICKETS` (registered batch tickets) pools.
+- Cryptographically secure `OsRng` draw without replacement, duplicate exclusion toggle, and live projector celebration events.
+
+### Event Branding & Procedural Sound Effects
+- Custom idle event poster upload and live scrolling ticker banner displayed on the projector.
+- 5 bundled procedural sound effects (`draw`, `drumroll`, `win`, `loss`, `tick`) with selectable Host/Projector audio routing.
+
+### Data Management, Safe Staged Restore & Admin PIN
+- SQLite online backup API creating zip archives containing `tambola.sqlite`, `manifest.json`, `posters/`, and `templates/`.
+- Zip bomb & path traversal security (20,000 entry cap, 2 GB uncompressed cap).
+- Staged restore with `PRAGMA integrity_check`, WAL checkpointing (`PRAGMA wal_checkpoint(TRUNCATE)`), automated rollback snapshot (`pre_restore_<timestamp>/`), and restart marker.
+- Argon2id-hashed Admin PIN with 5 attempts/minute rate limiting and 10-minute session unlock guarding setup modifications while a game is active or paused.
 
 ---
 
@@ -43,7 +71,7 @@ Production-grade, offline-first desktop application for running multimedia Tambo
 
 ### Clone & Install Dependencies
 ```powershell
-git clone https://github.com/rushitvaghela/musical-tambola.git
+git clone https://github.com/WRDeadman10/musical-tambola.git
 cd musical-tambola
 npm install
 npx playwright install chromium
@@ -68,7 +96,7 @@ The project maintains 100% passing automated test suites across frontend, backen
 
 ### Rust Backend Tests & Quality Checks
 ```powershell
-# Run unit and integration tests (57 tests)
+# Run unit and integration tests (125 tests: 123 unit + 2 end-to-end acceptance)
 cargo test --manifest-path src-tauri/Cargo.toml
 
 # Code formatting validation
@@ -83,7 +111,7 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 # Type checking & Prettier code style
 npm run lint
 
-# Vitest UI component & store test suite (17 test files, 56 tests)
+# Vitest UI component & store test suite (27 test files, 146 tests)
 npm run test:ui
 
 # Playwright end-to-end smoke test

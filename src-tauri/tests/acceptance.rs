@@ -2,14 +2,27 @@ use media_tambola_lib::db::connection::initialize_database;
 use media_tambola_lib::db::repositories::claim::ClaimRepository;
 use media_tambola_lib::db::repositories::game::GameRepository;
 use media_tambola_lib::db::repositories::history::HistoryRepository;
+use media_tambola_lib::db::repositories::lucky_draw::LuckyDrawRepository;
 use media_tambola_lib::db::repositories::media::MediaRepository;
+use media_tambola_lib::db::repositories::scheme::SchemeRepository;
 use media_tambola_lib::db::repositories::ticket::TicketRepository;
 use media_tambola_lib::domain::claims::claim_validation::ClaimRejectionCode;
+use media_tambola_lib::domain::format::GameFormat;
 use media_tambola_lib::domain::game::GameStatus;
-use media_tambola_lib::domain::media::{MediaType, SaveMediaInput, SourceType, ValidationStatus};
+use media_tambola_lib::domain::media::{
+    MediaAssignment, MediaFolderOrder, MediaType, SaveMediaInput, SourceType, ValidationStatus,
+};
 use media_tambola_lib::domain::random::DeterministicRandomSource;
+use media_tambola_lib::domain::schemes::{PatternKind, PatternMask, SaveSchemeInput, SchemeType};
 use media_tambola_lib::domain::tambola::ticket_generator::Ticket;
+use media_tambola_lib::services::backup::{
+    create_backup_archive_in_dir, restore_backup_archive_in_dir,
+};
+use media_tambola_lib::services::media_folder::scan_media_folder;
 use media_tambola_lib::services::media_validation::validate_slot;
+use media_tambola_lib::services::title_import::{
+    apply_song_title_import_impl, preview_song_title_import_impl, ApplyTitleImportItemDto,
+};
 use rusqlite::params;
 use std::collections::HashSet;
 use std::fs;
@@ -426,4 +439,439 @@ async fn test_end_to_end_acceptance_workflow() {
     assert_eq!(history_stats.recent_winners.len(), 2);
 
     let _ = server_shutdown.send(());
+}
+
+#[tokio::test]
+async fn test_song_grid_v1_0_1_end_to_end_acceptance_workflow() {
+    let temp_dir: tempfile::TempDir = tempfile::tempdir().unwrap();
+    let app_data_dir: PathBuf = temp_dir.path().join("appdata");
+    let db_path: PathBuf = app_data_dir.join("data").join("tambola.sqlite");
+    fs::create_dir_all(db_path.parent().unwrap()).unwrap();
+
+    let mut conn = initialize_database(&db_path).unwrap();
+
+    // 1. Configure active format to SONG_GRID with 45 songs
+    conn.execute(
+        "INSERT INTO app_settings (key, value) VALUES ('active_game_format', 'SONG_GRID')
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value;",
+        [],
+    )
+    .unwrap();
+    conn.execute(
+        "INSERT INTO app_settings (key, value) VALUES ('active_song_count', '45')
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value;",
+        [],
+    )
+    .unwrap();
+
+    // 2. Folder-assign media from temp directory
+    let media_dir: PathBuf = temp_dir.path().join("media_scan");
+    fs::create_dir_all(&media_dir).unwrap();
+    for num in 1..=45 {
+        let fpath: PathBuf = media_dir.join(format!("{:02}_track.jpg", num));
+        let mut f = fs::File::create(&fpath).unwrap();
+        f.write_all(&[
+            0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01,
+        ])
+        .unwrap();
+    }
+    let scan_res = scan_media_folder(&media_dir, MediaFolderOrder::Asc, false, None, 45).unwrap();
+    assert_eq!(scan_res.assignments.len(), 45);
+
+    let assignments: Vec<MediaAssignment> = scan_res
+        .assignments
+        .into_iter()
+        .map(|pair| MediaAssignment {
+            number: pair.number,
+            path: pair.path,
+            media_type: MediaType::Image,
+            title: None,
+        })
+        .collect();
+    let slots = MediaRepository::apply_assignments(&mut conn, &assignments).unwrap();
+    assert_eq!(slots.len(), 90);
+
+    // 3. Apply song title import (CSV)
+    let mut csv_data: String = String::from("Number,Title\n");
+    for i in 1..=45 {
+        csv_data.push_str(&format!("{},Song Title {}\n", i, i));
+    }
+    let preview = preview_song_title_import_impl(csv_data.as_bytes(), "titles.csv", &conn).unwrap();
+    assert_eq!(preview.valid_count, 45);
+    assert_eq!(preview.out_of_format_range.len(), 0);
+
+    let apply_items: Vec<ApplyTitleImportItemDto> = preview
+        .rows
+        .into_iter()
+        .filter(|r| r.is_valid)
+        .map(|r| ApplyTitleImportItemDto {
+            number: r.number,
+            title: r.new_title,
+        })
+        .collect();
+    let applied: u32 = apply_song_title_import_impl(&apply_items, &mut conn).unwrap();
+    assert_eq!(applied, 45);
+
+    // 4. Generate tickets in SONG_GRID format
+    let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(4545);
+    let batch = TicketRepository::generate_batch(
+        &mut conn,
+        "Acceptance Song Grid Batch",
+        5,
+        Some(GameFormat::SongGrid),
+        Some(45),
+        &mut rng,
+        |_, _| {},
+    )
+    .unwrap();
+    assert_eq!(batch.generated_count, 5);
+    let tickets_page = TicketRepository::list_batch_tickets(&conn, batch.id, 0, 5).unwrap();
+    assert_eq!(tickets_page.items.len(), 5);
+
+    // 5. Seed / save schemes: Pattern H, Photo Frame, and 2 Full House tiers
+    conn.execute("DELETE FROM prize_schemes;", []).unwrap();
+    let h_mask: PatternMask = [
+        [true, false, false, false, true],
+        [true, true, true, true, true],
+        [true, false, false, false, true],
+    ];
+    let photo_mask: PatternMask = [
+        [true, true, true, true, true],
+        [true, false, false, false, true],
+        [true, true, true, true, true],
+    ];
+    let scheme_h = SchemeRepository::save(
+        &conn,
+        &SaveSchemeInput {
+            id: None,
+            name: "Pattern H".to_string(),
+            description: "H pattern".to_string(),
+            scheme_type: None,
+            pattern_kind: Some(PatternKind::Mask),
+            mask: Some(h_mask),
+            early_n: None,
+            is_full_house: Some(false),
+            max_winners: 1,
+            is_active: true,
+        },
+    )
+    .unwrap();
+
+    let scheme_photo = SchemeRepository::save(
+        &conn,
+        &SaveSchemeInput {
+            id: None,
+            name: "Photo Frame".to_string(),
+            description: "Photo frame pattern".to_string(),
+            scheme_type: None,
+            pattern_kind: Some(PatternKind::Mask),
+            mask: Some(photo_mask),
+            early_n: None,
+            is_full_house: Some(false),
+            max_winners: 1,
+            is_active: true,
+        },
+    )
+    .unwrap();
+
+    let scheme_fh1 = SchemeRepository::save(
+        &conn,
+        &SaveSchemeInput {
+            id: None,
+            name: "Full House 1st".to_string(),
+            description: "First Full House tier".to_string(),
+            scheme_type: Some(SchemeType::FullHouse),
+            pattern_kind: Some(PatternKind::FullHouse),
+            mask: Some([[true; 5]; 3]),
+            early_n: None,
+            is_full_house: Some(true),
+            max_winners: 1,
+            is_active: true,
+        },
+    )
+    .unwrap();
+
+    let scheme_fh2 = SchemeRepository::save(
+        &conn,
+        &SaveSchemeInput {
+            id: None,
+            name: "Full House 2nd".to_string(),
+            description: "Second Full House tier".to_string(),
+            scheme_type: Some(SchemeType::FullHouse),
+            pattern_kind: Some(PatternKind::FullHouse),
+            mask: Some([[true; 5]; 3]),
+            early_n: None,
+            is_full_house: Some(true),
+            max_winners: 1,
+            is_active: true,
+        },
+    )
+    .unwrap();
+
+    // 6. Create game session
+    let game = GameRepository::create_game(&mut conn, batch.id, &mut rng).unwrap();
+    let game_id: i64 = game.game.id;
+    let first_draw: u8 = game.current.unwrap().number;
+
+    // 7. Find two tickets that share at least one Pattern H number
+    let mut t1_idx: usize = 0;
+    let mut t2_idx: usize = 1;
+    let mut shared_h_num: u8 = 0;
+
+    'outer: for (i, item_i) in tickets_page.items.iter().enumerate() {
+        let ti = TicketRepository::get_ticket(&conn, &item_i.code).unwrap();
+        let ti_h: HashSet<u8> = ti
+            .cells
+            .iter()
+            .filter(|c| (c.row == 1) || ((c.row == 0 || c.row == 2) && (c.col == 0 || c.col == 4)))
+            .map(|c| c.number)
+            .collect();
+
+        for (j, item_j) in tickets_page.items.iter().enumerate().skip(i + 1) {
+            let tj = TicketRepository::get_ticket(&conn, &item_j.code).unwrap();
+            let tj_h: HashSet<u8> = tj
+                .cells
+                .iter()
+                .filter(|c| {
+                    (c.row == 1) || ((c.row == 0 || c.row == 2) && (c.col == 0 || c.col == 4))
+                })
+                .map(|c| c.number)
+                .collect();
+
+            if let Some(&num) = ti_h.intersection(&tj_h).next() {
+                t1_idx = i;
+                t2_idx = j;
+                shared_h_num = num;
+                break 'outer;
+            }
+        }
+    }
+    assert!(
+        shared_h_num > 0,
+        "Must find two tickets sharing a Pattern H number"
+    );
+
+    let t1_code: String = tickets_page.items[t1_idx].code.clone();
+    let t2_code: String = tickets_page.items[t2_idx].code.clone();
+    let t1_dto = TicketRepository::get_ticket(&conn, &t1_code).unwrap();
+    let t2_dto = TicketRepository::get_ticket(&conn, &t2_code).unwrap();
+
+    let t1_h_nums: Vec<u8> = t1_dto
+        .cells
+        .iter()
+        .filter(|c| (c.row == 1) || ((c.row == 0 || c.row == 2) && (c.col == 0 || c.col == 4)))
+        .map(|c| c.number)
+        .collect();
+    assert_eq!(t1_h_nums.len(), 9);
+
+    let t2_h_nums: Vec<u8> = t2_dto
+        .cells
+        .iter()
+        .filter(|c| (c.row == 1) || ((c.row == 0 || c.row == 2) && (c.col == 0 || c.col == 4)))
+        .map(|c| c.number)
+        .collect();
+    assert_eq!(t2_h_nums.len(), 9);
+
+    // Photo frame cells on Ticket 1 (12 cells)
+    let t1_photo_nums: Vec<u8> = t1_dto
+        .cells
+        .iter()
+        .filter(|c| c.row == 0 || c.row == 2 || c.col == 0 || c.col == 4)
+        .map(|c| c.number)
+        .collect();
+    assert_eq!(t1_photo_nums.len(), 12);
+
+    let t1_all_nums: Vec<u8> = t1_dto.cells.iter().map(|c| c.number).collect();
+    assert_eq!(t1_all_nums.len(), 15);
+
+    // Build deterministic sequence
+    let mut seq: Vec<u8> = Vec::with_capacity(45);
+    let mut used: [bool; 46] = [false; 46];
+    seq.push(first_draw);
+    used[first_draw as usize] = true;
+
+    // Call all T1 H numbers except shared_h_num
+    for &n in &t1_h_nums {
+        if n != shared_h_num && !used[n as usize] {
+            seq.push(n);
+            used[n as usize] = true;
+        }
+    }
+
+    // Call all T2 H numbers except shared_h_num
+    for &n in &t2_h_nums {
+        if n != shared_h_num && !used[n as usize] {
+            seq.push(n);
+            used[n as usize] = true;
+        }
+    }
+
+    // Now call shared_h_num: completes Pattern H for BOTH T1 and T2 at this exact position!
+    if !used[shared_h_num as usize] {
+        seq.push(shared_h_num);
+        used[shared_h_num as usize] = true;
+    }
+    let h_complete_pos: u32 = seq.len() as u32;
+
+    // Call remaining Photo Frame numbers of Ticket 1
+    for &n in &t1_photo_nums {
+        if !used[n as usize] {
+            seq.push(n);
+            used[n as usize] = true;
+        }
+    }
+    let photo_complete_pos: u32 = seq.len() as u32;
+
+    // Call remaining numbers of Ticket 1 for Full House
+    for &n in &t1_all_nums {
+        if !used[n as usize] {
+            seq.push(n);
+            used[n as usize] = true;
+        }
+    }
+    let fh_complete_pos: u32 = seq.len() as u32;
+
+    // Fill the rest up to 45
+    for n in 1..=45 {
+        if !used[n as usize] {
+            seq.push(n);
+            used[n as usize] = true;
+        }
+    }
+    assert_eq!(seq.len(), 45);
+
+    conn.execute(
+        "UPDATE games SET draw_sequence_json = ?1 WHERE id = ?2;",
+        params![serde_json::to_string(&seq).unwrap(), game_id],
+    )
+    .unwrap();
+
+    // Advance draws to h_complete_pos
+    for p in 1..h_complete_pos {
+        GameRepository::draw_next(&mut conn, game_id, p).unwrap();
+    }
+
+    // 8. Claims testing:
+    // (a) Ticket 1 claims Pattern H at h_complete_pos -> ACCEPTED
+    let claim_h = ClaimRepository::submit_claim(&mut conn, game_id, scheme_h.id, &t1_code).unwrap();
+    assert_eq!(claim_h.status, "ACCEPTED");
+    assert_eq!(claim_h.winner_position, Some(1));
+    assert_eq!(claim_h.qualification_position, Some(h_complete_pos));
+
+    // (b) Winner limit reached: Ticket 2 also qualifies at h_complete_pos, but max_winners 1 reached -> REJECTED (WinnerLimitReached)
+    let claim_h_limit =
+        ClaimRepository::submit_claim(&mut conn, game_id, scheme_h.id, &t2_code).unwrap();
+    assert_eq!(claim_h_limit.status, "REJECTED");
+    assert_eq!(
+        claim_h_limit.rejection_code,
+        Some(ClaimRejectionCode::WinnerLimitReached)
+    );
+
+    // (c) Not completed: Ticket 1 claims Full House before completion -> REJECTED (NotCompleted)
+    let claim_fh_early =
+        ClaimRepository::submit_claim(&mut conn, game_id, scheme_fh1.id, &t1_code).unwrap();
+    assert_eq!(claim_fh_early.status, "REJECTED");
+    assert_eq!(
+        claim_fh_early.rejection_code,
+        Some(ClaimRejectionCode::NotCompleted)
+    );
+
+    // Now advance ONE MORE draw past h_complete_pos
+    GameRepository::draw_next(&mut conn, game_id, h_complete_pos).unwrap();
+
+    // (d) Late claim: Ticket 2 attempts claim at h_complete_pos + 1 (qualified at h_complete_pos) -> REJECTED (LateClaim)
+    let claim_late =
+        ClaimRepository::submit_claim(&mut conn, game_id, scheme_h.id, &t2_code).unwrap();
+    assert_eq!(claim_late.status, "REJECTED");
+    assert_eq!(
+        claim_late.rejection_code,
+        Some(ClaimRejectionCode::LateClaim)
+    );
+
+    // Advance draws to photo_complete_pos where Ticket 1 completes Photo Frame
+    for p in (h_complete_pos + 1)..photo_complete_pos {
+        GameRepository::draw_next(&mut conn, game_id, p).unwrap();
+    }
+
+    // (e) OnlyFullHouseEligible: Ticket 1 completed Photo Frame, but already won Pattern H -> REJECTED (OnlyFullHouseEligible)
+    let claim_photo_only_fh =
+        ClaimRepository::submit_claim(&mut conn, game_id, scheme_photo.id, &t1_code).unwrap();
+    assert_eq!(claim_photo_only_fh.status, "REJECTED");
+    assert_eq!(
+        claim_photo_only_fh.rejection_code,
+        Some(ClaimRejectionCode::OnlyFullHouseEligible)
+    );
+
+    // Advance draws to fh_complete_pos
+    for p in photo_complete_pos..fh_complete_pos {
+        GameRepository::draw_next(&mut conn, game_id, p).unwrap();
+    }
+
+    // (f) Full House 1st tier: Ticket 1 claims at fh_complete_pos -> ACCEPTED
+    let claim_fh =
+        ClaimRepository::submit_claim(&mut conn, game_id, scheme_fh1.id, &t1_code).unwrap();
+    assert_eq!(claim_fh.status, "ACCEPTED");
+    assert_eq!(claim_fh.winner_position, Some(1));
+    assert_eq!(claim_fh.qualification_position, Some(fh_complete_pos));
+
+    // (g) AlreadyWonFullHouse: Ticket 1 tries to claim Full House 2nd tier -> REJECTED (AlreadyWonFullHouse)
+    let claim_fh2 =
+        ClaimRepository::submit_claim(&mut conn, game_id, scheme_fh2.id, &t1_code).unwrap();
+    assert_eq!(claim_fh2.status, "REJECTED");
+    assert_eq!(
+        claim_fh2.rejection_code,
+        Some(ClaimRejectionCode::AlreadyWonFullHouse)
+    );
+
+    // 9. Lucky Draw execution
+    let candidate_names: Vec<String> = vec!["Guest A".to_string(), "Guest B".to_string()];
+    let ld = LuckyDrawRepository::create_draw(
+        &mut conn,
+        Some("Song Grid Lucky Draw"),
+        "NAMES",
+        &candidate_names,
+        None,
+        false,
+    )
+    .unwrap();
+    let mut ld_rng: DeterministicRandomSource = DeterministicRandomSource::new(888);
+    let ld_winner = LuckyDrawRepository::draw_winner(&mut conn, ld.id, &mut ld_rng).unwrap();
+    assert!(["Guest A", "Guest B"].contains(&ld_winner.value.as_str()));
+
+    // 10. Crash simulation / database reopen
+    drop(conn);
+    let mut conn2 = initialize_database(&db_path).unwrap();
+    let active_game = GameRepository::get_active_game(&conn2)
+        .unwrap()
+        .expect("Game must recover after reopen");
+    assert_eq!(active_game.game.id, game_id);
+    assert_eq!(active_game.game.status, GameStatus::Active);
+
+    // 11. Backup -> Staged Restore -> Apply -> Verification
+    let backup_zip_path: PathBuf = temp_dir.path().join("backup.zip");
+    create_backup_archive_in_dir(
+        Some(backup_zip_path.to_string_lossy().to_string()),
+        &app_data_dir,
+        &conn2,
+    )
+    .unwrap();
+    assert!(backup_zip_path.exists());
+
+    // End active game before restore
+    GameRepository::end_game(&mut conn2, game_id).unwrap();
+
+    let restore_dto =
+        restore_backup_archive_in_dir(&backup_zip_path.to_string_lossy(), &app_data_dir, &conn2)
+            .unwrap();
+    assert!(restore_dto.restart_required);
+
+    drop(conn2);
+
+    // Startup applies staged restore!
+    let conn3 = initialize_database(&db_path).unwrap();
+    let games = GameRepository::list_games(&conn3, 10).unwrap();
+    assert_eq!(games.len(), 1);
+    assert_eq!(games[0].id, game_id);
+    let claims = ClaimRepository::list_game_claims(&conn3, game_id).unwrap();
+    assert_eq!(claims.len(), 7);
 }
