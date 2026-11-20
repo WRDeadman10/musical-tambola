@@ -71,14 +71,20 @@
 - **W3-2 (Lucky Draw Backend Engine)**: ACCEPTED by Claude (`MSG-193`), committed by AG in `3925752` and pushed to `origin/main`. Legacy `input` parameter removed from `draw_lucky_winner` so `drawId` is the sole input per `MSG-193`.
 - **U2 (Lucky Draw UI)**: ACCEPTED by Claude (`MSG-193`, `MSG-194`), committed by AG in `dfe4701` and pushed to `origin/main` ("Implemented by Codex").
 - **W3-3 (Event Branding & Sound Settings Backend)**: ACCEPTED by Claude (`MSG-200`), committed by AG in `34e779b` and pushed to `origin/main`.
-- **W3-4 (Backup / Restore + Admin PIN)**: IMPLEMENTED by AG:
+- **W3-4 (Backup / Restore + Admin PIN)**: IMPLEMENTED and HARDENED by AG per `MSG-205` & `MSG-207`:
   - Argon2id password hashing for admin PIN (`services/admin_pin.rs`), strict 4-8 digit numeric check, 5 attempts/minute rate limiting, 10-minute authenticated session timestamp.
   - Guards setup-mutating commands (media, schemes, ticket generation/deletion, format switching, branding uploads, restore) with `require_admin_pin_if_game_in_progress`.
   - SQLite online backup API (`rusqlite::backup::Backup`) with `zip` compression into archive containing `tambola.sqlite`, `manifest.json`, `posters/`, and `templates/`.
-  - Safe staged restore (`services/backup.rs`): rejects active/paused games (`CANNOT_RESTORE_ACTIVE_GAME`), rejects newer schema backups (`BACKUP_SCHEMA_INCOMPATIBLE`), extracts to `restore_staging/` with `restore_staged.json` marker. Applied on startup in `connection.rs::apply_staged_restore_if_present`.
+  - Safe staged restore (`services/backup.rs`): zip bomb / path safety (max 20,000 entries, 2 GB uncompressed cap, strict path allowlist rejecting `..` and unknown files, requiring `tambola.sqlite` and `manifest.json`), rejects active/paused games (`CANNOT_RESTORE_ACTIVE_GAME`), rejects newer schema backups (`BACKUP_SCHEMA_INCOMPATIBLE`), extracts to `restore_staging/` with `restore_staged.json` marker (with error propagation).
+  - Atomic startup apply with safety rollback (`connection.rs::apply_staged_restore_if_present`):
+    (a) Opens staged DB read-only and validates `PRAGMA integrity_check` ("ok") and schema version (`<= LATEST_SCHEMA_VERSION`), aborting without touching runtime files if invalid.
+    (b) Checkpoints current WAL (`PRAGMA wal_checkpoint(TRUNCATE)`), moves current DB and asset folders into `<appdata>/pre_restore_<timestamp>/`, pruning older backups to keep the latest 3.
+    (c) Copies staged database and assets into runtime directories.
+    (d) On any copy error, rolls back from `pre_restore_<timestamp>` restoring original files.
+    (e) Cleans up staging folder and marker only upon complete success.
   - Commands: `create_backup`, `restore_backup`, `set_admin_pin`, `verify_admin_pin`, `clear_admin_pin`, `get_admin_pin_status`.
   - Frontend API modules: `src/lib/api/adminPin.ts` and `src/lib/api/backup.ts`.
-  - Removed redundant `public/sounds/` directory per `MSG-200` (single source of truth in `resources/sounds/` streamed via media protocol).
-  - 113 Cargo unit tests + 1 acceptance test pass (114 total), clippy clean (-D warnings), rustfmt clean.
-- **Next Task for AG**: Commit W3-4, submit REVIEW to Claude, commit U3 when accepted, implement W3-5 Song Title Import.
-- **Next Task for Codex**: Await review on U3 corrective submission (MSG-204).
+  - Removed redundant `public/sounds/` directory per `MSG-200`.
+  - 115 Cargo unit tests + 1 acceptance test pass (116 total), clippy clean (-D warnings), rustfmt clean.
+- **Next Task for AG**: Commit W3-4 hardening, submit REVIEW to Claude, commit U3 when accepted, implement W3-5 Song Title Import.
+- **Next Task for Codex**: Complete U3 Event Branding & Sounds UI per `MSG-206`.

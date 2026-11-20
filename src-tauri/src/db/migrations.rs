@@ -53,6 +53,8 @@ const MIGRATIONS: &[(i32, &str, &str)] = &[
     ),
 ];
 
+pub const LATEST_SCHEMA_VERSION: i32 = 10;
+
 pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS schema_migrations (

@@ -243,7 +243,83 @@ pub fn restore_backup_archive_in_dir(
     let mut archive: ZipArchive<File> = ZipArchive::new(file)
         .map_err(|e| AppError::new("BACKUP_INVALID_FILE", format!("Invalid zip archive: {}", e)))?;
 
-    // 2. Validate manifest
+    // 2. Validate zip archive limits and path allowlist
+    const MAX_ZIP_ENTRIES: usize = 20_000;
+    const MAX_UNCOMPRESSED_SIZE: u64 = 2 * 1024 * 1024 * 1024; // 2 GB
+
+    if archive.len() > MAX_ZIP_ENTRIES {
+        return Err(AppError::new(
+            "BACKUP_INVALID_FILE",
+            format!(
+                "Backup archive contains too many entries ({} > {})",
+                archive.len(),
+                MAX_ZIP_ENTRIES
+            ),
+        ));
+    }
+
+    let mut total_uncompressed_size: u64 = 0;
+    let mut has_sqlite_db: bool = false;
+    let mut has_manifest: bool = false;
+
+    for i in 0..archive.len() {
+        let entry: zip::read::ZipFile<'_, File> = archive.by_index(i).map_err(|e| {
+            AppError::new(
+                "BACKUP_INVALID_FILE",
+                format!("Failed to read archive entry #{}: {}", i, e),
+            )
+        })?;
+
+        total_uncompressed_size = total_uncompressed_size.saturating_add(entry.size());
+        if total_uncompressed_size > MAX_UNCOMPRESSED_SIZE {
+            return Err(AppError::new(
+                "BACKUP_INVALID_FILE",
+                "Backup archive exceeds uncompressed size limit of 2 GB",
+            ));
+        }
+
+        let name: &str = entry.name();
+        let norm_name: String = name.replace('\\', "/");
+        if norm_name.contains("..") || norm_name.starts_with('/') {
+            return Err(AppError::new(
+                "BACKUP_INVALID_FILE",
+                format!("Backup archive contains illegal path: {}", name),
+            ));
+        }
+
+        if norm_name == "tambola.sqlite" {
+            has_sqlite_db = true;
+        } else if norm_name == "manifest.json" {
+            has_manifest = true;
+        } else if norm_name == "posters/"
+            || norm_name.starts_with("posters/")
+            || norm_name == "templates/"
+            || norm_name.starts_with("templates/")
+        {
+            // Allowed asset paths
+        } else {
+            return Err(AppError::new(
+                "BACKUP_INVALID_FILE",
+                format!("Backup archive contains unexpected file: {}", name),
+            ));
+        }
+    }
+
+    if !has_sqlite_db {
+        return Err(AppError::new(
+            "BACKUP_INVALID_FILE",
+            "Backup archive is missing required database tambola.sqlite",
+        ));
+    }
+
+    if !has_manifest {
+        return Err(AppError::new(
+            "BACKUP_INVALID_FILE",
+            "Backup archive is missing manifest.json",
+        ));
+    }
+
+    // 3. Validate manifest
     let manifest: BackupManifest = {
         let mut manifest_file = archive.by_name("manifest.json").map_err(|_| {
             AppError::new(
@@ -282,7 +358,7 @@ pub fn restore_backup_archive_in_dir(
         .with_param("currentSchemaVersion", current_schema.to_string()));
     }
 
-    // 3. Stage extraction into app_data_dir/restore_staging
+    // 4. Stage extraction into app_data_dir/restore_staging
     let staging_dir: PathBuf = app_data_dir.join("restore_staging");
 
     if staging_dir.exists() {
@@ -299,10 +375,14 @@ pub fn restore_backup_archive_in_dir(
         ))
     })?;
 
-    // Write restore_staged.json marker
+    // Write restore_staged.json marker (propagate errors)
     let marker_file: PathBuf = app_data_dir.join("restore_staged.json");
-    let marker_content: String = serde_json::to_string_pretty(&manifest).unwrap_or_default();
-    let _ = fs::write(&marker_file, marker_content);
+    let marker_content: String = serde_json::to_string_pretty(&manifest).map_err(|e| {
+        AppError::internal_error(format!("Failed to serialize restore manifest: {}", e))
+    })?;
+    fs::write(&marker_file, marker_content).map_err(|e: std::io::Error| {
+        AppError::internal_error(format!("Failed to write restore_staged.json marker: {}", e))
+    })?;
 
     Ok(RestoreResultDto {
         staged: true,
@@ -474,6 +554,8 @@ mod tests {
         };
         let manifest_bytes: Vec<u8> = serde_json::to_vec(&manifest).unwrap();
         zip.write_all(&manifest_bytes).unwrap();
+        zip.start_file("tambola.sqlite", options).unwrap();
+        zip.write_all(b"sqlite dummy").unwrap();
         zip.finish().unwrap();
 
         let err: AppError =
@@ -502,5 +584,115 @@ mod tests {
             restore_backup_archive_in_dir(&corrupt_file.to_string_lossy(), &app_data_dir, &conn)
                 .unwrap_err();
         assert_eq!(err2.code, "BACKUP_INVALID_FILE");
+    }
+
+    #[test]
+    fn test_zip_safety_rejects_disallowed_paths_and_missing_db() {
+        let temp_dir: tempfile::TempDir = tempfile::tempdir().unwrap();
+        let app_data_dir: PathBuf = temp_dir.path().to_path_buf();
+
+        let conn: Connection = Connection::open_in_memory().unwrap();
+        run_migrations(&conn).unwrap();
+
+        // 1. Disallowed path `evil.exe`
+        let evil_zip: PathBuf = app_data_dir.join("evil.zip");
+        let zip_file: File = File::create(&evil_zip).unwrap();
+        let mut zip: ZipWriter<File> = ZipWriter::new(zip_file);
+        let options: SimpleFileOptions =
+            SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        zip.start_file("manifest.json", options).unwrap();
+        zip.write_all(b"{}").unwrap();
+        zip.start_file("tambola.sqlite", options).unwrap();
+        zip.write_all(b"db").unwrap();
+        zip.start_file("evil.exe", options).unwrap();
+        zip.write_all(b"bad").unwrap();
+        zip.finish().unwrap();
+
+        let err: AppError =
+            restore_backup_archive_in_dir(&evil_zip.to_string_lossy(), &app_data_dir, &conn)
+                .unwrap_err();
+        assert_eq!(err.code, "BACKUP_INVALID_FILE");
+
+        // 2. Path traversal
+        let slip_zip: PathBuf = app_data_dir.join("slip.zip");
+        let zip_file2: File = File::create(&slip_zip).unwrap();
+        let mut zip2: ZipWriter<File> = ZipWriter::new(zip_file2);
+        zip2.start_file("manifest.json", options).unwrap();
+        zip2.write_all(b"{}").unwrap();
+        zip2.start_file("tambola.sqlite", options).unwrap();
+        zip2.write_all(b"db").unwrap();
+        zip2.start_file("../outside.txt", options).unwrap();
+        zip2.write_all(b"slip").unwrap();
+        zip2.finish().unwrap();
+
+        let err2: AppError =
+            restore_backup_archive_in_dir(&slip_zip.to_string_lossy(), &app_data_dir, &conn)
+                .unwrap_err();
+        assert_eq!(err2.code, "BACKUP_INVALID_FILE");
+
+        // 3. Missing tambola.sqlite
+        let no_db_zip: PathBuf = app_data_dir.join("nodb.zip");
+        let zip_file3: File = File::create(&no_db_zip).unwrap();
+        let mut zip3: ZipWriter<File> = ZipWriter::new(zip_file3);
+        zip3.start_file("manifest.json", options).unwrap();
+        zip3.write_all(b"{}").unwrap();
+        zip3.finish().unwrap();
+
+        let err3: AppError =
+            restore_backup_archive_in_dir(&no_db_zip.to_string_lossy(), &app_data_dir, &conn)
+                .unwrap_err();
+        assert_eq!(err3.code, "BACKUP_INVALID_FILE");
+    }
+
+    #[test]
+    fn test_apply_staged_restore_integrity_check_failure_aborts() {
+        let temp_dir: tempfile::TempDir = tempfile::tempdir().unwrap();
+        let app_data_dir: PathBuf = temp_dir.path().to_path_buf();
+
+        // Create original DB in data/
+        let data_dir: PathBuf = app_data_dir.join("data");
+        fs::create_dir_all(&data_dir).unwrap();
+        let original_db_path: PathBuf = data_dir.join("tambola.sqlite");
+        let orig_conn: Connection = Connection::open(&original_db_path).unwrap();
+        run_migrations(&orig_conn).unwrap();
+        orig_conn
+            .execute("CREATE TABLE sentinel_test (id INT);", [])
+            .unwrap();
+        drop(orig_conn);
+
+        // Stage a corrupt database
+        let staging_dir: PathBuf = app_data_dir.join("restore_staging");
+        fs::create_dir_all(&staging_dir).unwrap();
+        fs::write(
+            staging_dir.join("tambola.sqlite"),
+            b"corrupt non-sqlite file content",
+        )
+        .unwrap();
+        fs::write(
+            app_data_dir.join("restore_staged.json"),
+            b"{\"schemaVersion\":10}",
+        )
+        .unwrap();
+
+        // Apply staged restore -> should fail and abort
+        let res: Result<(), String> =
+            crate::db::connection::apply_staged_restore_if_present(&app_data_dir);
+        assert!(res.is_err());
+
+        // Staging removed
+        assert!(!staging_dir.exists());
+        assert!(!app_data_dir.join("restore_staged.json").exists());
+
+        // Original DB remains intact and operational
+        let check_conn: Connection = Connection::open(&original_db_path).unwrap();
+        let exists: bool = check_conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='sentinel_test';",
+                [],
+                |r: &rusqlite::Row<'_>| r.get::<_, i64>(0),
+            )
+            .map(|c| c > 0)
+            .unwrap();
+        assert!(exists);
     }
 }
