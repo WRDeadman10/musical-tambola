@@ -27,6 +27,7 @@ import { MediaPosterDialog } from "./MediaPosterDialog";
 import { generateMissingPosters } from "./posterGeneration";
 import { getGameFormat } from "../../lib/api/formats";
 import { GameFormat } from "../../types/game";
+import { TitleImportCard } from "./TitleImportCard";
 
 export { mediaFormSchema } from "./MediaEditDialog";
 
@@ -220,6 +221,7 @@ export const MediaLibraryPage: React.FC = () => {
                     </Button>
                 </div>
             </header>
+            <TitleImportCard />
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <StatCard
                     label={t("media.stats.configured")}
