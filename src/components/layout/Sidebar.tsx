@@ -1,6 +1,14 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Gamepad2, Images, LayoutDashboard, Settings, Ticket, Trophy } from "lucide-react";
+import {
+    Gamepad2,
+    Images,
+    LayoutDashboard,
+    Settings,
+    Ticket,
+    Trophy,
+    ShieldCheck,
+} from "lucide-react";
 import { useAppStore } from "../../stores/appStore";
 
 interface NavItem {
@@ -29,10 +37,15 @@ export const Sidebar: React.FC = () => {
             path: "/media",
             icon: <Images className="w-5 h-5" />,
         },
-        { labelKey: "nav.ticketGenerator", path: "/tickets/generate", icon: <Ticket className="w-5 h-5" /> },
+        {
+            labelKey: "nav.ticketGenerator",
+            path: "/tickets/generate",
+            icon: <Ticket className="w-5 h-5" />,
+        },
         { labelKey: "nav.ticketBatches", path: "/tickets", icon: <Ticket className="w-5 h-5" /> },
         { labelKey: "nav.schemes", path: "/schemes", icon: <Trophy className="w-5 h-5" /> },
         { labelKey: "nav.gameController", path: "/game", icon: <Gamepad2 className="w-5 h-5" /> },
+        { labelKey: "nav.claimDesk", path: "/claims", icon: <ShieldCheck className="w-5 h-5" /> },
     ];
 
     return (

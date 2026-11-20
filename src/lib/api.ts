@@ -8,6 +8,8 @@ export interface AppInfo {
     language: string;
     theme: string;
     settings?: Record<string, unknown>;
+    videoAutoplay?: boolean;
+    defaultVideoVolume?: number;
 }
 
 export async function getAppInfo(): Promise<AppInfo> {

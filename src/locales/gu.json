@@ -1,189 +1,226 @@
 {
-  "app": {
-    "title": "મીડિયા તંબોલા",
-    "subtitle": "ઓડિયો-વિઝ્યુઅલ ૯૦-બોલ તંબોલા પ્રણાલી"
-  },
-  "nav": {
-    "dashboard": "ડેશબોર્ડ",
-    "mediaLibrary": "મીડિયા લાયબ્રેરી",
-    "ticketGenerator": "ટિકિટ જનરેટર",
-    "ticketBatches": "ટિકિટ બેચ",
-    "schemes": "વિજેતા યોજનાઓ",
-    "tickets": "ટિકિટ્સ",
-    "schemes": "વિનિંગ સ્કીમ્સ",
-    "gameController": "ગેમ સ્ક્રીન",
-    "claimDesk": "ક્લેમ ડેસ્ક",
-    "winnerHistory": "વિજેતા ઇતિહાસ",
-    "settings": "સેટિંગ્સ"
-  },
-  "dashboard": {
-    "title": "ડેશબોર્ડ",
-    "welcome": "મીડિયા તંબોલામાં સ્વાગત છે",
-    "quickStatus": "સિસ્ટમ સ્થિતિ",
-    "mediaConfigured": "ગોઠવાયેલ મીડિયા એસેટ્સ",
-    "ticketsGenerated": "જનરેટ થયેલ ટિકિટ્સ",
-    "activeGame": "ચાલુ રમત સત્ર",
-    "noActiveGame": "કોઈ ચાલુ રમત નથી",
-    "startGame": "રમત શરૂ કરો",
-    "manageMedia": "મીડિયા ગોઠવો",
-    "generateTickets": "ટિકિટ્સ બનાવો"
-  },
-  "settings": {
-    "title": "એપ્લિકેશન સેટિંગ્સ",
-    "systemInfo": "સિસ્ટમ અને ડેટાબેઝ માહિતી",
-    "version": "એપ વર્ઝન",
-    "schemaVersion": "ડેટાબેઝ સ્કીમા વર્ઝન",
-    "dataDir": "ડેટા ડિરેક્ટરી",
-    "dbPath": "ડેટાબેઝ પાથ",
-    "language": "ભાષા (Language)",
-    "theme": "થીમ",
-    "soundVolume": "અવાજ વોલ્યુમ",
-    "autoplay": "ઓટોપ્લે ડ્રો",
-    "showNumbersAdmin": "નંબર્સ દર્શાવો (એડમિન ડાયગ્નોસ્ટિક)",
-    "save": "ફેરફારો સાચવો",
-    "savedSuccess": "સેટિંગ્સ સફળતાપૂર્વક સાચવવામાં આવી"
-  },
-  "common": {
-    "loading": "લોડ થઈ રહ્યું છે...",
-    "error": "ભૂલ આવી છે",
-    "retry": "ફરી પ્રયાસ કરો",
-    "cancel": "રદ કરો",
-    "save": "સાચવો",
-    "saving": "સાચવી રહ્યું છે...",
-    "active": "સક્રિય",
-    "inactive": "નિષ્ક્રિય",
-    "ready": "તૈયાર"
-  },
-  "tickets": {
-    "generatorTitle": "ટિકિટ જનરેટર",
-    "generatorSubtitle": "રેન્ડમાઇઝ્ડ તંબોલા ટિકિટ બેચ બનાવો.",
-    "generatorReady": "ટિકિટનો નવો બેચ બનાવો.",
-    "generate": "ટિકિટ બનાવો",
-    "batchName": "બેચનું નામ",
-    "count": "ટિકિટોની સંખ્યા",
-    "progress": "ટિકિટ બનાવાઈ રહી છે",
-    "batchesTitle": "ટિકિટ બેચ",
-    "open": "ખોલો",
-    "delete": "કાઢી નાખો",
-    "confirmDelete": "આ ટિકિટ બેચ કાઢી નાખવો છે?",
-    "search": "ટિકિટ કોડ શોધો",
-    "previous": "પહેલાં",
-    "next": "આગળ"
-  },
-  "media": {
-    "title": "મીડિયા લાયબ્રેરી",
-    "subtitle": "રમતમાં વપરાતા ૯૦ મીડિયા સ્લોટ ગોઠવો.",
-    "search": "નંબર, શીર્ષક અથવા સ્રોતથી શોધો...",
-    "notConfigured": "ગોઠવેલ નથી",
-    "progress": "મીડિયા ચકાસી રહ્યું છે",
-    "confirmRemove": "આ મીડિયા ગોઠવણી દૂર કરવી છે?",
-    "columns": {
-      "number": "નંબર",
-      "preview": "પૂર્વાવલોકન",
-      "title": "ગુજરાતી શીર્ષક",
-      "type": "પ્રકાર",
-      "source": "સ્રોત",
-      "status": "સ્થિતિ",
-      "validated": "છેલ્લી ચકાસણી",
-      "actions": "ક્રિયાઓ"
+    "app": {
+        "title": "મીડિયા તંબોલા",
+        "subtitle": "ઓડિયો-વિઝ્યુઅલ ૯૦-બોલ તંબોલા પ્રણાલી"
     },
-    "filters": {
-      "all": "બધા",
-      "valid": "માન્ય",
-      "invalid": "અમાન્ય",
-      "local": "સ્થાનિક",
-      "remote": "રિમોટ",
-      "image": "છબીઓ",
-      "video": "વિડિયો"
+    "nav": {
+        "dashboard": "ડેશબોર્ડ",
+        "mediaLibrary": "મીડિયા લાયબ્રેરી",
+        "ticketGenerator": "ટિકિટ જનરેટર",
+        "ticketBatches": "ટિકિટ બેચ",
+        "schemes": "વિજેતા યોજનાઓ",
+        "tickets": "ટિકિટ્સ",
+        "schemes": "વિનિંગ સ્કીમ્સ",
+        "gameController": "ગેમ સ્ક્રીન",
+        "claimDesk": "ક્લેમ ડેસ્ક",
+        "claimDesk": "ક્લેમ ડેસ્ક",
+        "winnerHistory": "વિજેતા ઇતિહાસ",
+        "settings": "સેટિંગ્સ"
     },
-    "types": {
-      "image": "છબી",
-      "video": "વિડિયો"
+    "dashboard": {
+        "title": "ડેશબોર્ડ",
+        "welcome": "મીડિયા તંબોલામાં સ્વાગત છે",
+        "quickStatus": "સિસ્ટમ સ્થિતિ",
+        "mediaConfigured": "ગોઠવાયેલ મીડિયા એસેટ્સ",
+        "ticketsGenerated": "જનરેટ થયેલ ટિકિટ્સ",
+        "activeGame": "ચાલુ રમત સત્ર",
+        "noActiveGame": "કોઈ ચાલુ રમત નથી",
+        "startGame": "રમત શરૂ કરો",
+        "manageMedia": "મીડિયા ગોઠવો",
+        "generateTickets": "ટિકિટ્સ બનાવો"
     },
-    "sourceTypes": {
-      "local": "સ્થાનિક",
-      "remote": "રિમોટ"
+    "settings": {
+        "title": "એપ્લિકેશન સેટિંગ્સ",
+        "systemInfo": "સિસ્ટમ અને ડેટાબેઝ માહિતી",
+        "version": "એપ વર્ઝન",
+        "schemaVersion": "ડેટાબેઝ સ્કીમા વર્ઝન",
+        "dataDir": "ડેટા ડિરેક્ટરી",
+        "dbPath": "ડેટાબેઝ પાથ",
+        "language": "ભાષા (Language)",
+        "theme": "થીમ",
+        "soundVolume": "અવાજ વોલ્યુમ",
+        "autoplay": "ઓટોપ્લે ડ્રો",
+        "showNumbersAdmin": "નંબર્સ દર્શાવો (એડમિન ડાયગ્નોસ્ટિક)",
+        "save": "ફેરફારો સાચવો",
+        "savedSuccess": "સેટિંગ્સ સફળતાપૂર્વક સાચવવામાં આવી"
     },
-    "status": {
-      "valid": "માન્ય",
-      "invalid": "અમાન્ય",
-      "not_tested": "ચકાસેલ નથી",
-      "unverified": "ચકાસણી બાકી"
+    "common": {
+        "loading": "લોડ થઈ રહ્યું છે...",
+        "error": "ભૂલ આવી છે",
+        "retry": "ફરી પ્રયાસ કરો",
+        "cancel": "રદ કરો",
+        "save": "સાચવો",
+        "saving": "સાચવી રહ્યું છે...",
+        "active": "સક્રિય",
+        "inactive": "નિષ્ક્રિય",
+        "ready": "તૈયાર"
     },
-    "fields": {
-      "number": "સ્લોટ નંબર",
-      "title": "ગુજરાતી શીર્ષક",
-      "mediaType": "મીડિયા પ્રકાર",
-      "sourceType": "સ્રોત પ્રકાર",
-      "source": "મીડિયા સ્રોત",
-      "thumbnail": "પોસ્ટર / થંબનેલ",
-      "thumbnailPlaceholder": "વૈકલ્પિક પોસ્ટર અથવા થંબનેલ પાથ / URL"
+    "tickets": {
+        "generatorTitle": "ટિકિટ જનરેટર",
+        "generatorSubtitle": "રેન્ડમાઇઝ્ડ તંબોલા ટિકિટ બેચ બનાવો.",
+        "generatorReady": "ટિકિટનો નવો બેચ બનાવો.",
+        "generate": "ટિકિટ બનાવો",
+        "batchName": "બેચનું નામ",
+        "count": "ટિકિટોની સંખ્યા",
+        "progress": "ટિકિટ બનાવાઈ રહી છે",
+        "batchesTitle": "ટિકિટ બેચ",
+        "open": "ખોલો",
+        "delete": "કાઢી નાખો",
+        "confirmDelete": "આ ટિકિટ બેચ કાઢી નાખવો છે?",
+        "search": "ટિકિટ કોડ શોધો",
+        "previous": "પહેલાં",
+        "next": "આગળ"
     },
-    "actions": {
-      "add": "મીડિયા ઉમેરો",
-      "edit": "મીડિયા સંપાદિત કરો",
-      "preview": "મીડિયા પૂર્વાવલોકન",
-      "validate": "મીડિયા ચકાસો",
-      "validateAll": "બધા ચકાસો",
-      "remove": "મીડિયા દૂર કરો",
-      "browse": "બ્રાઉઝ"
+    "media": {
+        "title": "મીડિયા લાયબ્રેરી",
+        "subtitle": "રમતમાં વપરાતા ૯૦ મીડિયા સ્લોટ ગોઠવો.",
+        "search": "નંબર, શીર્ષક અથવા સ્રોતથી શોધો...",
+        "notConfigured": "ગોઠવેલ નથી",
+        "progress": "મીડિયા ચકાસી રહ્યું છે",
+        "confirmRemove": "આ મીડિયા ગોઠવણી દૂર કરવી છે?",
+        "columns": {
+            "number": "નંબર",
+            "preview": "પૂર્વાવલોકન",
+            "title": "ગુજરાતી શીર્ષક",
+            "type": "પ્રકાર",
+            "source": "સ્રોત",
+            "status": "સ્થિતિ",
+            "validated": "છેલ્લી ચકાસણી",
+            "actions": "ક્રિયાઓ"
+        },
+        "filters": {
+            "all": "બધા",
+            "valid": "માન્ય",
+            "invalid": "અમાન્ય",
+            "local": "સ્થાનિક",
+            "remote": "રિમોટ",
+            "image": "છબીઓ",
+            "video": "વિડિયો"
+        },
+        "types": {
+            "image": "છબી",
+            "video": "વિડિયો"
+        },
+        "sourceTypes": {
+            "local": "સ્થાનિક",
+            "remote": "રિમોટ"
+        },
+        "status": {
+            "valid": "માન્ય",
+            "invalid": "અમાન્ય",
+            "not_tested": "ચકાસેલ નથી",
+            "unverified": "ચકાસણી બાકી"
+        },
+        "fields": {
+            "number": "સ્લોટ નંબર",
+            "title": "ગુજરાતી શીર્ષક",
+            "mediaType": "મીડિયા પ્રકાર",
+            "sourceType": "સ્રોત પ્રકાર",
+            "source": "મીડિયા સ્રોત",
+            "thumbnail": "પોસ્ટર / થંબનેલ",
+            "thumbnailPlaceholder": "વૈકલ્પિક પોસ્ટર અથવા થંબનેલ પાથ / URL"
+        },
+        "actions": {
+            "add": "મીડિયા ઉમેરો",
+            "edit": "મીડિયા સંપાદિત કરો",
+            "preview": "મીડિયા પૂર્વાવલોકન",
+            "validate": "મીડિયા ચકાસો",
+            "validateAll": "બધા ચકાસો",
+            "remove": "મીડિયા દૂર કરો",
+            "browse": "બ્રાઉઝ"
+        },
+        "dialog": {
+            "addTitle": "મીડિયા ગોઠવણી ઉમેરો",
+            "editTitle": "મીડિયા ગોઠવણી સંપાદિત કરો"
+        },
+        "hints": {
+            "remote": "સીધી HTTP/HTTPS મીડિયા URL વાપરો. YouTube/Vimeo પેજ URL સીધી મીડિયા ફાઇલ નથી.",
+            "poster": "વિડિયો માટે પોસ્ટર છબીની ભલામણ છે.",
+            "directMediaRequired": "આ YouTube/Vimeo પેજ URL છે. તેના બદલે સીધી મીડિયા ફાઇલ URL વાપરો."
+        },
+        "removeDialog": {
+            "title": "મીડિયા દૂર કરો",
+            "description": "આ મીડિયા ગોઠવણી દૂર કરવી છે?"
+        },
+        "stats": {
+            "configured": "ગોઠવેલ",
+            "valid": "માન્ય",
+            "invalid": "અમાન્ય",
+            "remaining": "બાકી"
+        },
+        "report": {
+            "title": "ચકાસણી રિપોર્ટ",
+            "valid": "માન્ય",
+            "invalid": "અમાન્ય",
+            "total": "ચકાસેલ",
+            "noIssues": "બધા ગોઠવેલા મીડિયા ચકાસણીમાં પાસ થયા.",
+            "validateAgain": "ફરી ચકાસો"
+        },
+        "messages": {
+            "saved": "મીડિયા ગોઠવણી સાચવાઈ.",
+            "validated": "મીડિયા ચકાસણી પૂર્ણ.",
+            "reportReady": "ચકાસણી રિપોર્ટ અપડેટ થયો."
+        },
+        "errors": {
+            "loadFailed": "મીડિયા સ્લોટ લોડ થઈ શક્યા નથી.",
+            "saveFailed": "મીડિયા ગોઠવણી સાચવી શકાઈ નથી.",
+            "removeFailed": "મીડિયા ગોઠવણી દૂર થઈ શકી નથી.",
+            "validateFailed": "મીડિયા ચકાસી શકાયું નથી.",
+            "browseFailed": "મીડિયા પિકર ખોલી શકાયું નથી."
+        },
+        "noResults": "વર્તમાન ફિલ્ટર સાથે કોઈ મીડિયા સ્લોટ મળ્યા નથી."
     },
-    "dialog": {
-      "addTitle": "મીડિયા ગોઠવણી ઉમેરો",
-      "editTitle": "મીડિયા ગોઠવણી સંપાદિત કરો"
+    "schemes": {
+        "title": "વિજેતા યોજનાઓ",
+        "subtitle": "રમતમાં વપરાતા ઇનામના નિયમો ગોઠવો.",
+        "snapshotNote": "સક્રિય યોજનાઓ રમત શરૂ થાય ત્યારે નકલ થાય છે.",
+        "add": "યોજના ઉમેરો",
+        "new": "નવી યોજના",
+        "edit": "યોજના સંપાદિત કરો",
+        "name": "નામ",
+        "description": "વર્ણન",
+        "type": "નિયમ પ્રકાર",
+        "maxWinners": "મહત્તમ વિજેતાઓ",
+        "active": "સ્થિતિ",
+        "validation": "નામ, 500 અક્ષર સુધીનું વર્ણન અને 1–100 વિજેતાઓ દાખલ કરો."
     },
-    "hints": {
-      "remote": "સીધી HTTP/HTTPS મીડિયા URL વાપરો. YouTube/Vimeo પેજ URL સીધી મીડિયા ફાઇલ નથી.",
-      "poster": "વિડિયો માટે પોસ્ટર છબીની ભલામણ છે.",
-      "directMediaRequired": "આ YouTube/Vimeo પેજ URL છે. તેના બદલે સીધી મીડિયા ફાઇલ URL વાપરો."
+    "game": {
+        "title": "ગેમ કંટ્રોલર",
+        "subtitle": "લાઇવ તંબોલા ડ્રો ચલાવો.",
+        "preflight": "ગેમ તૈયાર કરો",
+        "validate": "મીડિયા ચકાસો",
+        "valid": "માન્ય",
+        "invalid": "અમાન્ય",
+        "chooseBatch": "ટિકિટ બેચ પસંદ કરો",
+        "start": "ગેમ શરૂ કરો",
+        "fullscreen": "પૂર્ણ સ્ક્રીન",
+        "noCurrent": "હાલ કોઈ આઇટમ ડ્રો નથી",
+        "play": "ચલાવો",
+        "next": "આગળ",
+        "pause": "વિરામ",
+        "resume": "ફરી શરૂ કરો",
+        "end": "ગેમ સમાપ્ત કરો",
+        "endConfirm": "આ રમત સમાપ્ત કરવી છે? આ પાછું ફેરવી શકાશે નહીં.",
+        "history": "ડ્રો ઇતિહાસ",
+        "tickets": "ટિકિટ જુઓ"
     },
-    "removeDialog": {
-      "title": "મીડિયા દૂર કરો",
-      "description": "આ મીડિયા ગોઠવણી દૂર કરવી છે?"
-    },
-    "stats": {
-      "configured": "ગોઠવેલ",
-      "valid": "માન્ય",
-      "invalid": "અમાન્ય",
-      "remaining": "બાકી"
-    },
-    "report": {
-      "title": "ચકાસણી રિપોર્ટ",
-      "valid": "માન્ય",
-      "invalid": "અમાન્ય",
-      "total": "ચકાસેલ",
-      "noIssues": "બધા ગોઠવેલા મીડિયા ચકાસણીમાં પાસ થયા.",
-      "validateAgain": "ફરી ચકાસો"
-    },
-    "messages": {
-      "saved": "મીડિયા ગોઠવણી સાચવાઈ.",
-      "validated": "મીડિયા ચકાસણી પૂર્ણ.",
-      "reportReady": "ચકાસણી રિપોર્ટ અપડેટ થયો."
-    },
-    "errors": {
-      "loadFailed": "મીડિયા સ્લોટ લોડ થઈ શક્યા નથી.",
-      "saveFailed": "મીડિયા ગોઠવણી સાચવી શકાઈ નથી.",
-      "removeFailed": "મીડિયા ગોઠવણી દૂર થઈ શકી નથી.",
-      "validateFailed": "મીડિયા ચકાસી શકાયું નથી.",
-      "browseFailed": "મીડિયા પિકર ખોલી શકાયું નથી."
-    },
-    "noResults": "વર્તમાન ફિલ્ટર સાથે કોઈ મીડિયા સ્લોટ મળ્યા નથી."
-  },
-  "schemes": {
-    "title": "વિજેતા યોજનાઓ",
-    "subtitle": "રમતમાં વપરાતા ઇનામના નિયમો ગોઠવો.",
-    "snapshotNote": "સક્રિય યોજનાઓ રમત શરૂ થાય ત્યારે નકલ થાય છે.",
-    "add": "યોજના ઉમેરો",
-    "new": "નવી યોજના",
-    "edit": "યોજના સંપાદિત કરો",
-    "name": "નામ",
-    "description": "વર્ણન",
-    "type": "નિયમ પ્રકાર",
-    "maxWinners": "મહત્તમ વિજેતાઓ",
-    "active": "સ્થિતિ",
-    "validation": "નામ, 500 અક્ષર સુધીનું વર્ણન અને 1–100 વિજેતાઓ દાખલ કરો."
-  },
-  "game": {
-    "title": "ગેમ કંટ્રોલર", "subtitle": "લાઇવ તંબોલા ડ્રો ચલાવો.", "preflight": "ગેમ તૈયાર કરો", "validate": "મીડિયા ચકાસો", "valid": "માન્ય", "invalid": "અમાન્ય", "chooseBatch": "ટિકિટ બેચ પસંદ કરો", "start": "ગેમ શરૂ કરો", "fullscreen": "પૂર્ણ સ્ક્રીન", "noCurrent": "હાલ કોઈ આઇટમ ડ્રો નથી", "play": "ચલાવો", "next": "આગળ", "pause": "વિરામ", "resume": "ફરી શરૂ કરો", "end": "ગેમ સમાપ્ત કરો", "tickets": "ટિકિટ જુઓ"
-  }
+    "claims": {
+        "title": "ક્લેમ ડેસ્ક",
+        "subtitle": "ચાલુ ગેમના વિજેતા ક્લેમ ચકાસો.",
+        "validate": "ક્લેમ ચકાસો",
+        "noActiveGame": "ચાલુ ગેમ નથી. ક્લેમ સ્વીકારવામાં આવતા નથી.",
+        "rejections": {
+            "NO_ACTIVE_GAME": "ચાલુ ગેમ નથી.",
+            "GAME_NOT_ACCEPTING_CLAIMS": "આ ગેમ ક્લેમ સ્વીકારતી નથી.",
+            "TICKET_NOT_FOUND": "ટિકિટ મળી નથી.",
+            "TICKET_NOT_IN_GAME": "ટિકિટ આ ગેમમાં નથી.",
+            "SCHEME_NOT_IN_GAME": "સ્કીમ આ ગેમમાં નથી.",
+            "NOT_COMPLETED": "સ્કીમ પૂર્ણ થઈ નથી.",
+            "LATE_CLAIM": "ક્લેમ મોડો મોકલાયો.",
+            "ALREADY_WON_SCHEME": "આ ટિકિટ આ સ્કીમ જીતી ચૂકી છે.",
+            "ALREADY_WON_FULL_HOUSE": "આ ટિકિટ ફુલ હાઉસ જીતી ચૂકી છે.",
+            "ONLY_FULL_HOUSE_ELIGIBLE": "હવે માત્ર ફુલ હાઉસ ક્લેમ માન્ય છે.",
+            "WINNER_LIMIT_REACHED": "વિજેતાઓની મર્યાદા પહોંચી ગઈ છે."
+        }
+    }
 }

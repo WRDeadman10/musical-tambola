@@ -1,189 +1,226 @@
 {
-  "app": {
-    "title": "Media Tambola",
-    "subtitle": "Audio-Visual 90-Ball Tambola System"
-  },
-  "nav": {
-    "dashboard": "Dashboard",
-    "mediaLibrary": "Media Library",
-    "ticketGenerator": "Ticket Generator",
-    "ticketBatches": "Ticket Batches",
-    "schemes": "Winning Schemes",
-    "tickets": "Tickets",
-    "schemes": "Winning Schemes",
-    "gameController": "Game Screen",
-    "claimDesk": "Claim Desk",
-    "winnerHistory": "Winner History",
-    "settings": "Settings"
-  },
-  "dashboard": {
-    "title": "Dashboard",
-    "welcome": "Welcome to Media Tambola",
-    "quickStatus": "System Status",
-    "mediaConfigured": "Media Assets Configured",
-    "ticketsGenerated": "Tickets Generated",
-    "activeGame": "Active Game Session",
-    "noActiveGame": "No active game in progress",
-    "startGame": "Start Game",
-    "manageMedia": "Configure Media",
-    "generateTickets": "Generate Tickets"
-  },
-  "settings": {
-    "title": "Application Settings",
-    "systemInfo": "System & Environment Info",
-    "version": "App Version",
-    "schemaVersion": "Database Schema Version",
-    "dataDir": "Data Directory",
-    "dbPath": "Database Path",
-    "language": "Language",
-    "theme": "Theme",
-    "soundVolume": "Sound Volume",
-    "autoplay": "Autoplay Draw",
-    "showNumbersAdmin": "Show Numbers (Admin Diagnostic)",
-    "save": "Save Changes",
-    "savedSuccess": "Settings saved successfully"
-  },
-  "common": {
-    "loading": "Loading...",
-    "error": "An error occurred",
-    "retry": "Retry",
-    "cancel": "Cancel",
-    "save": "Save",
-    "saving": "Saving...",
-    "active": "Active",
-    "inactive": "Inactive",
-    "ready": "Ready"
-  },
-  "tickets": {
-    "generatorTitle": "Ticket Generator",
-    "generatorSubtitle": "Create randomized Tambola ticket batches.",
-    "generatorReady": "Generate a new batch of tickets.",
-    "generate": "Generate tickets",
-    "batchName": "Batch name",
-    "count": "Number of tickets",
-    "progress": "Generating tickets",
-    "batchesTitle": "Ticket Batches",
-    "open": "Open",
-    "delete": "Delete",
-    "confirmDelete": "Delete this ticket batch?",
-    "search": "Search ticket code",
-    "previous": "Previous",
-    "next": "Next"
-  },
-  "media": {
-    "title": "Media Library",
-    "subtitle": "Configure the 90 media slots used by the game.",
-    "search": "Search by number, title, or source...",
-    "notConfigured": "Not configured",
-    "progress": "Validating media",
-    "confirmRemove": "Remove this media configuration?",
-    "columns": {
-      "number": "Number",
-      "preview": "Preview",
-      "title": "Gujarati Title",
-      "type": "Type",
-      "source": "Source",
-      "status": "Status",
-      "validated": "Last Validated",
-      "actions": "Actions"
+    "app": {
+        "title": "Media Tambola",
+        "subtitle": "Audio-Visual 90-Ball Tambola System"
     },
-    "filters": {
-      "all": "All",
-      "valid": "Valid",
-      "invalid": "Invalid",
-      "local": "Local",
-      "remote": "Remote",
-      "image": "Images",
-      "video": "Videos"
+    "nav": {
+        "dashboard": "Dashboard",
+        "mediaLibrary": "Media Library",
+        "ticketGenerator": "Ticket Generator",
+        "ticketBatches": "Ticket Batches",
+        "schemes": "Winning Schemes",
+        "tickets": "Tickets",
+        "schemes": "Winning Schemes",
+        "gameController": "Game Screen",
+        "claimDesk": "Claim Desk",
+        "claimDesk": "Claim Desk",
+        "winnerHistory": "Winner History",
+        "settings": "Settings"
     },
-    "types": {
-      "image": "Image",
-      "video": "Video"
+    "dashboard": {
+        "title": "Dashboard",
+        "welcome": "Welcome to Media Tambola",
+        "quickStatus": "System Status",
+        "mediaConfigured": "Media Assets Configured",
+        "ticketsGenerated": "Tickets Generated",
+        "activeGame": "Active Game Session",
+        "noActiveGame": "No active game in progress",
+        "startGame": "Start Game",
+        "manageMedia": "Configure Media",
+        "generateTickets": "Generate Tickets"
     },
-    "sourceTypes": {
-      "local": "Local",
-      "remote": "Remote"
+    "settings": {
+        "title": "Application Settings",
+        "systemInfo": "System & Environment Info",
+        "version": "App Version",
+        "schemaVersion": "Database Schema Version",
+        "dataDir": "Data Directory",
+        "dbPath": "Database Path",
+        "language": "Language",
+        "theme": "Theme",
+        "soundVolume": "Sound Volume",
+        "autoplay": "Autoplay Draw",
+        "showNumbersAdmin": "Show Numbers (Admin Diagnostic)",
+        "save": "Save Changes",
+        "savedSuccess": "Settings saved successfully"
     },
-    "status": {
-      "valid": "Valid",
-      "invalid": "Invalid",
-      "not_tested": "Not tested",
-      "unverified": "Unverified"
+    "common": {
+        "loading": "Loading...",
+        "error": "An error occurred",
+        "retry": "Retry",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving...",
+        "active": "Active",
+        "inactive": "Inactive",
+        "ready": "Ready"
     },
-    "fields": {
-      "number": "Slot number",
-      "title": "Gujarati title",
-      "mediaType": "Media type",
-      "sourceType": "Source type",
-      "source": "Media source",
-      "thumbnail": "Poster / thumbnail",
-      "thumbnailPlaceholder": "Optional poster or thumbnail path / URL"
+    "tickets": {
+        "generatorTitle": "Ticket Generator",
+        "generatorSubtitle": "Create randomized Tambola ticket batches.",
+        "generatorReady": "Generate a new batch of tickets.",
+        "generate": "Generate tickets",
+        "batchName": "Batch name",
+        "count": "Number of tickets",
+        "progress": "Generating tickets",
+        "batchesTitle": "Ticket Batches",
+        "open": "Open",
+        "delete": "Delete",
+        "confirmDelete": "Delete this ticket batch?",
+        "search": "Search ticket code",
+        "previous": "Previous",
+        "next": "Next"
     },
-    "actions": {
-      "add": "Add media",
-      "edit": "Edit media",
-      "preview": "Preview media",
-      "validate": "Validate media",
-      "validateAll": "Validate all",
-      "remove": "Remove media",
-      "browse": "Browse"
+    "media": {
+        "title": "Media Library",
+        "subtitle": "Configure the 90 media slots used by the game.",
+        "search": "Search by number, title, or source...",
+        "notConfigured": "Not configured",
+        "progress": "Validating media",
+        "confirmRemove": "Remove this media configuration?",
+        "columns": {
+            "number": "Number",
+            "preview": "Preview",
+            "title": "Gujarati Title",
+            "type": "Type",
+            "source": "Source",
+            "status": "Status",
+            "validated": "Last Validated",
+            "actions": "Actions"
+        },
+        "filters": {
+            "all": "All",
+            "valid": "Valid",
+            "invalid": "Invalid",
+            "local": "Local",
+            "remote": "Remote",
+            "image": "Images",
+            "video": "Videos"
+        },
+        "types": {
+            "image": "Image",
+            "video": "Video"
+        },
+        "sourceTypes": {
+            "local": "Local",
+            "remote": "Remote"
+        },
+        "status": {
+            "valid": "Valid",
+            "invalid": "Invalid",
+            "not_tested": "Not tested",
+            "unverified": "Unverified"
+        },
+        "fields": {
+            "number": "Slot number",
+            "title": "Gujarati title",
+            "mediaType": "Media type",
+            "sourceType": "Source type",
+            "source": "Media source",
+            "thumbnail": "Poster / thumbnail",
+            "thumbnailPlaceholder": "Optional poster or thumbnail path / URL"
+        },
+        "actions": {
+            "add": "Add media",
+            "edit": "Edit media",
+            "preview": "Preview media",
+            "validate": "Validate media",
+            "validateAll": "Validate all",
+            "remove": "Remove media",
+            "browse": "Browse"
+        },
+        "dialog": {
+            "addTitle": "Add media configuration",
+            "editTitle": "Edit media configuration"
+        },
+        "hints": {
+            "remote": "Use a direct HTTP/HTTPS media URL. YouTube/Vimeo page URLs are not direct media files.",
+            "poster": "A poster image is recommended for videos.",
+            "directMediaRequired": "This is a YouTube/Vimeo page URL. Use the direct media file URL instead."
+        },
+        "removeDialog": {
+            "title": "Remove media",
+            "description": "Remove this media configuration?"
+        },
+        "stats": {
+            "configured": "Configured",
+            "valid": "Valid",
+            "invalid": "Invalid",
+            "remaining": "Remaining"
+        },
+        "report": {
+            "title": "Validation report",
+            "valid": "valid",
+            "invalid": "invalid",
+            "total": "checked",
+            "noIssues": "All configured media passed validation.",
+            "validateAgain": "Validate again"
+        },
+        "messages": {
+            "saved": "Media configuration saved.",
+            "validated": "Media validation complete.",
+            "reportReady": "Validation report updated."
+        },
+        "errors": {
+            "loadFailed": "Could not load media slots.",
+            "saveFailed": "Could not save media configuration.",
+            "removeFailed": "Could not remove media configuration.",
+            "validateFailed": "Could not validate media.",
+            "browseFailed": "Could not open the media picker."
+        },
+        "noResults": "No media slots match the current filters."
     },
-    "dialog": {
-      "addTitle": "Add media configuration",
-      "editTitle": "Edit media configuration"
+    "schemes": {
+        "title": "Winning Schemes",
+        "subtitle": "Configure the prize rules used by the game.",
+        "snapshotNote": "Active schemes are copied into each game when it starts.",
+        "add": "Add scheme",
+        "new": "New scheme",
+        "edit": "Edit scheme",
+        "name": "Name",
+        "description": "Description",
+        "type": "Rule type",
+        "maxWinners": "Maximum winners",
+        "active": "Status",
+        "validation": "Enter a name, a description up to 500 characters, and 1–100 winners."
     },
-    "hints": {
-      "remote": "Use a direct HTTP/HTTPS media URL. YouTube/Vimeo page URLs are not direct media files.",
-      "poster": "A poster image is recommended for videos.",
-      "directMediaRequired": "This is a YouTube/Vimeo page URL. Use the direct media file URL instead."
+    "game": {
+        "title": "Game Controller",
+        "subtitle": "Run the live Tambola draw.",
+        "preflight": "Prepare game",
+        "validate": "Validate media",
+        "valid": "valid",
+        "invalid": "invalid",
+        "chooseBatch": "Choose a ticket batch",
+        "start": "Start game",
+        "fullscreen": "Fullscreen",
+        "noCurrent": "No item currently drawn",
+        "play": "Play",
+        "next": "Next",
+        "pause": "Pause",
+        "resume": "Resume",
+        "end": "End game",
+        "endConfirm": "End this game? This cannot be undone.",
+        "history": "Draw history",
+        "tickets": "View tickets"
     },
-    "removeDialog": {
-      "title": "Remove media",
-      "description": "Remove this media configuration?"
-    },
-    "stats": {
-      "configured": "Configured",
-      "valid": "Valid",
-      "invalid": "Invalid",
-      "remaining": "Remaining"
-    },
-    "report": {
-      "title": "Validation report",
-      "valid": "valid",
-      "invalid": "invalid",
-      "total": "checked",
-      "noIssues": "All configured media passed validation.",
-      "validateAgain": "Validate again"
-    },
-    "messages": {
-      "saved": "Media configuration saved.",
-      "validated": "Media validation complete.",
-      "reportReady": "Validation report updated."
-    },
-    "errors": {
-      "loadFailed": "Could not load media slots.",
-      "saveFailed": "Could not save media configuration.",
-      "removeFailed": "Could not remove media configuration.",
-      "validateFailed": "Could not validate media.",
-      "browseFailed": "Could not open the media picker."
-    },
-    "noResults": "No media slots match the current filters."
-  },
-  "schemes": {
-    "title": "Winning Schemes",
-    "subtitle": "Configure the prize rules used by the game.",
-    "snapshotNote": "Active schemes are copied into each game when it starts.",
-    "add": "Add scheme",
-    "new": "New scheme",
-    "edit": "Edit scheme",
-    "name": "Name",
-    "description": "Description",
-    "type": "Rule type",
-    "maxWinners": "Maximum winners",
-    "active": "Status",
-    "validation": "Enter a name, a description up to 500 characters, and 1–100 winners."
-  },
-  "game": {
-    "title": "Game Controller", "subtitle": "Run the live Tambola draw.", "preflight": "Prepare game", "validate": "Validate media", "valid": "valid", "invalid": "invalid", "chooseBatch": "Choose a ticket batch", "start": "Start game", "fullscreen": "Fullscreen", "noCurrent": "No item currently drawn", "play": "Play", "next": "Next", "pause": "Pause", "resume": "Resume", "end": "End game", "tickets": "View tickets"
-  }
+    "claims": {
+        "title": "Claim Desk",
+        "subtitle": "Validate winning claims for the active game.",
+        "validate": "Validate claim",
+        "noActiveGame": "No active game. Claims are not accepted.",
+        "rejections": {
+            "NO_ACTIVE_GAME": "No active game.",
+            "GAME_NOT_ACCEPTING_CLAIMS": "This game is not accepting claims.",
+            "TICKET_NOT_FOUND": "Ticket was not found.",
+            "TICKET_NOT_IN_GAME": "Ticket is not part of this game.",
+            "SCHEME_NOT_IN_GAME": "Scheme is not part of this game.",
+            "NOT_COMPLETED": "The scheme is not completed.",
+            "LATE_CLAIM": "This claim was submitted too late.",
+            "ALREADY_WON_SCHEME": "This ticket already won this scheme.",
+            "ALREADY_WON_FULL_HOUSE": "This ticket already won Full House.",
+            "ONLY_FULL_HOUSE_ELIGIBLE": "Only Full House claims are eligible now.",
+            "WINNER_LIMIT_REACHED": "The winner limit has been reached."
+        }
+    }
 }
