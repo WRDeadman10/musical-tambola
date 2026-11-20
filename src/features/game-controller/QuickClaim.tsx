@@ -1,18 +1,24 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { useAppStore } from "../../stores/appStore";
 import { useClaimDesk } from "../claim-desk/useClaimDesk";
+import { ClaimResult } from "../../types/claim";
 
 export function QuickClaim({
     onFocusRef,
+    onAccepted,
 }: {
     onFocusRef: React.RefObject<HTMLInputElement | null>;
+    onAccepted?: (result: ClaimResult) => void;
 }): React.JSX.Element {
     const t = useAppStore((state) => state.t);
     const model = useClaimDesk();
     const reason: string = model.result?.rejectionCode
         ? t(`claims.rejections.${model.result.rejectionCode}`)
         : (model.result?.rejectionReason ?? "");
+    useEffect(() => {
+        if (model.result?.status === "ACCEPTED") onAccepted?.(model.result);
+    }, [model.result, onAccepted]);
     return (
         <section className="space-y-3 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
             <h2 className="font-semibold">{t("game.quickClaim")}</h2>

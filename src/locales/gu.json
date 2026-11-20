@@ -326,7 +326,10 @@
         "disableSplash": "સ્પ્લેશ બંધ કરો",
         "announce": "ઇનામ જાહેર કરો",
         "nextUp": "આગળનું",
-        "upcomingItem": "આગળની આઇટમ"
+        "upcomingItem": "આગળની આઇટમ",
+        "volume": "વોલ્યુમ",
+        "autoplayBlocked": "આઇટમ {{number}} માટે આપમેળે ચલાવવું અટકાવાયું.",
+        "retryPlayback": "ફરી ચલાવો"
     },
     "game": {
         "title": "ગેમ કંટ્રોલર",

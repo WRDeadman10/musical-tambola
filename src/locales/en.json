@@ -326,7 +326,10 @@
         "disableSplash": "Disable splash",
         "announce": "Announce prize",
         "nextUp": "Next up",
-        "upcomingItem": "Upcoming item"
+        "upcomingItem": "Upcoming item",
+        "volume": "Volume",
+        "autoplayBlocked": "Autoplay was blocked for item {{number}}.",
+        "retryPlayback": "Retry playback"
     },
     "game": {
         "title": "Game Controller",

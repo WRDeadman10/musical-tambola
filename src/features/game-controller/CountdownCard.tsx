@@ -3,8 +3,10 @@ import { Button } from "../../components/ui/button";
 
 export function CountdownCard({
     translate,
+    onChange,
 }: {
     translate: (key: string) => string;
+    onChange?: (seconds: number, running: boolean) => void;
 }): React.JSX.Element {
     const [duration, setDuration] = useState<number>(30);
     const [remaining, setRemaining] = useState<number>(30);
@@ -38,12 +40,22 @@ export function CountdownCard({
                             setDuration(value);
                             setRemaining(value);
                             setRunning(false);
+                            onChange?.(value, false);
                         }}
                     >
                         {value} {translate("hostPanel.seconds")}
                     </Button>
                 ))}
-                <Button variant="outline" onClick={() => setRunning((value) => !value)}>
+                <Button
+                    variant="outline"
+                    onClick={() =>
+                        setRunning((value: boolean) => {
+                            const nextRunning: boolean = !value;
+                            onChange?.(remaining, nextRunning);
+                            return nextRunning;
+                        })
+                    }
+                >
                     {running ? translate("game.stopTimer") : translate("game.startTimer")}
                 </Button>
                 <Button
