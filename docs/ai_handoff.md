@@ -68,13 +68,15 @@
 - **BT-30 (Ticket Printing & Templates UI)**: ACCEPTED by Claude (`MSG-178`), committed by AG in `9e3c5fd` and pushed to `origin/main`.
 - **BT-32 / U1 (Presentation Suggested Prompt & Saved Display)**: ACCEPTED by Claude (`MSG-183`), committed by AG in `081d7b3` and pushed to `origin/main`.
 - **W3-1 (Ticket Template Storage Backend)**: ACCEPTED by Claude (`MSG-187`), committed by AG in `48cc635` and pushed to `origin/main`.
-- **W3-2 (Lucky Draw Backend Engine)**: IMPLEMENTED by AG per `MSG-178` & `MSG-190`:
-  - Migration 0009: `lucky_draws`, `lucky_draw_entries`, `lucky_draw_winners` tables with cascade deletion and indexes.
-  - Commands & ACL: `create_lucky_draw`, `draw_lucky_winner`, `list_lucky_draws` added to `main.json` and declared in `build.rs`, guarded with `require_main_window`.
-  - Pools: supports `NAMES` (list of strings) and `TICKETS` (ticket batch or active game tickets).
-  - No repeats guarantee: entries marked `is_winner = 1`, subsequent draws within the same pool cannot repeat.
-  - Exclude previous winners: filters out entries that have won earlier lucky draws across the session.
-  - Projector IPC: backend emits `presentation-command` with `LUCKY_DRAW { drawName, candidatesSample, winner }`.
-  - 104 Cargo unit tests + 1 acceptance test pass (105 total), clippy clean, rustfmt clean.
-- **Next Task for AG**: Submit W3-2 REVIEW to Claude, commit Codex U2 upon review, and begin W3-3 (Branding + Sounds settings backend).
-- **Next Task for Codex**: Complete U2 Lucky Draw UI realignment per `MSG-189`.
+- **W3-2 (Lucky Draw Backend Engine)**: ACCEPTED by Claude (`MSG-193`), committed by AG in `3925752` and pushed to `origin/main`. Legacy `input` parameter removed from `draw_lucky_winner` so `drawId` is the sole input per `MSG-193`.
+- **U2 (Lucky Draw UI)**: ACCEPTED by Claude (`MSG-193`, `MSG-194`), committed by AG in `dfe4701` and pushed to `origin/main` ("Implemented by Codex").
+- **W3-3 (Event Branding & Sound Settings Backend)**: IMPLEMENTED by AG per `MSG-178` & `MSG-193`:
+  - Migration 0010: `0010_event_branding_and_sounds.sql` added to schema migrations, seeding `event_name` ('Musical Tambola'), `ticker_text` (''), `idle_poster` (''), `accent_color` ('#6366f1'), `sound_enabled` ('true'), `sound_volume` ('80'), `sound_projector` ('true').
+  - `AppSettingKey` allowlist expanded with `EventName`, `TickerText`, `IdlePoster`, `AccentColor`, `SoundEnabled`, `SoundVolume`, `SoundProjector`. Lengths <= 200/256, hex format `^#[0-9a-fA-F]{6}$`, volume 0..=100, boolean validations.
+  - `AppInfo` struct & `get_app_info` command expose all branding and sound settings.
+  - Commands: `upload_idle_poster` (<= 5MB, PNG/JPEG magic bytes, sha16 hashed file in `app_data_dir/posters/idle_poster_<sha16>.<ext>`, persisted to `app_settings`), `clear_idle_poster`. Guarded with `require_main_window`.
+  - Audio bundle: 5 procedural 16-bit 44.1kHz mono WAVs generated under `src-tauri/resources/sounds/` and `public/sounds/` (`draw.wav`, `reveal.wav`, `accepted.wav`, `rejected.wav`, `lucky.wav`). Documented in `docs/audio-licenses.md` (MIT/CC0 public domain).
+  - Protocol streaming: `media://idle_poster` and `media://sound/<name>` supported in `services/media_protocol.rs` with `audio/wav`, `audio/ogg`, `audio/mpeg` mime types.
+  - 105 Cargo unit tests + 1 acceptance test pass (106 total), clippy clean, rustfmt clean.
+- **Next Task for AG**: Submit W3-3 REVIEW to Claude, commit Codex U3 when accepted, proceed to W3-4 (Backup/Restore + Admin PIN).
+- **Next Task for Codex**: Implement U3 Event Branding & Sounds UI per `MSG-179` & `MSG-194`.

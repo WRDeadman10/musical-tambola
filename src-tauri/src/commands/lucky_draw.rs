@@ -1,6 +1,4 @@
-use crate::db::repositories::lucky_draw::{
-    LuckyDrawDto, LuckyDrawInputDto, LuckyDrawRepository, LuckyWinnerDto,
-};
+use crate::db::repositories::lucky_draw::{LuckyDrawDto, LuckyDrawRepository, LuckyWinnerDto};
 use crate::db::DbState;
 use crate::domain::random::OsRngSource;
 use crate::errors::AppError;
@@ -36,8 +34,7 @@ pub fn create_lucky_draw(
 
 #[tauri::command]
 pub fn draw_lucky_winner(
-    draw_id: Option<i64>,
-    input: Option<LuckyDrawInputDto>,
+    draw_id: i64,
     window: Window,
     app: AppHandle,
     state: State<'_, DbState>,
@@ -47,16 +44,7 @@ pub fn draw_lucky_winner(
         state.conn.lock().map_err(|_| AppError::lock_error())?;
     let mut rng: OsRngSource = OsRngSource;
 
-    let result: LuckyWinnerDto = if let Some(id) = draw_id {
-        LuckyDrawRepository::draw_winner(&mut conn, id, &mut rng)?
-    } else if let Some(ref inp) = input {
-        LuckyDrawRepository::draw_winner_from_input(&mut conn, inp, &mut rng)?
-    } else {
-        return Err(AppError::new(
-            "LUCKY_DRAW_INVALID_INPUT",
-            "Either draw_id or input must be provided",
-        ));
-    };
+    let result: LuckyWinnerDto = LuckyDrawRepository::draw_winner(&mut conn, draw_id, &mut rng)?;
 
     let draw_name: String = conn
         .query_row(
@@ -96,7 +84,7 @@ pub fn list_lucky_draws(state: State<'_, DbState>) -> Result<Vec<LuckyDrawDto>, 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::db::repositories::lucky_draw::LuckyDrawInputDto;
 
     #[test]
     fn test_lucky_draw_input_dto_deserialization() {

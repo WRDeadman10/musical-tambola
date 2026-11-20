@@ -56,6 +56,8 @@ const ALL_COMMANDS: &[&str] = &[
     "create_lucky_draw",
     "draw_lucky_winner",
     "list_lucky_draws",
+    "upload_idle_poster",
+    "clear_idle_poster",
 ];
 
 fn main() {

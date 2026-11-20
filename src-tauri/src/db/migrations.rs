@@ -46,6 +46,11 @@ const MIGRATIONS: &[(i32, &str, &str)] = &[
         "0009_lucky_draw",
         include_str!("../../migrations/0009_lucky_draw.sql"),
     ),
+    (
+        10,
+        "0010_event_branding_and_sounds",
+        include_str!("../../migrations/0010_event_branding_and_sounds.sql"),
+    ),
 ];
 
 pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
@@ -126,7 +131,7 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let applied_version: i32 = run_migrations(&conn).expect("Migrations failed");
-        assert_eq!(applied_version, 9);
+        assert_eq!(applied_version, 10);
 
         let tables = [
             "app_settings",
@@ -172,10 +177,10 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let v1: i32 = run_migrations(&conn).expect("First migration run failed");
-        assert_eq!(v1, 9);
+        assert_eq!(v1, 10);
 
         let v2: i32 = run_migrations(&conn).expect("Second migration run failed");
-        assert_eq!(v2, 9);
+        assert_eq!(v2, 10);
     }
 
     #[test]
@@ -360,7 +365,7 @@ mod tests {
     fn test_migration_0006_game_formats_columns() {
         let conn: Connection = Connection::open_in_memory().unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 9);
+        assert_eq!(applied, 10);
 
         // Verify columns on ticket_batches
         conn.execute(
@@ -411,7 +416,7 @@ mod tests {
         let conn: Connection = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 9);
+        assert_eq!(applied, 10);
 
         // Verify prize_schemes backfilled and presets seeded
         let full_house_row: (String, String, bool) = conn
@@ -451,7 +456,7 @@ mod tests {
         let conn: Connection = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 9);
+        assert_eq!(applied, 10);
 
         let default_template: (i64, String, bool, bool, Option<String>) = conn
             .query_row(
@@ -473,7 +478,7 @@ mod tests {
         let conn: Connection = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 9);
+        assert_eq!(applied, 10);
 
         conn.execute(
             "INSERT INTO lucky_draws (id, name, source, exclude_previous_winners)
@@ -495,5 +500,58 @@ mod tests {
             [],
         )
         .unwrap();
+    }
+
+    #[test]
+    fn test_migration_0010_event_branding_and_sounds() {
+        let conn: Connection = Connection::open_in_memory().unwrap();
+        conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
+        let applied: i32 = run_migrations(&conn).unwrap();
+        assert_eq!(applied, 10);
+
+        let event_name: String = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'event_name';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(event_name, "Musical Tambola");
+
+        let accent_color: String = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'accent_color';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(accent_color, "#6366f1");
+
+        let sound_enabled: String = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'sound_enabled';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(sound_enabled, "true");
+
+        let sound_volume: String = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'sound_volume';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(sound_volume, "80");
+
+        let sound_projector: String = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'sound_projector';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(sound_projector, "true");
     }
 }

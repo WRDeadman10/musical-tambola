@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-upload-idle-poster"
+description = "Enables the upload_idle_poster command without any pre-configured scope."
+commands.allow = ["upload_idle_poster"]
+
+[[permission]]
+identifier = "deny-upload-idle-poster"
+description = "Denies the upload_idle_poster command without any pre-configured scope."
+commands.deny = ["upload_idle_poster"]

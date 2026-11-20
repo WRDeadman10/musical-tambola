@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-clear-idle-poster"
+description = "Enables the clear_idle_poster command without any pre-configured scope."
+commands.allow = ["clear_idle_poster"]
+
+[[permission]]
+identifier = "deny-clear-idle-poster"
+description = "Denies the clear_idle_poster command without any pre-configured scope."
+commands.deny = ["clear_idle_poster"]

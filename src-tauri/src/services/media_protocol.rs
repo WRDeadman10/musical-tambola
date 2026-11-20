@@ -18,6 +18,9 @@ pub fn get_mime_type(path: &Path) -> Option<&'static str> {
         Some("gif") => Some("image/gif"),
         Some("mp4") => Some("video/mp4"),
         Some("webm") => Some("video/webm"),
+        Some("wav") => Some("audio/wav"),
+        Some("ogg") => Some("audio/ogg"),
+        Some("mp3") => Some("audio/mpeg"),
         _ => None,
     }
 }
@@ -176,6 +179,78 @@ pub fn handle_media_protocol<R: tauri::Runtime>(
         drop(conn);
 
         bg_path
+    } else if segments.first() == Some(&"idle_poster") || segments.first() == Some(&"idle-poster") {
+        let state: tauri::State<'_, crate::db::DbState> =
+            match app.try_state::<crate::db::DbState>() {
+                Some(s) => s,
+                None => {
+                    return Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .body(b"Database state unavailable".to_vec())
+                        .unwrap();
+                }
+            };
+
+        let conn: std::sync::MutexGuard<'_, Connection> = match state.conn.lock() {
+            Ok(c) => c,
+            Err(_) => {
+                return Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(b"Database lock failed".to_vec())
+                    .unwrap();
+            }
+        };
+
+        let poster_path: Option<String> = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'idle_poster';",
+                [],
+                |r: &rusqlite::Row<'_>| r.get(0),
+            )
+            .ok()
+            .filter(|s: &String| !s.trim().is_empty());
+
+        drop(conn);
+
+        poster_path
+    } else if segments.first() == Some(&"sound") {
+        if segments.len() < 2 {
+            return Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .body(b"Missing sound name".to_vec())
+                .unwrap();
+        }
+        let sound_name: &str = segments[1];
+        let file_name: String = if sound_name.ends_with(".wav") || sound_name.ends_with(".ogg") {
+            sound_name.to_string()
+        } else {
+            format!("{}.wav", sound_name)
+        };
+
+        let mut candidate_path: Option<PathBuf> = None;
+        if let Ok(res_dir) = app.path().resource_dir() {
+            let res_path: PathBuf = res_dir.join("resources").join("sounds").join(&file_name);
+            if res_path.exists() {
+                candidate_path = Some(res_path);
+            }
+        }
+        if candidate_path.is_none() {
+            let local_path: PathBuf = PathBuf::from("src-tauri")
+                .join("resources")
+                .join("sounds")
+                .join(&file_name);
+            if local_path.exists() {
+                candidate_path = Some(local_path);
+            }
+        }
+        if candidate_path.is_none() {
+            let public_path: PathBuf = PathBuf::from("public").join("sounds").join(&file_name);
+            if public_path.exists() {
+                candidate_path = Some(public_path);
+            }
+        }
+
+        candidate_path.map(|p: PathBuf| p.to_string_lossy().to_string())
     } else {
         let (is_game, game_id, number, is_thumb): (bool, Option<i64>, u8, bool) =
             if segments.first() == Some(&"game") {

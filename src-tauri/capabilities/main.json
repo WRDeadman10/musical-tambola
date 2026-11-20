@@ -63,6 +63,8 @@
     "allow-delete-template",
     "allow-create-lucky-draw",
     "allow-draw-lucky-winner",
-    "allow-list-lucky-draws"
+    "allow-list-lucky-draws",
+    "allow-upload-idle-poster",
+    "allow-clear-idle-poster"
   ]
 }

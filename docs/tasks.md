@@ -203,8 +203,11 @@
 | **BT-30** | Ticket Printing & Templates | DONE | Codex (X) | Wave 3 | Fixed 1800×900 template canvas, regions, print preview/pagination, range filter, guide download (committed `9e3c5fd`) |
 | **BT-32** | Presentation Suggested Prompt & Saved Display | DONE | Codex (X) | Wave 3 | Presentation suggested toast, session suppression, display preference (committed `081d7b3`) |
 | **W3-1** | Ticket Template Storage Backend | DONE | AG (A) | Wave 3 | Migration 0008, template CRUD, aspect 2:1 validation, image header decode, <=5MB limit, SHA-256 hashed storage, media://template/ (committed `48cc635`) |
-| **W3-2** | Lucky Draw Backend Engine | DONE | AG (A) | Wave 3 | Migration 0009, pools (NAMES/TICKETS), OsRng draw, no repeats, exclude previous winners, presentation LUCKY_DRAW event (104 unit + 1 acceptance tests) |
-| **U2** | Lucky Draw UI | IN_PROGRESS | Codex (X) | Wave 3 | Host Lucky Draw card, batch selector, exclude toggle, history list |
-| **W3-3** | Event Branding & Sound Settings Backend | TODO | AG (A) | Wave 3 | Settings allowlist (event_name, ticker, accent_color, sounds), bundled royalty-free audio |
+| **W3-2** | Lucky Draw Backend Engine | DONE | AG (A) | Wave 3 | Migration 0009, pools (NAMES/TICKETS), OsRng draw, no repeats, exclude previous winners, presentation LUCKY_DRAW event (accepted MSG-193, committed `3925752`) |
+| **U2** | Lucky Draw UI | DONE | Codex (X) | Wave 3 | Host Lucky Draw card, drawId integration, batch selector, exclude toggle, history list, projector command backend-owned (accepted MSG-194, committed `dfe4701`) |
+| **W3-3** | Event Branding & Sound Settings Backend | DONE | AG (A) | Wave 3 | Migration 0010, allowlist branding & sound keys, upload_idle_poster / clear_idle_poster, bundled 5 procedural WAVs under src-tauri/resources/sounds and public/sounds, media://idle_poster & media://sound/ streaming |
+| **U3** | Event Branding & Sounds UI | IN_PROGRESS | Codex (X) | Wave 3 | Settings Event Branding card, sound controls, projector ticker strip, sound triggers |
+| **W3-4** | Backup / Restore + Admin PIN | TODO | AG (A) | Wave 3 | create_backup zip with SQLite online backup API, restore_backup, Argon2id admin PIN & session |
+| **W3-5** | Song Title Import | TODO | AG (A) | Wave 3 | import_titles_csv / import_titles_xlsx (calamine), preview -> apply transaction |
 
 

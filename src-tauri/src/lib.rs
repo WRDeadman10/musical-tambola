@@ -5,7 +5,7 @@ pub mod errors;
 pub mod services;
 pub mod smoke;
 
-use commands::app_info::{get_app_info, set_app_setting};
+use commands::app_info::{clear_idle_poster, get_app_info, set_app_setting, upload_idle_poster};
 use commands::claim::{list_game_claims, submit_claim};
 use commands::game::{
     create_game, draw_next, end_game, get_active_game, get_game, get_game_format, list_games,
@@ -128,6 +128,8 @@ pub fn run() {
             create_lucky_draw,
             draw_lucky_winner,
             list_lucky_draws,
+            upload_idle_poster,
+            clear_idle_poster,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");
