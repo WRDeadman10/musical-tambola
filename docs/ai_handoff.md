@@ -1,6 +1,6 @@
 # AI Handoff & Session State — Media Tambola
 
-## Current Phase: Project Completed (Phase 1–8)
+## Current Phase: Project Completed (Phase 1–8) — V1 Release Candidate (`v1.0.0-rc1`)
 - **Date**: 2026-11-20
 - **Lead / Reviewer**: Claude (C)
 - **Implementer #1 (Backend / Rust & Git Owner)**: Antigravity (AG / A)

@@ -161,7 +161,7 @@
 
 ---
 
-## Phase 8: Hardening, Packaging & Release Verification
+## Phase 8: Hardening, Packaging & Release Verification (V1 Release Candidate)
 
 ### Track 1: Backend / Rust (Assignee: AG — Implementer #1 & Git Owner)
 
