@@ -63,8 +63,8 @@
 
 | Task ID | Description | Status | Assignee | Notes |
 |---------|-------------|--------|----------|-------|
-| T3-F01 | MediaLibraryPage refactoring into focused components | IN_PROGRESS | Codex | Carry-over item |
-| T3-F02 | Ticket Generator modal & progress bar | IN_PROGRESS | Codex | `src/features/ticket-generator/**` |
-| T3-F03 | Ticket Batches page & pagination | IN_PROGRESS | Codex | `src/features/ticket-batches/**` |
-| T3-F04 | Reusable `TicketGrid` component | IN_PROGRESS | Codex | `src/components/ticket/TicketGrid.tsx` |
-| T3-F05 | Ticket API wrappers & Vitest suite | IN_PROGRESS | Codex | `src/lib/api/tickets.ts`, `src/test/ticket*.test.ts(x)` |
+| T3-F01 | MediaLibraryPage refactoring into focused components | DONE | Codex | MediaModal, MediaPreviewDialog, RemoveMediaDialog extracted |
+| T3-F02 | Ticket Generator modal & progress bar | DONE | Codex | `src/features/ticket-generator/TicketGeneratorPage.tsx` |
+| T3-F03 | Ticket Batches page & pagination | DONE | Codex | `src/features/ticket-batches/TicketBatchesPage.tsx` |
+| T3-F04 | Reusable `TicketGrid` component | DONE | Codex | `src/components/ticket/TicketGrid.tsx` |
+| T3-F05 | Ticket API wrappers & Vitest suite | DONE | Codex | 18/18 Vitest tests pass across 8 test suites |

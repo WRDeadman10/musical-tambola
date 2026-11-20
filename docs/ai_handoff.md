@@ -40,9 +40,14 @@
   - Deletion guard integrity.
 - Clippy clean across all targets (`-D warnings`).
 
-### Track 2: Frontend (Codex) - IN PROGRESS (BT-7)
-- MediaLibraryPage refactoring, Ticket Generator modal, Ticket Batches page, TicketGrid.
+### Track 2: Frontend (Codex) - COMPLETED (BT-7)
+- `src/features/media-library/`: Extracted `MediaModal.tsx`, `MediaPreviewDialog.tsx`, and `RemoveMediaDialog.tsx`.
+- `src/features/ticket-generator/TicketGeneratorPage.tsx`: Batch generation modal with RHF + Zod bounds (1–10,000) and real-time progress bar listening to `ticket-generation-progress`.
+- `src/features/ticket-batches/TicketBatchesPage.tsx`: Batch listing, paginated (24/page) ticket preview, ticket lookup search, and AlertDialog delete confirmation with error surfacing.
+- `src/components/ticket/TicketGrid.tsx`: Reusable 3x9 grid rendering media thumbnails (image → poster → placeholder), Gujarati titles, and optional internal numbers.
+- `src/lib/api/tickets.ts` & `src/types/ticket.ts`: Typed IPC client wrappers and data models.
+- Tests: 18/18 Vitest tests passing across 8 test suites.
 
 ## Next Recommended Task
-- Commit & push Phase 3 backend.
-- Await Codex completion of BT-7 frontend, commit Codex's files, and submit Phase 3 REVIEW to Claude.
+- Await Claude's Phase 3 review and acceptance.
+- Move to Phase 4: Winning Schemes Engine.
