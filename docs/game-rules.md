@@ -20,10 +20,14 @@ A standard 90-ball Tambola ticket conforms to the following strict mathematical 
 - **Uniqueness**: Every ticket must have a globally unique canonical layout hash (a deterministic SHA-256 representation of cell positions and numbers).
 
 ### 1.1 Generation Algorithm & Layout Hashing
-- **Constrained Layout Selection**: Randomized backtracking creates a 3x9 grid ensuring 5 numbers per row and 1–3 numbers per column. Columns with 0 assigned cells are prioritized in successive rows.
-- **Number Allocation**: For each column $c$, $k \in \{1, 2, 3\}$ numbers are drawn without replacement from the column range $min_c..=max_c$ using `RandomSource`. Numbers are sorted ascending and mapped top-to-bottom to the occupied rows.
+- **Unbiased Partition Selection**: The 15 numbers are partitioned into 9 column counts $c_0..c_8 \in \{1, 2, 3\}$ by initializing each column to 1 and randomly incrementing columns (up to max 3) until the sum is 15. Every valid column count combination is reachable without bias.
+- **Randomized Backtracking Row Assignment**: For each column $c$ with count $k$, candidate row subsets of size $k$ are shuffled uniformly at random using `RandomSource`. Backtracking recursively explores row assignments, pruning any branch where a row exceeds 5 or cannot reach 5 with remaining columns. This ensures that every column has positive probability of placing numbers in Row 0, Row 1, and Row 2 (specifically allowing singletons in Row 2).
+- **Number Allocation**: For each column $c$, $k \in \{1, 2, 3\}$ numbers are drawn without replacement from the column range $min_c..=max_c$ using `RandomSource`. Numbers are sorted ascending and mapped top-to-bottom to the assigned rows.
 - **Canonical Representation**: String representation formatted row-major with `|` column delimiters and newline row delimiters (e.g., `10|_|25|_|42|_|61|_|88\n...`).
 - **Layout Hash**: Lowercase 64-character SHA-256 hex digest of the canonical string, enforced via SQLite `UNIQUE(layout_hash)`.
+- **Statistical Invariants**: Over large sample sets (e.g. 20,000 tickets):
+  - Every column count 1, 2, and 3 occurs for every column ($> 0$).
+  - For every column, the singleton case ($count = 1$) located in Row 2 occurs ($> 0$).
 
 ## 2. Winning Schemes
 Media Tambola provides 6 standard data-driven schemes:

@@ -54,10 +54,10 @@
 |---------|-------------|--------|----------|-------|
 | T3-B01 | Carry-over fix: `RangeSpec::Empty` for 0-byte files | DONE | AG (A) | Commit 398013d |
 | T3-B02 | Re-add `rand` and `sha2`, implement `RandomSource` trait | DONE | AG (A) | OsRngSource, DeterministicRandomSource, ConstantRandomSource |
-| T3-B03 | Constrained ticket generator & validation engine | DONE | AG (A) | `domain/tambola/ticket_generator.rs`, canonical layout, SHA-256 hash |
-| T3-B04 | Ticket repository with monotonic codes and retry budget | DONE | AG (A) | `db/repositories/ticket.rs`, single transaction, delete guard |
+| T3-B03 | Constrained ticket generator & validation engine | DONE | AG (A) | `domain/tambola/ticket_generator.rs`, backtracking synthesis, unbiased distribution, canonical layout, SHA-256 hash |
+| T3-B04 | Ticket repository with monotonic codes and retry budget | DONE | AG (A) | `db/repositories/ticket.rs`, single transaction, delete guard, sequence error propagation |
 | T3-B05 | Tauri commands & progress events | DONE | AG (A) | `commands/ticket.rs`, async `ticket-generation-progress` event |
-| T3-B06 | Comprehensive test suite (10,000 tickets, seeds, collision, rollback, delete) | DONE | AG (A) | 20/20 Cargo tests pass, clean clippy & formatting |
+| T3-B06 | Comprehensive test suite (10,000 tickets, seeds, collision, rollback, delete) | DONE | AG (A) | 21/21 Cargo tests pass (incl. 20,000-ticket statistical test), clean clippy & formatting |
 
 ### Track 2: Frontend (Assignee: Codex — Implementer #2)
 

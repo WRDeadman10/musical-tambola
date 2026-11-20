@@ -41,6 +41,8 @@ pub enum TicketError {
     },
     #[error("Duplicate number {0} found on ticket")]
     DuplicateNumber(u8),
+    #[error("Failed to generate a valid ticket layout via backtracking")]
+    LayoutGenerationFailed,
 }
 
 pub fn col_min(col: usize) -> u8 {
@@ -164,81 +166,102 @@ pub fn layout_hash(ticket: &Ticket) -> String {
     let canonical: String = canonical_layout(ticket);
     let mut hasher: Sha256 = Sha256::new();
     hasher.update(canonical.as_bytes());
-    let result = hasher.finalize();
+    let result: sha2::digest::Output<Sha256> = hasher.finalize();
     format!("{:x}", result)
 }
 
-fn generate_valid_layout<R: RandomSource>(rng: &mut R) -> [[bool; 9]; 3] {
-    for _ in 0..500 {
-        let mut grid: [[bool; 9]; 3] = [[false; 9]; 3];
-        let mut col_counts: [u8; 9] = [0u8; 9];
+fn backtrack_layout<R: RandomSource>(
+    col: usize,
+    col_counts: &[usize; 9],
+    row_counts: &mut [usize; 3],
+    grid: &mut [[bool; 9]; 3],
+    rng: &mut R,
+) -> bool {
+    if col == 9 {
+        return row_counts[0] == 5 && row_counts[1] == 5 && row_counts[2] == 5;
+    }
 
-        // Row 0: Pick 5 distinct columns at random
-        let mut available: Vec<usize> = (0..9).collect();
-        for _ in 0..5 {
-            let idx: usize = rng.next_index(available.len());
-            let col: usize = available.swap_remove(idx);
-            grid[0][col] = true;
-            col_counts[col] += 1;
+    let remaining_cols: usize = 9 - col;
+    for &count in row_counts.iter() {
+        if count > 5 || count + remaining_cols < 5 {
+            return false;
         }
+    }
 
-        // Row 1: Prioritize columns with count 0 (at most 4)
-        let mut zero_cols: Vec<usize> = (0..9).filter(|&c| col_counts[c] == 0).collect();
-        let mut other_cols: Vec<usize> = (0..9).filter(|&c| col_counts[c] > 0).collect();
+    let k: usize = col_counts[col];
+    let mut candidate_subsets: Vec<Vec<usize>> = match k {
+        3 => vec![vec![0, 1, 2]],
+        2 => vec![vec![0, 1], vec![0, 2], vec![1, 2]],
+        1 => vec![vec![0], vec![1], vec![2]],
+        _ => return false,
+    };
 
-        let mut row1_cols: Vec<usize> = Vec::with_capacity(5);
-        while !zero_cols.is_empty() && row1_cols.len() < 5 {
-            let idx: usize = rng.next_index(zero_cols.len());
-            let col: usize = zero_cols.swap_remove(idx);
-            row1_cols.push(col);
-        }
-        while row1_cols.len() < 5 && !other_cols.is_empty() {
-            let idx: usize = rng.next_index(other_cols.len());
-            let col: usize = other_cols.swap_remove(idx);
-            row1_cols.push(col);
-        }
-        for &col in &row1_cols {
-            grid[1][col] = true;
-            col_counts[col] += 1;
-        }
+    // Shuffle candidate row combinations to guarantee unbiased assignment across all rows
+    for i in (1..candidate_subsets.len()).rev() {
+        let j: usize = rng.next_index(i + 1);
+        candidate_subsets.swap(i, j);
+    }
 
-        // Row 2: Any remaining zero columns must be included
-        let remaining_zero_cols: Vec<usize> = (0..9).filter(|&c| col_counts[c] == 0).collect();
-        if remaining_zero_cols.len() > 5 {
-            continue;
-        }
-        let mut remaining_available: Vec<usize> = (0..9)
-            .filter(|&c| col_counts[c] > 0 && col_counts[c] < 3)
-            .collect();
-
-        let mut row2_cols: Vec<usize> = remaining_zero_cols;
-        while row2_cols.len() < 5 && !remaining_available.is_empty() {
-            let idx: usize = rng.next_index(remaining_available.len());
-            let col: usize = remaining_available.swap_remove(idx);
-            row2_cols.push(col);
-        }
-
-        if row2_cols.len() == 5 {
-            for &col in &row2_cols {
-                grid[2][col] = true;
-                col_counts[col] += 1;
+    for subset in candidate_subsets {
+        let can_add: bool = subset.iter().all(|&r| row_counts[r] < 5);
+        if can_add {
+            for &r in &subset {
+                row_counts[r] += 1;
+                grid[r][col] = true;
             }
-            if col_counts.iter().all(|&c| (1..=3).contains(&c)) {
-                return grid;
+
+            if backtrack_layout(col + 1, col_counts, row_counts, grid, rng) {
+                return true;
+            }
+
+            for &r in &subset {
+                row_counts[r] -= 1;
+                grid[r][col] = false;
             }
         }
     }
 
-    // Static fallback pattern (guaranteed valid: 5-5-5 rows, 1-2 per col, sum 15)
-    [
-        [true, true, true, true, true, false, false, false, false],
-        [false, false, false, true, true, true, true, true, false],
-        [true, false, false, false, false, true, true, true, true],
-    ]
+    false
+}
+
+fn generate_valid_layout<R: RandomSource>(rng: &mut R) -> Result<[[bool; 9]; 3], TicketError> {
+    // Try up to 50 randomized partition attempts with backtracking
+    for _ in 0..50 {
+        // Step 1: Uniformly partition 15 numbers into 9 column counts in {1, 2, 3}
+        let mut col_counts: [usize; 9] = [1; 9];
+        let mut extra: usize = 6;
+        let mut attempts: usize = 0;
+        while extra > 0 && attempts < 100 {
+            attempts += 1;
+            let col: usize = rng.next_index(9);
+            if col_counts[col] < 3 {
+                col_counts[col] += 1;
+                extra -= 1;
+            }
+        }
+        if extra > 0 {
+            for count in &mut col_counts {
+                while extra > 0 && *count < 3 {
+                    *count += 1;
+                    extra -= 1;
+                }
+            }
+        }
+
+        // Step 2: Randomized backtracking assignment to rows 0, 1, 2 (each row exactly 5)
+        let mut row_counts: [usize; 3] = [0, 0, 0];
+        let mut grid: [[bool; 9]; 3] = [[false; 9]; 3];
+
+        if backtrack_layout(0, &col_counts, &mut row_counts, &mut grid, rng) {
+            return Ok(grid);
+        }
+    }
+
+    Err(TicketError::LayoutGenerationFailed)
 }
 
 pub fn generate_ticket<R: RandomSource>(rng: &mut R) -> Result<Ticket, TicketError> {
-    let layout: [[bool; 9]; 3] = generate_valid_layout(rng);
+    let layout: [[bool; 9]; 3] = generate_valid_layout(rng)?;
     let mut ticket: Ticket = Ticket::empty();
 
     for c in 0..9 {
@@ -281,6 +304,54 @@ mod tests {
     }
 
     #[test]
+    fn test_statistical_distribution_unbiased() {
+        let mut rng: OsRngSource = OsRngSource::new();
+        // Track per-column count occurrences (1, 2, 3) and bottom-row singleton occurrences
+        let mut count_occurrences: [[usize; 4]; 9] = [[0; 4]; 9]; // count_occurrences[col][1..=3]
+        let mut singleton_in_row2: [usize; 9] = [0; 9];
+
+        for _ in 0..20_000 {
+            let ticket: Ticket = generate_ticket(&mut rng).expect("generated ticket must be valid");
+            for c in 0..9 {
+                let occupied_rows: Vec<usize> =
+                    (0..3).filter(|&r| ticket.cells[r][c].is_some()).collect();
+                let count: usize = occupied_rows.len();
+                count_occurrences[c][count] += 1;
+
+                if count == 1 && occupied_rows[0] == 2 {
+                    singleton_in_row2[c] += 1;
+                }
+            }
+        }
+
+        for c in 0..9 {
+            // (a) Every column must have the "count = 1 and in row 2" case occur (> 0)
+            assert!(
+                singleton_in_row2[c] > 0,
+                "Column {} never had count = 1 located in row 2 across 20,000 samples",
+                c
+            );
+
+            // (b) Every column count value 1, 2, and 3 must occur for every column (> 0)
+            assert!(
+                count_occurrences[c][1] > 0,
+                "Column {} never had count = 1",
+                c
+            );
+            assert!(
+                count_occurrences[c][2] > 0,
+                "Column {} never had count = 2",
+                c
+            );
+            assert!(
+                count_occurrences[c][3] > 0,
+                "Column {} never had count = 3",
+                c
+            );
+        }
+    }
+
+    #[test]
     fn test_deterministic_reproducibility() {
         let mut rng1: DeterministicRandomSource = DeterministicRandomSource::new(42);
         let mut rng2: DeterministicRandomSource = DeterministicRandomSource::new(42);
@@ -296,7 +367,6 @@ mod tests {
     #[test]
     fn test_validation_rejects_invalid_row_counts() {
         let mut ticket: Ticket = Ticket::empty();
-        // 6 numbers in row 0
         for (c, cell) in ticket.cells[0].iter_mut().enumerate().take(6) {
             *cell = Some(col_min(c));
         }
@@ -309,7 +379,6 @@ mod tests {
         let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(12345);
         let mut ticket: Ticket = generate_ticket(&mut rng).unwrap();
 
-        // Swap numbers in any column that has at least 2 numbers
         for c in 0..9 {
             let rows: Vec<usize> = (0..3).filter(|&r| ticket.cells[r][c].is_some()).collect();
             if rows.len() >= 2 {

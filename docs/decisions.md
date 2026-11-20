@@ -112,10 +112,16 @@ Tambola tickets require a valid 3x9 grid (15 numbers, 5 per row, 1–3 per colum
 3. **Canonical Layout Hashing**: Compute a deterministic row-major string representation and SHA-256 hash (`layout_hash`). Uniqueness is enforced atomically in SQLite (`UNIQUE(layout_hash)`).
 4. **Collision Handling**: Maintain a retry budget (50 per ticket, $10 \times count$ overall). If budget is exhausted, the transaction is rolled back completely.
 
+5. **Database Transaction & Mutex Locking**:
+   - `generate_batch` operates within a single SQLite transaction and acquires the database lock for the duration of batch generation.
+   - During generation of a large batch (up to 10,000 tickets), concurrent reader or media protocol requests will wait on the mutex.
+   - For V1 desktop usage, this mutex exclusivity is acceptable given the 10,000 ticket cap and guarantees absolute consistency and monotonic code assignment without interleaving or partial writes.
+
 ### Consequences
 - **Pros**:
   - 100% of generated tickets pass full Tambola validation before insertion.
   - Zero duplicate tickets across games and batches.
   - Testable and reproducible with deterministic RNG seeds.
+  - Atomic generation: no partial batches or corrupted sequences.
 - **Cons**:
-  - Generating very large batches (e.g. 10,000 tickets) requires retry budget monitoring.
+  - Media protocol requests are blocked during large batch generation (acceptable for V1 offline desktop usage).

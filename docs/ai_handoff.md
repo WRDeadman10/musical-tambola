@@ -21,19 +21,20 @@
 - `src-tauri/Cargo.toml`: Re-added `rand = "0.8"` and `sha2 = "0.10"`.
 - `src-tauri/src/domain/random.rs`: Defined `RandomSource` trait (`fn next_index(&mut self, upper: usize) -> usize`) with `OsRngSource`, `DeterministicRandomSource` (for tests), and `ConstantRandomSource` (for collision testing).
 - `src-tauri/src/domain/tambola/ticket_generator.rs`:
-  - Pure constrained ticket generator with randomized backtracking ensuring exactly 5 numbers per row, 1-3 numbers per column, correct column ranges, and ascending sorted column values.
+  - Constrained layout generation via randomized backtracking over column counts and row combinations. Eliminates layout bias (guarantees positive probability for singletons in row 2 and all valid column counts). Removed static fallback layout.
   - Strict `validate_ticket` function verifying all 8 Tambola invariants.
-  - `canonical_layout` and SHA-256 `layout_hash` generator.
+  - `canonical_layout` formatting and SHA-256 `layout_hash`.
 - `src-tauri/src/db/repositories/ticket.rs`:
-  - `generate_batch`: executes within a single SQLite transaction with monotonic ticket codes (`T-000001` format) persisted in `app_settings`.
+  - `generate_batch`: executes within a single SQLite transaction with monotonic ticket codes (`T-000001` format) persisted in `app_settings`. Propagates sequence and batch ID errors explicitly.
   - Collision retry budget (50 per ticket, 10x overall) with complete rollback on exhaustion.
   - Paginated ticket retrieval (`list_batch_tickets`), single ticket lookup (`get_ticket`), prefix search (`search_tickets`).
   - Deletion guard (`delete_batch`): prevents deletion if tickets are referenced in `game_tickets`, `claims`, or `winners`.
 - `src-tauri/src/commands/ticket.rs`:
   - Asynchronous `generate_ticket_batch` via `spawn_blocking` emitting `ticket-generation-progress` {done, total} events.
   - Commands `list_ticket_batches`, `list_batch_tickets`, `get_ticket`, `search_tickets`, `delete_ticket_batch`.
-- Tests: 20/20 Cargo tests passing:
+- Tests: 21/21 Cargo tests passing:
   - 10,000 ticket generation validation without a single invariant failure.
+  - 20,000 sample statistical distribution test verifying all column counts 1..=3 and singleton row 2 cells appear in every column.
   - Deterministic reproducibility with seeded RNG.
   - Exhausted retry budget transaction rollback.
   - Monotonic ticket code continuation across batches.

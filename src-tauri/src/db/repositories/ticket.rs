@@ -36,7 +36,7 @@ impl TicketRepository {
                 [],
                 |r: &rusqlite::Row<'_>| r.get(0),
             )
-            .unwrap_or(1);
+            .map_err(|e: rusqlite::Error| format!("Failed to query next batch id: {}", e))?;
         let batch_code: String = format!("B-{:04}", next_batch_num);
 
         tx.execute(
@@ -48,18 +48,26 @@ impl TicketRepository {
         let batch_id: i64 = tx.last_insert_rowid();
 
         // 2. Monotonic sequence for ticket codes
-        let mut seq: u64 = tx
+        let val_opt: Option<String> = tx
             .query_row(
                 "SELECT value FROM app_settings WHERE key = 'ticket_sequence_counter';",
                 [],
-                |r: &rusqlite::Row<'_>| {
-                    let val: String = r.get(0)?;
-                    Ok(val.parse::<u64>().unwrap_or(0))
-                },
+                |r: &rusqlite::Row<'_>| r.get(0),
             )
             .optional()
-            .map_err(|e: rusqlite::Error| format!("Failed to read ticket sequence: {}", e))?
-            .unwrap_or(0);
+            .map_err(|e: rusqlite::Error| {
+                format!("Failed to read ticket sequence setting: {}", e)
+            })?;
+
+        let mut seq: u64 = match val_opt {
+            Some(s) => s
+                .trim()
+                .parse::<u64>()
+                .map_err(|e: std::num::ParseIntError| {
+                    format!("Corrupted ticket sequence counter '{}': {}", s, e)
+                })?,
+            None => 0,
+        };
 
         let mut overall_budget: usize = (count as usize) * 10;
 
