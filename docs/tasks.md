@@ -155,6 +155,30 @@
 
 | Task ID | Description | Status | Assignee | Notes |
 |---------|-------------|--------|----------|-------|
-| T7-F01 | Winner History page (/history) with tabs & filters | IN_PROGRESS | Codex | BT-15 |
-| T7-F02 | Ticket claim history modal dialog | IN_PROGRESS | Codex | BT-15 |
-| T7-F03 | Dashboard real stats cards & navigation | IN_PROGRESS | Codex | BT-15 |
+| T7-F01 | Winner History page (/history) with tabs & filters | DONE | Codex | BT-15 accepted & committed (`2a492dc`) |
+| T7-F02 | Ticket claim history modal dialog | DONE | Codex | BT-15 accepted & committed (`2a492dc`) |
+| T7-F03 | Dashboard real stats cards & navigation | DONE | Codex | BT-15 accepted & committed (`2a492dc`) |
+
+---
+
+## Phase 8: Hardening, Packaging & Release Verification
+
+### Track 1: Backend / Rust (Assignee: AG — Implementer #1 & Git Owner)
+
+| Task ID | Description | Status | Assignee | Notes |
+|---------|-------------|--------|----------|-------|
+| T8-B01 | End-to-end acceptance integration test | DONE | AG (A) | `tests/acceptance.rs`: 90 media, 100 tickets, full game flow, claims, crash recovery |
+| T8-B02 | Headless smoke CLI flag (`--smoke-test`) | DONE | AG (A) | `src-tauri/src/smoke.rs`: verifies AppData DB resolution, migrations, sentinel check |
+| T8-B03 | AppInfo command settings expansion | DONE | AG (A) | `commands/app_info.rs`: exposes default_video_volume, video_autoplay, show_internal_numbers |
+| T8-B04 | Standalone release build & packaging | DONE | AG (A) | `src-tauri/target/release/media-tambola.exe` (8.25 MB) verified |
+| T8-B05 | Backend verification & test suites | DONE | AG (A) | 57/57 Cargo tests pass (56 unit + 1 integration), clean fmt and clippy |
+
+### Track 2: Frontend & E2E (Assignee: Codex — Implementer #2)
+
+| Task ID | Description | Status | Assignee | Notes |
+|---------|-------------|--------|----------|-------|
+| T8-F01 | Settings page completion & persistence | DONE | Codex | BT-17 committed (`5dd9976`): theme toggle, volume slider, autoplay, show-number |
+| T8-F02 | Gujarati typography preview panel | DONE | Codex | BT-17: Noto Sans Gujarati sample rendering, numbers & conjuncts |
+| T8-F03 | Playwright E2E smoke test suite | DONE | Codex | BT-17: `e2e/smoke.spec.ts` 1/1 passed with deterministic Tauri IPC stub |
+| T8-F04 | Settings unit tests suite | DONE | Codex | BT-17: `src/test/settings.test.tsx` 7/7 tests passed |
+

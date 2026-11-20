@@ -261,3 +261,35 @@ Phase 7 introduces Winner History, Claim Audit History, and Dashboard Statistics
   - Query performance: pagination and date-range filters remain performant across thousands of historical records.
 - **Cons**:
   - Storage space is permanent (negligible for SQLite with local tambola sessions).
+
+---
+
+## ADR-011: Headless Smoke Test CLI and End-to-End Acceptance Testing Architecture
+
+### Context
+Phase 8 requires final hardening, release verification, and packaging (spec §22). Automated integration tests must ensure the entire lifecycle—from media setup, ticket generation, game drawing, and claim validation to crash recovery—functions seamlessly. Additionally, field deployments and CI pipelines need a reliable, headless way to verify database path resolution and migrations without launching the full WebView2 GUI window.
+
+### Decision
+1. **Headless Smoke Test CLI (`--smoke-test`)**:
+   - `src-tauri/src/smoke.rs` intercepts command line arguments before Tauri GUI runtime initialization.
+   - When `--smoke-test` is detected, it resolves the production application data path (`%APPDATA%\com.mediatambola.app\data\tambola.sqlite`), runs all embedded migrations, sets and reads back an `app_settings` sentinel value, and outputs structured status before exiting with code 0.
+2. **Comprehensive Integration Acceptance Test (`tests/acceptance.rs`)**:
+   - Tests a complete end-to-end multi-step scenario:
+     - 90 media slots populated with mixed local and remote media.
+     - 100 tickets generated across batches with cryptographic integrity and monotonic codes.
+     - Game session started, taking immutable snapshots of media and schemes.
+     - Sequential draws executed using `draw_next`.
+     - Valid claims accepted; late claims rejected; post-Full-House restrictions enforced; winner capacity limits checked.
+     - Simulates an unexpected database disconnect/crash mid-game and asserts full state recovery upon reopening the database connection.
+3. **Deterministic E2E Playwright Suite (`e2e/smoke.spec.ts`)**:
+   - Stubs Tauri IPC commands with stateful in-memory mock storage.
+   - Exercises route traversal across all sidebar pages (`/`, `/media`, `/tickets`, `/batches`, `/schemes`, `/game`, `/claims`, `/history`, `/settings`).
+   - Verifies game progression, draw increments, and claim acceptance dialogs without relying on native WebView2 platform binaries during web test runs.
+
+### Consequences
+- **Pros**:
+  - CI and headless environments can quickly verify database integrity and migration status in <500ms.
+  - Acceptance tests guard against regression across domain boundaries, migrations, and transactional isolation.
+  - Playwright smoke test validates complete user interface flows in isolation.
+- **Cons**:
+  - Acceptance tests require running against a temporary SQLite database file.
