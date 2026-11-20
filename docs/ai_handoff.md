@@ -42,11 +42,12 @@
   - `list_schemes`, `save_scheme`, `set_scheme_active`, `list_scheme_types`.
 - `src-tauri/src/lib.rs`:
   - Registered scheme commands in `invoke_handler!`.
-- Tests: 28/28 Cargo tests passing (all targets clean, 0 warnings, clippy clean):
-  - Mandatory spec scenario: draws [12, 63, 55], corners completed by 63 has position == 2.
-  - Early five with 4 called (not qualified) vs 7 called (5th position).
-  - Partial vs complete lines and full house.
-  - Repository validation, duplicate name rejection, active toggling.
+- Tests: 30/30 Cargo tests passing (all targets clean, 0 warnings, clippy clean):
+  - Helper fixtures: `ticket_from_rows` validating full Tambola rules, `positions_from_draws` enforcing 1-based sequential draws without duplicates.
+  - Mandatory spec scenario: draws sequence ending in `[..., 12, 63, 55]`, corners completed by 63 has position == 5 (call of 63), NOT 6 (call of 55).
+  - Magnitude disagreement test: reverse numerical order draws for line and full house assert position is chronologically last call, not largest magnitude.
+  - Early five: exactly 4 called gives not qualified; 7 called gives 5th position; out-of-order calls with interleaved non-ticket calls correctly resolves 5th ticket position.
+  - Repository: validation constraints, case-insensitive duplicate name rejection, active toggling.
 
 ### Track 2: Frontend (Codex) - IN PROGRESS (BT-9)
 - Codex building Winning Schemes UI against the Phase 4 contract (MSG-035).

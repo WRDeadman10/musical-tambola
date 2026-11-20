@@ -82,7 +82,7 @@
 | T4-B03 | SchemeRegistry & DTOs | DONE | AG (A) | Registration, canonical rule descriptions, PrizeScheme, SaveSchemeInput, SchemeTypeInfo |
 | T4-B04 | Scheme repository with validation & name uniqueness | DONE | AG (A) | `db/repositories/scheme.rs`: list, get_by_id, save, set_active (case-insensitive name check) |
 | T4-B05 | Scheme Tauri commands & lib.rs registration | DONE | AG (A) | `commands/scheme.rs`: list_schemes, save_scheme, set_scheme_active, list_scheme_types |
-| T4-B06 | Comprehensive Cargo test suite | DONE | AG (A) | 28/28 tests pass (evaluators, chronological draw order, Four Corners 12/63/55 spec case, Early Five 4 vs 7, repository) |
+| T4-B06 | Comprehensive Cargo test suite | DONE | AG (A) | 30/30 tests pass (valid ticket fixtures, 1-based sequential draws, spec 12/63/55 case, magnitude disagreement, Early Five out-of-order) |
 
 ### Track 2: Frontend (Assignee: Codex — Implementer #2)
 

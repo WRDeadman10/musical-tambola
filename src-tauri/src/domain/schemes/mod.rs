@@ -386,7 +386,28 @@ pub struct SchemeTypeInfo {
 mod tests {
     use super::*;
     use crate::domain::random::DeterministicRandomSource;
-    use crate::domain::tambola::ticket_generator::generate_ticket;
+    use crate::domain::tambola::ticket_generator::{generate_ticket, validate_ticket};
+
+    /// Constructs a Ticket from a 3x9 grid of optional numbers and asserts validity against full Tambola rules.
+    fn ticket_from_rows(rows: [[Option<u8>; 9]; 3]) -> Ticket {
+        let ticket: Ticket = Ticket { cells: rows };
+        validate_ticket(&ticket).expect("ticket fixture must pass Tambola validation");
+        ticket
+    }
+
+    /// Builds a 1-based call position map from a sequential draw history.
+    fn positions_from_draws(draws: &[u8]) -> HashMap<u8, u32> {
+        let mut map: HashMap<u8, u32> = HashMap::new();
+        for (i, &n) in draws.iter().enumerate() {
+            let pos: u32 = (i as u32) + 1;
+            assert!(
+                map.insert(n, pos).is_none(),
+                "draws sequence must not contain duplicate numbers: {}",
+                n
+            );
+        }
+        map
+    }
 
     #[test]
     fn test_line_evaluators_partial_vs_complete() {
@@ -397,66 +418,144 @@ mod tests {
         let req_top: Vec<u8> = top_eval.required_numbers(&ticket);
         assert_eq!(req_top.len(), 5);
 
-        // Map only 4 of the 5 numbers: not qualified
-        let mut call_pos: HashMap<u8, u32> = HashMap::new();
-        call_pos.insert(req_top[0], 10);
-        call_pos.insert(req_top[1], 5);
-        call_pos.insert(req_top[2], 20);
-        call_pos.insert(req_top[3], 15);
+        // Draw only 4 of the 5 numbers: not qualified
+        let partial_draws: Vec<u8> = vec![req_top[1], req_top[3], req_top[0], req_top[2]];
+        let call_pos_partial: HashMap<u8, u32> = positions_from_draws(&partial_draws);
 
-        let res_partial: QualificationResult = top_eval.evaluate(&ticket, &call_pos);
+        let res_partial: QualificationResult = top_eval.evaluate(&ticket, &call_pos_partial);
         assert!(!res_partial.is_qualified);
         assert_eq!(res_partial.qualification_position, None);
 
-        // Add 5th number at pos 12: max is 20
-        call_pos.insert(req_top[4], 12);
-        let res_complete: QualificationResult = top_eval.evaluate(&ticket, &call_pos);
+        // Draw 5th number at pos 5
+        let complete_draws: Vec<u8> =
+            vec![req_top[1], req_top[3], req_top[0], req_top[2], req_top[4]];
+        let call_pos_complete: HashMap<u8, u32> = positions_from_draws(&complete_draws);
+
+        let res_complete: QualificationResult = top_eval.evaluate(&ticket, &call_pos_complete);
         assert!(res_complete.is_qualified);
-        assert_eq!(res_complete.qualification_position, Some(20));
+        assert_eq!(res_complete.qualification_position, Some(5));
     }
 
     #[test]
     fn test_four_corners_mandatory_spec_scenario() {
-        // Spec scenario:
-        // Draws [12, 63, 55], ticket whose corners are completed by 63 has position == 2
-        let mut ticket: Ticket = Ticket::empty();
-        // Construct ticket with known corners
-        ticket.cells[0][0] = Some(4);
-        ticket.cells[0][1] = Some(12);
-        ticket.cells[0][2] = Some(22);
-        ticket.cells[0][3] = Some(31);
-        ticket.cells[0][4] = Some(45); // top right corner
-
-        ticket.cells[1][0] = Some(5);
-        ticket.cells[1][1] = Some(15);
-        ticket.cells[1][2] = Some(25);
-        ticket.cells[1][3] = Some(35);
-        ticket.cells[1][4] = Some(46);
-
-        ticket.cells[2][0] = Some(9); // bottom left corner
-        ticket.cells[2][1] = Some(19);
-        ticket.cells[2][2] = Some(29);
-        ticket.cells[2][3] = Some(39);
-        ticket.cells[2][7] = Some(72);
-        ticket.cells[2][8] = Some(63); // bottom right corner
+        // Build a 100% valid Tambola ticket passing validate_ticket():
+        // Row 0: 5 numbers across cols [0, 2, 4, 5, 6]. Leftmost = 4, Rightmost = 61.
+        // Row 1: 5 numbers across cols [1, 3, 4, 7, 8].
+        // Row 2: 5 numbers across cols [0, 1, 2, 3, 6]. Leftmost = 9, Rightmost = 63.
+        let ticket: Ticket = ticket_from_rows([
+            [
+                Some(4),
+                None,
+                Some(22),
+                None,
+                Some(45),
+                Some(52),
+                Some(61),
+                None,
+                None,
+            ],
+            [
+                None,
+                Some(15),
+                None,
+                Some(35),
+                Some(46),
+                None,
+                None,
+                Some(75),
+                Some(82),
+            ],
+            [
+                Some(9),
+                Some(19),
+                Some(29),
+                Some(39),
+                None,
+                None,
+                Some(63),
+                None,
+                None,
+            ],
+        ]);
 
         let corners_eval = FourCornersEvaluator;
         let corners: Vec<u8> = corners_eval.required_numbers(&ticket);
-        assert_eq!(corners, vec![4, 45, 9, 63]);
+        assert_eq!(corners, vec![4, 61, 9, 63]);
 
-        // Draws: 4 at pos 0 (before test start), 9 at pos 1 (call 12 not a corner), 45 at pos 1, 63 at pos 2, 55 at pos 3
-        let mut call_pos: HashMap<u8, u32> = HashMap::new();
-        call_pos.insert(4, 1);
-        call_pos.insert(9, 1);
-        call_pos.insert(45, 1);
-        call_pos.insert(12, 1); // 12 drawn at pos 1
-        call_pos.insert(63, 2); // 63 drawn at pos 2 (completes corners)
-        call_pos.insert(55, 3); // 55 drawn at pos 3 (after corners completed)
+        // Spec scenario draw sequence ending with ..., 12, 63, 55.
+        // Draw higher corner 61 early (pos 1), 9 at pos 2, 4 at pos 3.
+        // 12 (non-corner) at pos 4, 63 (4th corner) at pos 5, 55 (current draw) at pos 6.
+        let draws: Vec<u8> = vec![61, 9, 4, 12, 63, 55];
+        let call_pos: HashMap<u8, u32> = positions_from_draws(&draws);
 
         let res: QualificationResult = corners_eval.evaluate(&ticket, &call_pos);
         assert!(res.is_qualified);
-        // Qualification position must be exactly 2 (MAX of corner call positions), NOT comparing number magnitudes!
-        assert_eq!(res.qualification_position, Some(2));
+
+        // Qualification position equals pos of 63 (position 5), NOT the current draw position (55 at pos 6).
+        // Magnitude order (61 > 63 > 9 > 4) explicitly disagrees with chronological draw order.
+        assert_eq!(res.qualification_position, Some(5));
+        assert_ne!(res.qualification_position, Some(6));
+    }
+
+    #[test]
+    fn test_magnitude_disagreement_lines_and_full_house() {
+        let ticket: Ticket = ticket_from_rows([
+            [
+                Some(4),
+                None,
+                Some(22),
+                None,
+                Some(45),
+                Some(52),
+                Some(61),
+                None,
+                None,
+            ],
+            [
+                None,
+                Some(15),
+                None,
+                Some(35),
+                Some(46),
+                None,
+                None,
+                Some(75),
+                Some(82),
+            ],
+            [
+                Some(9),
+                Some(19),
+                Some(29),
+                Some(39),
+                None,
+                None,
+                Some(63),
+                None,
+                None,
+            ],
+        ]);
+
+        // 1. Top line: numbers are [4, 22, 45, 52, 61].
+        // Draw in reverse numerical order: largest (61) drawn first (pos 1), smallest (4) drawn last (pos 5).
+        let top_draws: Vec<u8> = vec![61, 52, 45, 22, 4];
+        let top_call_pos: HashMap<u8, u32> = positions_from_draws(&top_draws);
+        let top_eval = LineEvaluator::top_line();
+
+        let top_res: QualificationResult = top_eval.evaluate(&ticket, &top_call_pos);
+        assert!(top_res.is_qualified);
+        // Position must equal chronologically last call (4 at pos 5), NOT the largest magnitude (61 at pos 1)
+        assert_eq!(top_res.qualification_position, Some(5));
+
+        // 2. Full house: all 15 numbers drawn in reverse magnitude order.
+        let fh_eval = FullHouseEvaluator;
+        let mut all_nums: Vec<u8> = fh_eval.required_numbers(&ticket);
+        all_nums.sort_by(|a, b| b.cmp(a)); // sorted descending: 82, 75, 63, ... 4
+
+        let fh_call_pos: HashMap<u8, u32> = positions_from_draws(&all_nums);
+        let fh_res: QualificationResult = fh_eval.evaluate(&ticket, &fh_call_pos);
+        assert!(fh_res.is_qualified);
+        // Completed at pos 15 when the smallest number (4) is drawn, not pos 1 (82).
+        assert_eq!(fh_res.qualification_position, Some(15));
     }
 
     #[test]
@@ -465,31 +564,74 @@ mod tests {
         let ticket: Ticket = generate_ticket(&mut rng).unwrap();
         let early_five = EarlyFiveEvaluator;
 
-        // Flatten all 15 numbers on ticket
         let all_nums: Vec<u8> = early_five.required_numbers(&ticket);
         assert_eq!(all_nums.len(), 15);
 
         // 1. Exactly 4 called: not qualified
-        let mut call_pos: HashMap<u8, u32> = HashMap::new();
-        call_pos.insert(all_nums[0], 10);
-        call_pos.insert(all_nums[1], 2);
-        call_pos.insert(all_nums[2], 18);
-        call_pos.insert(all_nums[3], 7);
+        let draws_4: Vec<u8> = vec![all_nums[1], all_nums[3], all_nums[0], all_nums[2]];
+        let call_pos_4: HashMap<u8, u32> = positions_from_draws(&draws_4);
 
-        let res4: QualificationResult = early_five.evaluate(&ticket, &call_pos);
+        let res4: QualificationResult = early_five.evaluate(&ticket, &call_pos_4);
         assert!(!res4.is_qualified);
         assert_eq!(res4.qualification_position, None);
 
-        // 2. Add 3 more called (total 7 called) with positions: [10, 2, 18, 7, 14, 5, 25]
-        // Sorted call positions: [2, 5, 7, 10, 14, 18, 25]
-        // 5th smallest is 14 (index 4)
-        call_pos.insert(all_nums[4], 14);
-        call_pos.insert(all_nums[5], 5);
-        call_pos.insert(all_nums[6], 25);
+        // 2. 7 ticket numbers called in mixed chronological order:
+        // Sequence: [n1, n3, n5, n0, n6, n2, n4]
+        // Corresponding draw positions:
+        // n1 -> 1, n3 -> 2, n5 -> 3, n0 -> 4, n6 -> 5 (5th ticket number drawn!), n2 -> 6, n4 -> 7
+        let draws_7: Vec<u8> = vec![
+            all_nums[1],
+            all_nums[3],
+            all_nums[5],
+            all_nums[0],
+            all_nums[6],
+            all_nums[2],
+            all_nums[4],
+        ];
+        let call_pos_7: HashMap<u8, u32> = positions_from_draws(&draws_7);
 
-        let res7: QualificationResult = early_five.evaluate(&ticket, &call_pos);
+        let res7: QualificationResult = early_five.evaluate(&ticket, &call_pos_7);
         assert!(res7.is_qualified);
-        assert_eq!(res7.qualification_position, Some(14));
+        assert_eq!(res7.qualification_position, Some(5));
+    }
+
+    #[test]
+    fn test_early_five_out_of_order_draws_with_non_ticket_calls() {
+        let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(321);
+        let ticket: Ticket = generate_ticket(&mut rng).unwrap();
+        let early_five = EarlyFiveEvaluator;
+        let all_nums: Vec<u8> = early_five.required_numbers(&ticket);
+
+        // Pick 6 numbers from ticket:
+        let t0 = all_nums[0];
+        let t1 = all_nums[1];
+        let t2 = all_nums[2];
+        let t3 = all_nums[3];
+        let t4 = all_nums[4];
+        let t5 = all_nums[5];
+
+        // Interleave with non-ticket numbers 89 and 90 (assuming they're not in the 6 chosen):
+        // Draw sequence:
+        // pos 1: t3 (ticket 1st)
+        // pos 2: 89 (dummy)
+        // pos 3: t0 (ticket 2nd)
+        // pos 4: t4 (ticket 3rd)
+        // pos 5: 90 (dummy)
+        // pos 6: t1 (ticket 4th)
+        // pos 7: t5 (ticket 5th -> completes Early Five at pos 7!)
+        // pos 8: t2 (ticket 6th)
+        let non_ticket_1: u8 = (1..=90).find(|n| !all_nums.contains(n)).unwrap();
+        let non_ticket_2: u8 = (1..=90)
+            .find(|n| !all_nums.contains(n) && *n != non_ticket_1)
+            .unwrap();
+
+        let draws: Vec<u8> = vec![t3, non_ticket_1, t0, t4, non_ticket_2, t1, t5, t2];
+        let call_pos: HashMap<u8, u32> = positions_from_draws(&draws);
+
+        let res: QualificationResult = early_five.evaluate(&ticket, &call_pos);
+        assert!(res.is_qualified);
+        // The 5th ticket number drawn was t5 at pos 7
+        assert_eq!(res.qualification_position, Some(7));
     }
 
     #[test]
@@ -499,10 +641,7 @@ mod tests {
         let fh_eval = FullHouseEvaluator;
         let all_nums: Vec<u8> = fh_eval.required_numbers(&ticket);
 
-        let mut call_pos: HashMap<u8, u32> = HashMap::new();
-        for (i, &n) in all_nums.iter().enumerate() {
-            call_pos.insert(n, (i as u32) + 1);
-        }
+        let call_pos: HashMap<u8, u32> = positions_from_draws(&all_nums);
 
         let res: QualificationResult = fh_eval.evaluate(&ticket, &call_pos);
         assert!(res.is_qualified);

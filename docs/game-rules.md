@@ -72,8 +72,10 @@ Media Tambola provides 6 standard data-driven schemes implemented via pure, stat
 ## 3. Claim Evaluation & Late Claim Rule
 Qualification and validation are evaluated authoritatively by the Rust backend.
 
-### 3.1 Draw Position Map
-Let `callPositionByNumber: HashMap<u8, u32>` be the map of drawn number to its 1-based sequential draw position in the active game.
+### 3.1 Draw Position Map & 1-Based Indexing
+- Draw positions are strictly **1-based** integers (`position 1` = the first number called, `position 2` = second number called, up to `position 90` maximum).
+- Each draw position holds exactly one called number.
+- `callPositionByNumber: HashMap<u8, u32>` maps each drawn number to its 1-based sequential call position in the active game. Uncalled numbers are absent from this map.
 
 ### 3.2 Qualification Position Calculation
 - **Lines / Corners / Full House**:
