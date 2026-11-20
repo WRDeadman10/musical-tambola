@@ -1,6 +1,7 @@
 pub mod commands;
 pub mod db;
 
+use commands::app_info::{get_app_info, set_app_setting};
 use db::connection::{get_app_data_dir, initialize_database, DbState};
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -34,8 +35,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            commands::get_app_info,
-            commands::set_app_setting,
+            get_app_info,
+            set_app_setting,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");

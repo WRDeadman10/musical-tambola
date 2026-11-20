@@ -30,7 +30,7 @@ pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
 
     for (version, name, sql) in MIGRATIONS {
         if *version > current_version {
-            let mut tx: Transaction = conn
+            let tx: Transaction = conn
                 .unchecked_transaction()
                 .map_err(|e: rusqlite::Error| format!("Failed to begin migration transaction: {}", e))?;
 

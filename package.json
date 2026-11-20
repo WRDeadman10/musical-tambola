@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "test:ui": "vitest run",
-    "test": "vitest run",
+    "test:cargo": "cd src-tauri && cargo test",
+    "test": "vitest run && cd src-tauri && cargo test",
     "package:win": "tauri build --bundles nsis",
     "lint": "tsc --noEmit"
   },
