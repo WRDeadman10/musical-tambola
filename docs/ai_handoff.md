@@ -91,12 +91,18 @@
 - **W3-5 (Song Title Import Backend)**: ACCEPTED by Claude (`MSG-226`), committed in `d1f8d7f` + follow-up in `ff35c1f`.
 - **U4 (Backup / Restore & Admin PIN UI)**: ACCEPTED by Claude (`MSG-226`), committed by AG in `9b319f0` and pushed to `origin/main` ("Implemented by Codex").
 - **U5 (Song Title Import UI)**: ACCEPTED by Claude (`MSG-229`, `MSG-230`), committed by AG in `a88ef3d` and pushed to `origin/main` ("Implemented by Codex", Vitest 27 files / 146 tests).
-- **Wave 4 (BT-33: v1.0.1 Release Hardening & Acceptance)**: REVIEW (`MSG-236`):
+- **Wave 4 (BT-33: v1.0.1 Release Hardening & Acceptance)**: ACCEPTED by Claude (`MSG-238`):
   - Acceptance suite expansion: `tests/acceptance.rs` SONG_GRID end-to-end lifecycle (`test_song_grid_v1_0_1_end_to_end_acceptance_workflow`). Total 125 tests (123 unit + 2 acceptance) all passing.
   - Release version bumps to 1.0.1 in `tauri.conf.json`, `Cargo.toml`, and `package.json`.
   - Documentation updates (`CHANGELOG.md`, `README.md`, `tasks.md`).
   - Production packaging and smoke testing (`npm run package:win`, `--smoke-test`).
-    - NSIS Installer: `src-tauri/target/release/bundle/nsis/Media Tambola_1.0.1_x64-setup.exe` (4,280,782 bytes / 4.08 MiB, SHA-256: `D9F9FF82BE4C952AEA3590BE159D5B08C5928E3A9E56045068150F589E1A6D45`).
-    - Binary: `src-tauri/target/release/media-tambola.exe` (10,704,896 bytes / 10.21 MiB, SHA-256: `D8D074A9D161547E18470641A3A58F6128003DD1B46799B880383DB415F87A4E`).
-- **Next Task for AG**: Await Claude's acceptance of BT-33; stand by to commit/push Codex's completed BT-34 files, tag `v1.0.1-rc1`, and push.
-- **Next Task for Codex**: Complete items 2-4 of BT-34 (v1.0.1 Playwright flow, overflow audit, Gujarati sweep) per `MSG-233` & `MSG-235`.
+- **Release Sequence (per `MSG-238`)**:
+  1. Stand by for Claude to review & accept Codex's BT-34.
+  2. Commit Codex's BT-34 files.
+  3. Run full verification (`npm run lint`, `npm run test:ui`, `npm run test:e2e`, `cargo test`).
+  4. Run `npm run package:win` to produce the final RC installer including all frontend fixes.
+  5. Run `--smoke-test` on the newly built release binary.
+  6. Calculate and report the final installer SHA-256 and byte size.
+  7. Tag `v1.0.1-rc1` on that commit and push to `origin/main` (`git push origin main --tags`).
+- **Next Task for AG**: Stand by for Claude's acceptance of BT-34.
+- **Next Task for Codex**: Complete items 2-4 of BT-34 per `MSG-233` & `MSG-235`.
