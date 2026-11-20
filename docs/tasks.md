@@ -193,12 +193,14 @@
 |---------|-------|--------|----------|------|----------------------|
 | **BT-20** | Game Formats (`CLASSIC_90` & `SONG_GRID`) | DONE | AG (A) | Wave 1 | Migration 0006, 3×5 generator, format snapshot, songCount 15..90, draw engine |
 | **BT-22** | Host Control Panel Redesign | DONE | Codex (X) | Wave 1 | 3-column layout, large NEXT button, shortcuts, quick claim, countdown timer, Present toggle |
-| **BT-25** | Media Folder Scan/Apply & Posters Engine | DONE | AG (A) | Wave 1 | scan_media_folder, apply_media_assignments, save_media_poster, clear_media_poster |
+| **BT-25** | Media Folder Scan/Apply & Posters Engine | DONE | AG (A) | Wave 1 | scan_media_folder, apply_media_assignments, save_media_poster, clear_media_poster, hardening (5000 cap, magic bytes, symlink guards) |
 | **BT-24** | Media Folder Import UI & Auto Posters | DONE | Codex (X) | Wave 1 | Folder import wizard, segmented order, previews, scrubber, frame poster generator |
-| **BT-21** | Pattern Engine & Mask Evaluators | DONE | AG (A) | Wave 2 | Migration 0007, 3×5 masks, EARLY_N, generic evaluator, multiple Full House, 81 tests |
-| **BT-26** | Presentation Window Management & IPC | IN_PROGRESS | AG (A) | Wave 2 | Multi-window Tauri lifecycle, target display, presentation state sync |
-| **BT-23** | Projector Scenes & Presentation Display | TODO | Codex (X) | Wave 2 | Idle poster, media stage, number badge, countdown, prize announcement |
+| **BT-21** | Pattern Engine & Mask Evaluators | DONE | AG (A) | Wave 2 | Migration 0007, 3×5 masks, EARLY_N, generic evaluator, multiple Full House, Song Grid claim tests (86 unit + 1 acceptance tests) |
+| **BT-26** | Presentation Window Management & IPC | DONE | AG (A) | Wave 2 | Multi-window Tauri lifecycle, list_displays, open/close_presentation, presentation_command, get_presentation_state, get_next_item (90 unit + 1 acceptance tests) |
+| **BT-23** | Projector Scenes & Presentation Display | DONE | Codex (X) | Wave 2 | Idle poster, media stage, number badge, countdown, prize announcement, host projector card |
+| **BT-28** | Pattern Editor UI & Preset Gallery | DONE | Codex (X) | Wave 2 | 3×5 clickable mask editor, preset gallery, mini pattern grid, 21 files / 102 Vitest tests |
+| **BT-29** | Game Format UI & Song Grid Tickets | IN_PROGRESS | Codex (X) | Wave 3 | Format selector card, 3×5 TicketGrid, batch format badge, song count media library slots |
 | **BT-27** | Ticket Printing & Lucky Draw UI | TODO | Codex (X) | Wave 3 | A4 sheet layout preview/PDF, Lucky Draw animated wheel/cards, branding themes |
-| **BT-28** | Full Regression & v1.0.1 Packaging | TODO | AG + Codex | Wave 4 | Acceptance tests for both formats, E2E flows, v1.0.1 NSIS installer |
+| **BT-30** | Full Regression & v1.0.1 Packaging | TODO | AG + Codex | Wave 4 | Acceptance tests for both formats, E2E flows, v1.0.1 NSIS installer |
 
 

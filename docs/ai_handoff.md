@@ -52,12 +52,14 @@
 - **BT-22 (Host Control Panel Redesign)**: ACCEPTED by Claude (`MSG-145`, `MSG-146`, `MSG-157`), committed by AG in `d749c9f` + `d14a1c0` and pushed to `origin/main`.
 - **BT-20 (Game Formats & Song Grid Generator)**: ACCEPTED by Claude (`MSG-151`), committed in `5ce2ba7` and pushed to `origin/main`.
 - **BT-24 (Media Folder Import UI & Auto Posters)**: ACCEPTED by Claude (`MSG-154`, `MSG-155`), committed in `b6f39d9` and pushed to `origin/main`.
-- **BT-25 (Backend Folder Scan/Apply & Posters Engine)**: IMPLEMENTED by AG in `4af269a` and reviewed in `MSG-154`.
-- **BT-21 (Pattern Engine & Mask Evaluators)**: IMPLEMENTED by AG in `1316f37`:
-  - Migration 0007 (`pattern_kind`, `mask_json`, `early_n`, `is_full_house`), 11 seeded presets with display_order 7..17.
-  - `GenericPatternEvaluator` (`Mask`, `EarlyN`, `FullHouse`) evaluating logical 3×5 cells for both Classic90 and SongGrid.
-  - Multiple Full House scheme support with `ALREADY_WON_FULL_HOUSE` guard.
-  - Full SongGrid claims integration & lifecycle tests.
-  - 81 Cargo unit tests + 1 acceptance test PASS, clippy & rustfmt clean. Pushed to `origin/main`.
-- **Next Task for AG**: BT-26 (Presentation Window Management & IPC) + BT-25 review hardening.
-- **Next Task for Codex**: BT-23 / BT-27 Projector UI review resolution.
+- **BT-25 (Backend Folder Scan/Apply & Posters Engine & Hardening)**: IMPLEMENTED and HARDENED (`1613707`): 5000-file cap, symlink traversal prevention, hidden/system file skip, magic-byte checking, 2MB poster limit, JPEG header check, and sha8 hashed poster storage with snapshot protection.
+- **BT-21 (Pattern Engine & Mask Evaluators)**: ACCEPTED by Claude (`MSG-168`), committed in `1316f37` + `9b4a760`, with Song Grid DB claim scenarios (exact late-claim, already-won Full House, and winner-limit-reached) added and verified in `1613707`.
+- **BT-28 (Pattern Editor UI & Preset Gallery)**: ACCEPTED by Claude (`MSG-168`, `MSG-169`), committed in `65c85db` and pushed to `origin/main`.
+- **BT-26 (Presentation Window Management & IPC Backend)**: IMPLEMENTED by AG in `f7cfc3c`:
+  - Tauri multi-window commands: `list_displays`, `open_presentation`, `close_presentation`, `presentation_status`.
+  - State & IPC: `presentation_command`, `get_presentation_state`, `get_next_item`.
+  - Multi-window permission enabled in `capabilities/default.json`.
+  - Event emissions for `game-state-changed` and `presentation-command`.
+  - 90 Cargo unit tests + 1 acceptance test pass (91 total). Pushed to `origin/main`.
+- **Next Task for AG**: Review Codex's incoming BT-29 (Game Format UI) once submitted to Claude, then coordinate Wave 3/4 tasks.
+- **Next Task for Codex**: Complete BT-29 Game Format UI per `MSG-169`.
