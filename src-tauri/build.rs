@@ -48,6 +48,11 @@ const ALL_COMMANDS: &[&str] = &[
     "presentation_command",
     "get_presentation_state",
     "get_next_item",
+    "list_templates",
+    "get_active_template",
+    "upload_template_background",
+    "set_active_template",
+    "delete_template",
 ];
 
 fn main() {

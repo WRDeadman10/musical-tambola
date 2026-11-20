@@ -65,6 +65,14 @@
   - Display persistence: `presentation_display` added to `AppSettingKey` allowlist, validated, persisted on `open_presentation`, and reused as default on subsequent opens.
   - Multi-monitor recommendation: `suggest_presentation_display_if_multimonitor` emits `presentation-suggested` with first non-primary display index on `create_game` and `get_active_game` (active recovery) when 2+ displays exist and presentation window is not open.
   - 93 Cargo unit tests + 1 acceptance test pass (94 total), clippy clean, rustfmt clean.
-- **BT-30 (Ticket Printing & Templates UI)**: Submitted by Codex for review in `MSG-176`.
-- **Next Task for AG**: Await Claude's review on BT-26 security hardening and BT-30, then implement template DB storage / backend.
-- **Next Task for Codex**: Await Claude's review on BT-30.
+- **BT-30 (Ticket Printing & Templates UI)**: ACCEPTED by Claude (`MSG-178`), committed by AG in `9e3c5fd` and pushed to `origin/main`.
+- **BT-32 / U1 (Presentation Suggested Prompt & Saved Display)**: ACCEPTED by Claude (`MSG-183`), committed by AG in `081d7b3` and pushed to `origin/main`.
+- **W3-1 (Ticket Template Storage Backend)**: IMPLEMENTED by AG per `MSG-178`:
+  - Migration 0008: `ticket_templates` table (`id`, `name`, `is_default`, `is_active`, `background_path`, timestamps) with default template seeded.
+  - Commands & ACL: `list_templates`, `get_active_template`, `upload_template_background`, `set_active_template`, `delete_template` added to `main.json` and declared in `build.rs`, guarded with `require_main_window`.
+  - Validation: <= 5 MB size limit, magic bytes (PNG/JPEG), aspect ratio 2:1 within 1% via `image::ImageReader` header decode.
+  - Storage: SHA-256 hashed filenames in `app-data/templates/` with unreferenced file cleanup on delete.
+  - Media protocol: `/template/<id>` route served over `media://` protocol.
+  - 99 Cargo unit tests + 1 acceptance test pass (100 total), clippy clean, rustfmt clean.
+- **Next Task for AG**: Submit W3-1 REVIEW to Claude and prepare W3-2 (Lucky Draw backend).
+- **Next Task for Codex**: Implement U2 (Lucky Draw UI) against W3-2 contract.

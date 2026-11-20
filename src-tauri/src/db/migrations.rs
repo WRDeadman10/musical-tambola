@@ -36,6 +36,11 @@ const MIGRATIONS: &[(i32, &str, &str)] = &[
         "0007_pattern_engine",
         include_str!("../../migrations/0007_pattern_engine.sql"),
     ),
+    (
+        8,
+        "0008_ticket_templates",
+        include_str!("../../migrations/0008_ticket_templates.sql"),
+    ),
 ];
 
 pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
@@ -116,7 +121,7 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let applied_version: i32 = run_migrations(&conn).expect("Migrations failed");
-        assert_eq!(applied_version, 7);
+        assert_eq!(applied_version, 8);
 
         let tables = [
             "app_settings",
@@ -133,6 +138,7 @@ mod tests {
             "claims",
             "winners",
             "schema_migrations",
+            "ticket_templates",
         ];
 
         for table in tables.iter() {
@@ -158,10 +164,10 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let v1: i32 = run_migrations(&conn).expect("First migration run failed");
-        assert_eq!(v1, 7);
+        assert_eq!(v1, 8);
 
         let v2: i32 = run_migrations(&conn).expect("Second migration run failed");
-        assert_eq!(v2, 7);
+        assert_eq!(v2, 8);
     }
 
     #[test]
@@ -346,7 +352,7 @@ mod tests {
     fn test_migration_0006_game_formats_columns() {
         let conn: Connection = Connection::open_in_memory().unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 7);
+        assert_eq!(applied, 8);
 
         // Verify columns on ticket_batches
         conn.execute(
@@ -397,7 +403,7 @@ mod tests {
         let conn: Connection = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 7);
+        assert_eq!(applied, 8);
 
         // Verify prize_schemes backfilled and presets seeded
         let full_house_row: (String, String, bool) = conn
@@ -430,5 +436,27 @@ mod tests {
             )
             .unwrap();
         assert!(preset_count >= 11);
+    }
+
+    #[test]
+    fn test_migration_0008_ticket_templates() {
+        let conn: Connection = Connection::open_in_memory().unwrap();
+        conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
+        let applied: i32 = run_migrations(&conn).unwrap();
+        assert_eq!(applied, 8);
+
+        let default_template: (i64, String, bool, bool, Option<String>) = conn
+            .query_row(
+                "SELECT id, name, is_default, is_active, background_path FROM ticket_templates WHERE id = 1;",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
+            )
+            .unwrap();
+
+        assert_eq!(default_template.0, 1);
+        assert_eq!(default_template.1, "Default Classic");
+        assert!(default_template.2);
+        assert!(default_template.3);
+        assert!(default_template.4.is_none());
     }
 }

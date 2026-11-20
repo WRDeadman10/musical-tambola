@@ -265,6 +265,19 @@ mod tests {
             assert!(!perm_str.contains("open-presentation"));
             assert!(!perm_str.contains("close-presentation"));
             assert!(!perm_str.contains("next-item"));
+            assert!(!perm_str.contains("template"));
         }
+    }
+
+    #[test]
+    fn test_template_error_codes() {
+        let err = AppError::new(
+            "TEMPLATE_CANNOT_DELETE_DEFAULT",
+            "Default template protected",
+        );
+        assert_eq!(err.code, "TEMPLATE_CANNOT_DELETE_DEFAULT");
+
+        let err2 = AppError::new("TEMPLATE_INVALID_ASPECT_RATIO", "Must be 2:1");
+        assert_eq!(err2.code, "TEMPLATE_INVALID_ASPECT_RATIO");
     }
 }

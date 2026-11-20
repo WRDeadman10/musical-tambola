@@ -200,7 +200,9 @@
 | **BT-23** | Projector Scenes & Presentation Display | DONE | Codex (X) | Wave 2 | Idle poster, media stage, number badge, countdown, prize announcement, host projector card |
 | **BT-28** | Pattern Editor UI & Preset Gallery | DONE | Codex (X) | Wave 2 | 3×5 clickable mask editor, preset gallery, mini pattern grid, 21 files / 102 Vitest tests |
 | **BT-29** | Game Format UI & Song Grid Tickets | DONE | Codex (X) | Wave 3 | Format selector card, 3×5 TicketGrid, batch format badge, song count media library slots (committed `919bcc2`) |
-| **BT-30** | Ticket Printing & Templates | REVIEW | Codex (X) | Wave 3 | Fixed 1800×900 template canvas, regions, print preview/pagination, range filter, guide download |
-| **BT-27** | Lucky Draw UI & Template Storage Backend | TODO | AG + Codex | Wave 3 | Template DB storage/CRUD backend, Lucky Draw animated wheel/cards |
+| **BT-30** | Ticket Printing & Templates | DONE | Codex (X) | Wave 3 | Fixed 1800×900 template canvas, regions, print preview/pagination, range filter, guide download (committed `9e3c5fd`) |
+| **BT-32** | Presentation Suggested Prompt & Saved Display | DONE | Codex (X) | Wave 3 | Presentation suggested toast, session suppression, display preference (committed `081d7b3`) |
+| **W3-1** | Ticket Template Storage Backend | DONE | AG (A) | Wave 3 | Migration 0008, template CRUD, aspect 2:1 validation, image header decode, <=5MB limit, SHA-256 hashed storage, media://template/ (99 unit + 1 acceptance tests) |
+| **BT-27** | Lucky Draw UI & Backend | TODO | AG + Codex | Wave 3 | Lucky Draw pools, OsRng winner draw, presentation animation, UI dialog |
 
 

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-upload-template-background"
+description = "Enables the upload_template_background command without any pre-configured scope."
+commands.allow = ["upload_template_background"]
+
+[[permission]]
+identifier = "deny-upload-template-background"
+description = "Denies the upload_template_background command without any pre-configured scope."
+commands.deny = ["upload_template_background"]

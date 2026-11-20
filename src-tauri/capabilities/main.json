@@ -55,6 +55,11 @@
     "allow-presentation-status",
     "allow-presentation-command",
     "allow-get-presentation-state",
-    "allow-get-next-item"
+    "allow-get-next-item",
+    "allow-list-templates",
+    "allow-get-active-template",
+    "allow-upload-template-background",
+    "allow-set-active-template",
+    "allow-delete-template"
   ]
 }

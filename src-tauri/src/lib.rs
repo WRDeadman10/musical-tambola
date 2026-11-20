@@ -24,6 +24,10 @@ use commands::presentation::{
 use commands::scheme::{
     list_pattern_presets, list_scheme_types, list_schemes, save_scheme, set_scheme_active,
 };
+use commands::template::{
+    delete_template, get_active_template, list_templates, set_active_template,
+    upload_template_background,
+};
 use commands::ticket::{
     delete_ticket_batch, generate_ticket_batch, get_ticket, list_batch_tickets,
     list_ticket_batches, search_tickets,
@@ -115,6 +119,11 @@ pub fn run() {
             list_claim_history,
             list_winners,
             get_dashboard_stats,
+            list_templates,
+            get_active_template,
+            upload_template_background,
+            set_active_template,
+            delete_template,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");

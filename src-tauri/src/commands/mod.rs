@@ -5,4 +5,5 @@ pub mod history;
 pub mod media;
 pub mod presentation;
 pub mod scheme;
+pub mod template;
 pub mod ticket;

@@ -126,108 +126,161 @@ pub fn handle_media_protocol<R: tauri::Runtime>(
             .unwrap();
     }
 
-    let (is_game, game_id, number, is_thumb): (bool, Option<i64>, u8, bool) =
-        if segments.first() == Some(&"game") {
-            if segments.len() < 3 {
+    let selected_path_str: Option<String> = if segments.first() == Some(&"template") {
+        if segments.len() < 2 {
+            return Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .body(b"Missing template id".to_vec())
+                .unwrap();
+        }
+        let template_id: i64 = match segments[1].parse::<i64>() {
+            Ok(t) => t,
+            Err(_) => {
                 return Response::builder()
                     .status(StatusCode::BAD_REQUEST)
-                    .body(b"Missing gameId or number in game media path".to_vec())
+                    .body(b"Invalid template id".to_vec())
                     .unwrap();
             }
-            let g_id: i64 = match segments[1].parse::<i64>() {
-                Ok(g) => g,
-                Err(_) => {
-                    return Response::builder()
-                        .status(StatusCode::BAD_REQUEST)
-                        .body(b"Invalid gameId".to_vec())
-                        .unwrap();
-                }
-            };
-            let n: u8 = match segments[2].parse::<u8>() {
-                Ok(val) if (1..=90).contains(&val) => val,
-                _ => {
-                    return Response::builder()
-                        .status(StatusCode::BAD_REQUEST)
-                        .body(b"Invalid slot number (must be 1-90)".to_vec())
-                        .unwrap();
-                }
-            };
-            let thumb: bool = segments.len() > 3 && segments[3] == "thumb";
-            (true, Some(g_id), n, thumb)
-        } else {
-            let n: u8 = match segments[0].parse::<u8>() {
-                Ok(val) if (1..=90).contains(&val) => val,
-                _ => {
-                    return Response::builder()
-                        .status(StatusCode::BAD_REQUEST)
-                        .body(b"Invalid slot number (must be 1-90)".to_vec())
-                        .unwrap();
-                }
-            };
-            let thumb: bool = segments.len() > 1 && segments[1] == "thumb";
-            (false, None, n, thumb)
         };
 
-    let state: tauri::State<'_, crate::db::DbState> = match app.try_state::<crate::db::DbState>() {
-        Some(s) => s,
-        None => {
-            return Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(b"Database state unavailable".to_vec())
-                .unwrap();
-        }
-    };
+        let state: tauri::State<'_, crate::db::DbState> =
+            match app.try_state::<crate::db::DbState>() {
+                Some(s) => s,
+                None => {
+                    return Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .body(b"Database state unavailable".to_vec())
+                        .unwrap();
+                }
+            };
 
-    let conn: std::sync::MutexGuard<'_, Connection> = match state.conn.lock() {
-        Ok(c) => c,
-        Err(_) => {
-            return Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(b"Database lock failed".to_vec())
-                .unwrap();
-        }
-    };
-
-    let row_data: Option<(String, Option<String>, Option<String>)> = if is_game {
-        conn.query_row(
-            "SELECT source_type, path_or_url, poster_path FROM game_media_snapshots WHERE game_id = ?1 AND number = ?2;",
-            rusqlite::params![game_id.unwrap(), number],
-            |r: &rusqlite::Row<'_>| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
-        )
-        .ok()
-    } else {
-        conn.query_row(
-            "SELECT source_type, path_or_url, poster_path FROM media_assets WHERE number = ?1;",
-            rusqlite::params![number],
-            |r: &rusqlite::Row<'_>| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
-        )
-        .ok()
-    };
-
-    drop(conn);
-
-    let (source_type, path_or_url, poster_path): (String, Option<String>, Option<String>) =
-        match row_data {
-            Some(d) => d,
-            None => {
+        let conn: std::sync::MutexGuard<'_, Connection> = match state.conn.lock() {
+            Ok(c) => c,
+            Err(_) => {
                 return Response::builder()
-                    .status(StatusCode::NOT_FOUND)
-                    .body(b"Media slot not configured".to_vec())
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(b"Database lock failed".to_vec())
                     .unwrap();
             }
         };
 
-    if source_type != "LOCAL" {
-        return Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(b"Only LOCAL media is served via media:// protocol".to_vec())
-            .unwrap();
-    }
+        let bg_path: Option<String> = conn
+            .query_row(
+                "SELECT background_path FROM ticket_templates WHERE id = ?1;",
+                rusqlite::params![template_id],
+                |r: &rusqlite::Row<'_>| r.get(0),
+            )
+            .ok()
+            .flatten();
 
-    let selected_path_str: Option<String> = if is_thumb {
-        poster_path.or(path_or_url)
+        drop(conn);
+
+        bg_path
     } else {
-        path_or_url
+        let (is_game, game_id, number, is_thumb): (bool, Option<i64>, u8, bool) =
+            if segments.first() == Some(&"game") {
+                if segments.len() < 3 {
+                    return Response::builder()
+                        .status(StatusCode::BAD_REQUEST)
+                        .body(b"Missing gameId or number in game media path".to_vec())
+                        .unwrap();
+                }
+                let g_id: i64 = match segments[1].parse::<i64>() {
+                    Ok(g) => g,
+                    Err(_) => {
+                        return Response::builder()
+                            .status(StatusCode::BAD_REQUEST)
+                            .body(b"Invalid gameId".to_vec())
+                            .unwrap();
+                    }
+                };
+                let n: u8 = match segments[2].parse::<u8>() {
+                    Ok(val) if (1..=90).contains(&val) => val,
+                    _ => {
+                        return Response::builder()
+                            .status(StatusCode::BAD_REQUEST)
+                            .body(b"Invalid slot number (must be 1-90)".to_vec())
+                            .unwrap();
+                    }
+                };
+                let thumb: bool = segments.len() > 3 && segments[3] == "thumb";
+                (true, Some(g_id), n, thumb)
+            } else {
+                let n: u8 = match segments[0].parse::<u8>() {
+                    Ok(val) if (1..=90).contains(&val) => val,
+                    _ => {
+                        return Response::builder()
+                            .status(StatusCode::BAD_REQUEST)
+                            .body(b"Invalid slot number (must be 1-90)".to_vec())
+                            .unwrap();
+                    }
+                };
+                let thumb: bool = segments.len() > 1 && segments[1] == "thumb";
+                (false, None, n, thumb)
+            };
+
+        let state: tauri::State<'_, crate::db::DbState> =
+            match app.try_state::<crate::db::DbState>() {
+                Some(s) => s,
+                None => {
+                    return Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .body(b"Database state unavailable".to_vec())
+                        .unwrap();
+                }
+            };
+
+        let conn: std::sync::MutexGuard<'_, Connection> = match state.conn.lock() {
+            Ok(c) => c,
+            Err(_) => {
+                return Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(b"Database lock failed".to_vec())
+                    .unwrap();
+            }
+        };
+
+        let row_data: Option<(String, Option<String>, Option<String>)> = if is_game {
+            conn.query_row(
+                "SELECT source_type, path_or_url, poster_path FROM game_media_snapshots WHERE game_id = ?1 AND number = ?2;",
+                rusqlite::params![game_id.unwrap(), number],
+                |r: &rusqlite::Row<'_>| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .ok()
+        } else {
+            conn.query_row(
+                "SELECT source_type, path_or_url, poster_path FROM media_assets WHERE number = ?1;",
+                rusqlite::params![number],
+                |r: &rusqlite::Row<'_>| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .ok()
+        };
+
+        drop(conn);
+
+        let (source_type, path_or_url, poster_path): (String, Option<String>, Option<String>) =
+            match row_data {
+                Some(d) => d,
+                None => {
+                    return Response::builder()
+                        .status(StatusCode::NOT_FOUND)
+                        .body(b"Media slot not configured".to_vec())
+                        .unwrap();
+                }
+            };
+
+        if source_type != "LOCAL" {
+            return Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(b"Only LOCAL media is served via media:// protocol".to_vec())
+                .unwrap();
+        }
+
+        if is_thumb {
+            poster_path.or(path_or_url)
+        } else {
+            path_or_url
+        }
     };
 
     let target_path: PathBuf = match selected_path_str {
