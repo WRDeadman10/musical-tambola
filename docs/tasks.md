@@ -183,3 +183,22 @@
 | T8-F03 | Playwright E2E smoke test suite | DONE | Codex | BT-17: `e2e/smoke.spec.ts` 1/1 passed with deterministic Tauri IPC stub |
 | T8-F04 | Settings unit tests suite | DONE | Codex | BT-17: `src/test/settings.test.tsx` 7/7 tests passed |
 
+---
+
+## Release v1.0.1: Feature Parity & Host UX Overhaul (APPROVED)
+
+### Kanban Board
+
+| Task ID | Title | Status | Assignee | Wave | Deliverables / Notes |
+|---------|-------|--------|----------|------|----------------------|
+| **BT-20** | Game Formats (`CLASSIC_90` & `SONG_GRID`) | IN_PROGRESS | AG (A) | Wave 1 | Migration 0006, 3×5 generator, format snapshot, songCount 15..90, draw engine |
+| **BT-21** | Pattern Engine & Mask Evaluators | TODO | AG (A) | Wave 1 | Migration 0007, 3×5 masks, EARLY_N, generic evaluator, multiple Full House |
+| **BT-22** | Host Control Panel Redesign | IN_PROGRESS | Codex (X) | Wave 1 | 3-column layout, large NEXT button, shortcuts, quick claim, countdown timer |
+| **BT-23** | Projector Scenes & Presentation Display | TODO | Codex (X) | Wave 2 | Idle poster, media stage, number badge, countdown, prize announcement |
+| **BT-24** | Presentation Window Management & IPC | TODO | AG (A) | Wave 2 | Multi-window Tauri lifecycle, fullscreen target display, presentation state sync |
+| **BT-25** | Pattern Editor UI & Format Wizard | TODO | Codex (X) | Wave 2 | Visual 3×5 mask grid, preset selection, format picker in New Game wizard |
+| **BT-26** | Bulk Media Import, Backup/Restore, Admin PIN | TODO | AG (A) | Wave 3 | Auto-map 01..NN folder, CSV/XLSX parser, SQLite snapshot export, PIN lock |
+| **BT-27** | Ticket Printing & Lucky Draw UI | TODO | Codex (X) | Wave 3 | A4 sheet layout preview/PDF, Lucky Draw animated wheel/cards, branding themes |
+| **BT-28** | Full Regression & v1.0.1 Packaging | TODO | AG + Codex | Wave 4 | Acceptance tests for both formats, E2E flows, v1.0.1 NSIS installer |
+
+
