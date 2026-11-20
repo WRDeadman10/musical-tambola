@@ -1,19 +1,22 @@
 use crate::domain::random::RandomSource;
 
-/// Generates a complete 90-ball Tambola draw sequence using Fisher-Yates shuffle.
-/// Each number 1..=90 appears exactly once with zero modulo bias.
-pub fn generate_draw_sequence(rng: &mut impl RandomSource) -> [u8; 90] {
-    let mut seq: [u8; 90] = [0u8; 90];
-    for (i, val) in (1u8..=90u8).enumerate() {
-        seq[i] = val;
-    }
-
-    // Fisher-Yates shuffle from 89 down to 1
-    for i in (1..90).rev() {
+/// Generates a complete Tambola draw sequence of N balls using Fisher-Yates shuffle.
+/// Each number 1..=count appears exactly once with zero modulo bias.
+pub fn generate_draw_sequence_for_count(count: u32, rng: &mut impl RandomSource) -> Vec<u8> {
+    let mut seq: Vec<u8> = (1u8..=(count as u8)).collect();
+    for i in (1..seq.len()).rev() {
         let j: usize = rng.next_index(i + 1);
         seq.swap(i, j);
     }
+    seq
+}
 
+/// Generates a complete 90-ball Tambola draw sequence using Fisher-Yates shuffle.
+/// Each number 1..=90 appears exactly once with zero modulo bias.
+pub fn generate_draw_sequence(rng: &mut impl RandomSource) -> [u8; 90] {
+    let vec: Vec<u8> = generate_draw_sequence_for_count(90, rng);
+    let mut seq: [u8; 90] = [0u8; 90];
+    seq.copy_from_slice(&vec[..90]);
     seq
 }
 
@@ -64,5 +67,23 @@ mod tests {
             seq1, seq2,
             "Different seeds should produce different draw sequences"
         );
+    }
+
+    #[test]
+    fn test_draw_sequence_for_count_45_distinct_and_complete() {
+        let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(42);
+        let seq: Vec<u8> = generate_draw_sequence_for_count(45, &mut rng);
+
+        assert_eq!(seq.len(), 45);
+        let mut seen: HashSet<u8> = HashSet::new();
+        for &num in seq.iter() {
+            assert!((1..=45).contains(&num), "Number out of range: {}", num);
+            assert!(
+                seen.insert(num),
+                "Duplicate number in draw sequence: {}",
+                num
+            );
+        }
+        assert_eq!(seen.len(), 45);
     }
 }

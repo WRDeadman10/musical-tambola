@@ -1,11 +1,12 @@
 use crate::commands::media::validate_all_media;
 use crate::db::repositories::game::GameRepository;
 use crate::db::DbState;
+use crate::domain::format::{GameFormat, GameFormatConfig, SetGameFormatInput};
 use crate::domain::game::{GameState, GameSummary};
 use crate::domain::media::MediaValidationReport;
 use crate::domain::random::OsRngSource;
 use crate::errors::AppError;
-use rusqlite::Connection;
+use rusqlite::{params, Connection};
 use std::sync::MutexGuard;
 use tauri::{AppHandle, State, Window};
 
@@ -45,6 +46,11 @@ pub fn create_game(batch_id: i64, state: State<'_, DbState>) -> Result<GameState
             AppError::new(
                 "GAME_NO_ACTIVE_SCHEMES",
                 "Cannot start game: no active prize schemes configured",
+            )
+        } else if e.contains("BATCH_FORMAT_MISMATCH") {
+            AppError::new(
+                "BATCH_FORMAT_MISMATCH",
+                "Selected ticket batch format or song count does not match active game format",
             )
         } else if e.contains("not found") {
             AppError::new(
@@ -96,6 +102,11 @@ pub fn draw_next(
             AppError::new(
                 "GAME_ALREADY_COMPLETED",
                 "All 90 numbers have already been drawn for this game session",
+            )
+        } else if e.contains("BATCH_FORMAT_MISMATCH") {
+            AppError::new(
+                "BATCH_FORMAT_MISMATCH",
+                "Selected ticket batch format or song count does not match active game format",
             )
         } else if e.contains("not found") {
             AppError::new(
@@ -183,5 +194,91 @@ pub fn set_fullscreen(fullscreen: bool, window: Window) -> Result<(), AppError> 
             "Failed to change fullscreen mode",
             e.to_string(),
         )
+    })
+}
+
+#[tauri::command]
+pub fn get_game_format(state: State<'_, DbState>) -> Result<GameFormatConfig, AppError> {
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+
+    let format_str: String = conn
+        .query_row(
+            "SELECT value FROM app_settings WHERE key = 'active_game_format';",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| "CLASSIC_90".to_string());
+
+    let format: GameFormat = GameFormat::from_db_str(&format_str).unwrap_or(GameFormat::Classic90);
+
+    let song_count: u32 = conn
+        .query_row(
+            "SELECT value FROM app_settings WHERE key = 'active_song_count';",
+            [],
+            |r| r.get(0),
+        )
+        .ok()
+        .and_then(|s: String| s.parse::<u32>().ok())
+        .unwrap_or_else(|| format.default_song_count());
+
+    Ok(GameFormatConfig {
+        format,
+        song_count,
+        rows: format.rows(),
+        cols: format.cols(),
+    })
+}
+
+#[tauri::command]
+pub fn set_game_format(
+    input: SetGameFormatInput,
+    state: State<'_, DbState>,
+) -> Result<GameFormatConfig, AppError> {
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+
+    // Validate that no game is ACTIVE or PAUSED
+    let active_count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM games WHERE status IN ('ACTIVE', 'PAUSED');",
+            [],
+            |r| r.get(0),
+        )
+        .map_err(AppError::database_error)?;
+
+    if active_count > 0 {
+        return Err(AppError::new(
+            "FORMAT_LOCKED_GAME_ACTIVE",
+            "Cannot change game format while a game is active or paused",
+        ));
+    }
+
+    let chosen_song_count: u32 = input
+        .song_count
+        .unwrap_or_else(|| input.format.default_song_count());
+
+    let valid_song_count: u32 = input
+        .format
+        .validate_song_count(chosen_song_count)
+        .map_err(|msg| AppError::new("SONG_COUNT_INVALID", msg))?;
+
+    conn.execute(
+        "INSERT INTO app_settings (key, value, updated_at) VALUES ('active_game_format', ?1, CURRENT_TIMESTAMP)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP;",
+        params![input.format.as_str()],
+    )
+    .map_err(AppError::database_error)?;
+
+    conn.execute(
+        "INSERT INTO app_settings (key, value, updated_at) VALUES ('active_song_count', ?1, CURRENT_TIMESTAMP)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP;",
+        params![valid_song_count.to_string()],
+    )
+    .map_err(AppError::database_error)?;
+
+    Ok(GameFormatConfig {
+        format: input.format,
+        song_count: valid_song_count,
+        rows: input.format.rows(),
+        cols: input.format.cols(),
     })
 }

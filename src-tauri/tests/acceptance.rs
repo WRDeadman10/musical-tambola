@@ -139,9 +139,16 @@ async fn test_end_to_end_acceptance_workflow() {
 
     // 3. Generate 100 tickets and assert unique codes and hashes
     let mut rng = DeterministicRandomSource::new(101);
-    let batch =
-        TicketRepository::generate_batch(&mut conn, "Acceptance Batch", 100, &mut rng, |_, _| {})
-            .unwrap();
+    let batch = TicketRepository::generate_batch(
+        &mut conn,
+        "Acceptance Batch",
+        100,
+        None,
+        None,
+        &mut rng,
+        |_, _| {},
+    )
+    .unwrap();
     assert_eq!(batch.generated_count, 100);
 
     let tickets_page = TicketRepository::list_batch_tickets(&conn, batch.id, 0, 100).unwrap();

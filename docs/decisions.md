@@ -293,3 +293,39 @@ Phase 8 requires final hardening, release verification, and packaging (spec §22
   - Playwright smoke test validates complete user interface flows in isolation.
 - **Cons**:
   - Acceptance tests require running against a temporary SQLite database file.
+
+---
+
+## ADR-012: Game Formats (`CLASSIC_90` vs `SONG_GRID`) and Song Grid Generation Architecture
+
+### Context
+Release v1.0.1 introduces support for alternative game formats alongside the traditional 3×9, 15-number, 1..90 Classic Tambola format. Specifically, musical tambola and club events require a `SONG_GRID` format: a 3×5 grid with all 15 cells filled (no blank cells, no column ranges, numbers chosen randomly from 1..`song_count` where $15 \le song\_count \le 90$, default 45). Games, ticket batches, draw sequences, and media validations must dynamically match the active game format and song count.
+
+### Decision
+1. **Domain Model (`domain/format.rs`)**:
+   - `GameFormat` enum: `Classic90` (`CLASSIC_90`) and `SongGrid` (`SONG_GRID`).
+   - Format configuration specifies:
+     - `rows` and `cols` (3×9 vs 3×5).
+     - `numbers_per_ticket` (15 for both).
+     - `song_count` (always 90 for `Classic90`; selectable 15..90 for `SongGrid`).
+2. **Schema Migration 0006 (`0006_game_formats.sql`)**:
+   - Added `format`, `rows`, `cols`, `song_count` columns to `ticket_batches`, `tickets`, and `games`.
+   - Seeded `app_settings` with `active_game_format` ('CLASSIC_90') and `active_song_count` ('45').
+   - Game creation takes an immutable snapshot of format and song count in `games`.
+3. **Song Grid Ticket Generation (`domain/tambola/ticket_generator.rs`)**:
+   - `SongGridTicket`: 3 rows × 5 cols = 15 distinct numbers sampled uniformly without replacement from `1..=song_count`.
+   - Layout hashing sorts rows internally then joins them to compute a canonical SHA-256 layout hash, guaranteeing global uniqueness across batches.
+4. **Draw Sequence Adaptation (`domain/tambola/draw_engine.rs`)**:
+   - `generate_draw_sequence_for_count`: generates a Fisher-Yates permutation of `1..=song_count`, completing at position `song_count`.
+5. **Strict Preflight & Format Compatibility**:
+   - `create_game` validates that media slots `1..=active_song_count` are configured and valid.
+   - Enforces `BATCH_FORMAT_MISMATCH` if the selected ticket batch format or song count does not match the active configuration.
+   - `set_game_format` is locked when an active or paused game session exists (`FORMAT_LOCKED_GAME_ACTIVE`).
+
+### Consequences
+- **Pros**:
+  - Full support for compact 3×5 song-based tambola events with variable track counts (e.g. 30, 45, 60, 75).
+  - Strict compile-time and database-level validation prevents cross-format batch usage.
+  - Draw engine and media validation scale smoothly to the chosen number pool.
+- **Cons**:
+  - Batch generation and game creation must explicitly manage format parameters.

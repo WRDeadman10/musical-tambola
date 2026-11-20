@@ -1,5 +1,6 @@
 use crate::db::repositories::ticket::TicketRepository;
 use crate::db::DbState;
+use crate::domain::format::GameFormat;
 use crate::domain::random::OsRngSource;
 use crate::domain::tambola::{TicketBatch, TicketDto, TicketPage};
 use crate::errors::AppError;
@@ -19,6 +20,8 @@ struct GenerationProgressPayload {
 pub async fn generate_ticket_batch(
     name: String,
     count: u32,
+    format: Option<GameFormat>,
+    song_count: Option<u32>,
     app_handle: AppHandle,
 ) -> Result<TicketBatch, AppError> {
     if !(1..=10_000).contains(&count) {
@@ -43,6 +46,8 @@ pub async fn generate_ticket_batch(
             &mut conn,
             &name,
             count,
+            format,
+            song_count,
             &mut rng,
             |done: usize, total: usize| {
                 let _ = app.emit(

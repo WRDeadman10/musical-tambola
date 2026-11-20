@@ -8,8 +8,8 @@ pub mod smoke;
 use commands::app_info::{get_app_info, set_app_setting};
 use commands::claim::{list_game_claims, submit_claim};
 use commands::game::{
-    create_game, draw_next, end_game, get_active_game, get_game, list_games, pause_game,
-    preflight_media, resume_game, set_fullscreen,
+    create_game, draw_next, end_game, get_active_game, get_game, get_game_format, list_games,
+    pause_game, preflight_media, resume_game, set_fullscreen, set_game_format,
 };
 use commands::history::{get_dashboard_stats, list_claim_history, list_winners};
 use commands::media::{
@@ -87,6 +87,8 @@ pub fn run() {
             end_game,
             list_games,
             set_fullscreen,
+            get_game_format,
+            set_game_format,
             submit_claim,
             list_game_claims,
             list_claim_history,

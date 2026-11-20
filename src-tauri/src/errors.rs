@@ -160,4 +160,25 @@ mod tests {
             Some("language")
         );
     }
+
+    #[test]
+    fn test_format_error_codes() {
+        let mismatch_err: AppError = AppError::new(
+            "BATCH_FORMAT_MISMATCH",
+            "Batch format does not match active game format",
+        )
+        .with_param("expected", "CLASSIC_90")
+        .with_param("actual", "SONG_GRID");
+        assert_eq!(mismatch_err.code, "BATCH_FORMAT_MISMATCH");
+        assert_eq!(
+            mismatch_err.params.get("expected").map(|s| s.as_str()),
+            Some("CLASSIC_90")
+        );
+
+        let locked_err: AppError = AppError::new(
+            "FORMAT_LOCKED_GAME_ACTIVE",
+            "Cannot change game format while game is active",
+        );
+        assert_eq!(locked_err.code, "FORMAT_LOCKED_GAME_ACTIVE");
+    }
 }

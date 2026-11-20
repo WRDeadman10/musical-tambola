@@ -1,15 +1,23 @@
+use crate::domain::format::GameFormat;
 use crate::domain::random::RandomSource;
-use crate::domain::tambola::ticket_generator::{generate_ticket, layout_hash, Ticket};
+use crate::domain::tambola::ticket_generator::{
+    generate_song_grid_ticket, generate_ticket, layout_hash, song_grid_layout_hash, SongGridTicket,
+    Ticket,
+};
 use crate::domain::tambola::{TicketBatch, TicketCell, TicketDto, TicketPage};
 use rusqlite::{params, Connection, OptionalExtension, Transaction};
 
 pub struct TicketRepository;
+
+type GeneratedTicketData = (String, Vec<(usize, usize, u8)>);
 
 impl TicketRepository {
     pub fn generate_batch<R: RandomSource, F: FnMut(usize, usize)>(
         conn: &mut Connection,
         name: &str,
         count: u32,
+        format_opt: Option<GameFormat>,
+        song_count_opt: Option<u32>,
         rng: &mut R,
         mut on_progress: F,
     ) -> Result<TicketBatch, String> {
@@ -24,6 +32,42 @@ impl TicketRepository {
         if trimmed_name.is_empty() {
             return Err("Batch name cannot be empty".to_string());
         }
+
+        let active_format_str: Option<String> = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'active_game_format';",
+                [],
+                |r| r.get(0),
+            )
+            .optional()
+            .map_err(|e: rusqlite::Error| format!("Failed to read active_game_format: {}", e))?;
+
+        let active_format: GameFormat = match active_format_str {
+            Some(ref s) => GameFormat::from_db_str(s).unwrap_or(GameFormat::Classic90),
+            None => GameFormat::Classic90,
+        };
+
+        let chosen_format: GameFormat = format_opt.unwrap_or(active_format);
+
+        let active_song_count: u32 = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'active_song_count';",
+                [],
+                |r| r.get(0),
+            )
+            .optional()
+            .map_err(|e: rusqlite::Error| format!("Failed to read active_song_count: {}", e))?
+            .and_then(|s: String| s.parse::<u32>().ok())
+            .unwrap_or_else(|| chosen_format.default_song_count());
+
+        let chosen_song_count: u32 = song_count_opt.unwrap_or(match chosen_format {
+            GameFormat::Classic90 => 90,
+            GameFormat::SongGrid => active_song_count,
+        });
+
+        let valid_song_count: u32 = chosen_format.validate_song_count(chosen_song_count)?;
+        let rows_cnt: u8 = chosen_format.rows();
+        let cols_cnt: u8 = chosen_format.cols();
 
         let tx: Transaction<'_> = conn
             .transaction()
@@ -40,8 +84,8 @@ impl TicketRepository {
         let batch_code: String = format!("B-{:04}", next_batch_num);
 
         tx.execute(
-            "INSERT INTO ticket_batches (batch_code, name, ticket_count) VALUES (?1, ?2, ?3);",
-            params![batch_code, trimmed_name, count],
+            "INSERT INTO ticket_batches (batch_code, name, ticket_count, format, rows, cols, song_count) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7);",
+            params![batch_code, trimmed_name, count, chosen_format.as_str(), rows_cnt, cols_cnt, valid_song_count],
         )
         .map_err(|e: rusqlite::Error| format!("Failed to insert ticket batch: {}", e))?;
 
@@ -73,15 +117,43 @@ impl TicketRepository {
 
         for i in 0..count {
             let mut per_ticket_retries: usize = 50;
-            let mut generated_ticket: Option<(Ticket, String)> = None;
+            let mut generated_ticket: Option<GeneratedTicketData> = None;
 
             while per_ticket_retries > 0 && overall_budget > 0 {
                 per_ticket_retries -= 1;
                 overall_budget -= 1;
 
-                let ticket: Ticket = generate_ticket(rng)
-                    .map_err(|e| format!("Ticket generation validation failed: {}", e))?;
-                let hash: String = layout_hash(&ticket);
+                let (hash, cells_to_insert): (String, Vec<(usize, usize, u8)>) = match chosen_format
+                {
+                    GameFormat::Classic90 => {
+                        let ticket: Ticket = generate_ticket(rng)
+                            .map_err(|e| format!("Ticket generation validation failed: {}", e))?;
+                        let h: String = layout_hash(&ticket);
+                        let mut c_list: Vec<(usize, usize, u8)> = Vec::with_capacity(15);
+                        for (r, row) in ticket.cells.iter().enumerate() {
+                            for (c, cell_opt) in row.iter().enumerate() {
+                                if let Some(n) = *cell_opt {
+                                    c_list.push((r, c, n));
+                                }
+                            }
+                        }
+                        (h, c_list)
+                    }
+                    GameFormat::SongGrid => {
+                        let ticket: SongGridTicket =
+                            generate_song_grid_ticket(valid_song_count, rng).map_err(|e| {
+                                format!("Song grid generation validation failed: {}", e)
+                            })?;
+                        let h: String = song_grid_layout_hash(&ticket);
+                        let mut c_list: Vec<(usize, usize, u8)> = Vec::with_capacity(15);
+                        for (r, row) in ticket.cells.iter().enumerate() {
+                            for (c, &n) in row.iter().enumerate() {
+                                c_list.push((r, c, n));
+                            }
+                        }
+                        (h, c_list)
+                    }
+                };
 
                 // Check collision against DB
                 let exists: bool = tx
@@ -95,12 +167,13 @@ impl TicketRepository {
                     .is_some();
 
                 if !exists {
-                    generated_ticket = Some((ticket, hash));
+                    generated_ticket = Some((hash, cells_to_insert));
                     break;
                 }
             }
 
-            let (ticket, hash): (Ticket, String) = match generated_ticket {
+            let (hash, cells_to_insert): (String, Vec<(usize, usize, u8)>) = match generated_ticket
+            {
                 Some(t) => t,
                 None => {
                     return Err(format!(
@@ -115,24 +188,20 @@ impl TicketRepository {
             let ticket_code: String = format!("T-{:06}", seq);
 
             tx.execute(
-                "INSERT INTO tickets (batch_id, ticket_code, layout_hash) VALUES (?1, ?2, ?3);",
-                params![batch_id, ticket_code, hash],
+                "INSERT INTO tickets (batch_id, ticket_code, layout_hash, format, rows, cols) VALUES (?1, ?2, ?3, ?4, ?5, ?6);",
+                params![batch_id, ticket_code, hash, chosen_format.as_str(), rows_cnt, cols_cnt],
             )
             .map_err(|e: rusqlite::Error| format!("Failed to insert ticket: {}", e))?;
 
             let ticket_id: i64 = tx.last_insert_rowid();
 
             // Insert 15 cells
-            for (r, row) in ticket.cells.iter().enumerate() {
-                for (c, cell_opt) in row.iter().enumerate() {
-                    if let Some(n) = *cell_opt {
-                        tx.execute(
-                            "INSERT INTO ticket_cells (ticket_id, row_idx, col_idx, number) VALUES (?1, ?2, ?3, ?4);",
-                            params![ticket_id, r as i64, c as i64, n as i64],
-                        )
-                        .map_err(|e: rusqlite::Error| format!("Failed to insert ticket cell: {}", e))?;
-                    }
-                }
+            for (r, c, n) in cells_to_insert {
+                tx.execute(
+                    "INSERT INTO ticket_cells (ticket_id, row_idx, col_idx, number) VALUES (?1, ?2, ?3, ?4);",
+                    params![ticket_id, r as i64, c as i64, n as i64],
+                )
+                .map_err(|e: rusqlite::Error| format!("Failed to insert ticket cell: {}", e))?;
             }
 
             on_progress(i as usize + 1, count as usize);
@@ -162,6 +231,10 @@ impl TicketRepository {
             name: trimmed_name.to_string(),
             requested_count: count,
             generated_count: count,
+            format: chosen_format,
+            rows: rows_cnt,
+            cols: cols_cnt,
+            song_count: valid_song_count,
             created_at,
         })
     }
@@ -169,7 +242,7 @@ impl TicketRepository {
     pub fn list_batches(conn: &Connection) -> Result<Vec<TicketBatch>, String> {
         let mut stmt: rusqlite::Statement<'_> = conn
             .prepare(
-                "SELECT id, name, ticket_count, created_at FROM ticket_batches ORDER BY id DESC;",
+                "SELECT id, name, ticket_count, created_at, format, rows, cols, song_count FROM ticket_batches ORDER BY id DESC;",
             )
             .map_err(|e: rusqlite::Error| format!("Failed to prepare list_batches: {}", e))?;
 
@@ -179,12 +252,22 @@ impl TicketRepository {
                 let name: String = r.get(1)?;
                 let ticket_count: u32 = r.get(2)?;
                 let created_at: String = r.get(3)?;
+                let format_str: String = r.get(4)?;
+                let format: GameFormat =
+                    GameFormat::from_db_str(&format_str).unwrap_or(GameFormat::Classic90);
+                let rows: u8 = r.get(5)?;
+                let cols: u8 = r.get(6)?;
+                let song_count: u32 = r.get(7)?;
 
                 Ok(TicketBatch {
                     id,
                     name,
                     requested_count: ticket_count,
                     generated_count: ticket_count,
+                    format,
+                    rows,
+                    cols,
+                    song_count,
                     created_at,
                 })
             })
@@ -214,7 +297,7 @@ impl TicketRepository {
 
         let mut stmt: rusqlite::Statement<'_> = conn
             .prepare(
-                "SELECT id, ticket_code, batch_id, created_at FROM tickets WHERE batch_id = ?1 ORDER BY id ASC LIMIT ?2 OFFSET ?3;",
+                "SELECT id, ticket_code, batch_id, created_at, format, rows, cols FROM tickets WHERE batch_id = ?1 ORDER BY id ASC LIMIT ?2 OFFSET ?3;",
             )
             .map_err(|e: rusqlite::Error| format!("Failed to prepare ticket query: {}", e))?;
 
@@ -224,18 +307,26 @@ impl TicketRepository {
                 let code: String = r.get(1)?;
                 let b_id: i64 = r.get(2)?;
                 let created_at: String = r.get(3)?;
-                Ok((id, code, b_id, created_at))
+                let format_str: String = r.get(4)?;
+                let format: GameFormat =
+                    GameFormat::from_db_str(&format_str).unwrap_or(GameFormat::Classic90);
+                let rows: u8 = r.get(5)?;
+                let cols: u8 = r.get(6)?;
+                Ok((id, code, b_id, created_at, format, rows, cols))
             })
             .map_err(|e: rusqlite::Error| format!("Query failed: {}", e))?;
 
         let mut items: Vec<TicketDto> = Vec::new();
         for row in rows.flatten() {
-            let (id, code, b_id, created_at) = row;
+            let (id, code, b_id, created_at, format, rows_val, cols_val) = row;
             let cells: Vec<TicketCell> = Self::fetch_ticket_cells(conn, id)?;
             items.push(TicketDto {
                 id,
                 code,
                 batch_id: b_id,
+                format,
+                rows: rows_val,
+                cols: cols_val,
                 cells,
                 created_at,
             });
@@ -246,22 +337,36 @@ impl TicketRepository {
 
     pub fn get_ticket(conn: &Connection, code: &str) -> Result<TicketDto, String> {
         let trimmed: &str = code.trim();
-        let (id, b_id, created_at): (i64, i64, String) = conn
+        let (id, b_id, created_at, format_str, rows_val, cols_val): (
+            i64,
+            i64,
+            String,
+            String,
+            u8,
+            u8,
+        ) = conn
             .query_row(
-                "SELECT id, batch_id, created_at FROM tickets WHERE ticket_code = ?1;",
+                "SELECT id, batch_id, created_at, format, rows, cols FROM tickets WHERE ticket_code = ?1;",
                 params![trimmed],
-                |r: &rusqlite::Row<'_>| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                |r: &rusqlite::Row<'_>| {
+                    Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?))
+                },
             )
             .optional()
             .map_err(|e: rusqlite::Error| format!("Failed to query ticket: {}", e))?
             .ok_or_else(|| format!("Ticket '{}' not found", trimmed))?;
 
+        let format: GameFormat =
+            GameFormat::from_db_str(&format_str).unwrap_or(GameFormat::Classic90);
         let cells: Vec<TicketCell> = Self::fetch_ticket_cells(conn, id)?;
 
         Ok(TicketDto {
             id,
             code: trimmed.to_string(),
             batch_id: b_id,
+            format,
+            rows: rows_val,
+            cols: cols_val,
             cells,
             created_at,
         })
@@ -277,7 +382,7 @@ impl TicketRepository {
 
         let mut stmt: rusqlite::Statement<'_> = conn
             .prepare(
-                "SELECT id, ticket_code, batch_id, created_at FROM tickets WHERE ticket_code LIKE ?1 ORDER BY id ASC LIMIT ?2;",
+                "SELECT id, ticket_code, batch_id, created_at, format, rows, cols FROM tickets WHERE ticket_code LIKE ?1 ORDER BY id ASC LIMIT ?2;",
             )
             .map_err(|e: rusqlite::Error| format!("Failed to prepare search: {}", e))?;
 
@@ -289,19 +394,27 @@ impl TicketRepository {
                     let code: String = r.get(1)?;
                     let b_id: i64 = r.get(2)?;
                     let created_at: String = r.get(3)?;
-                    Ok((id, code, b_id, created_at))
+                    let format_str: String = r.get(4)?;
+                    let format: GameFormat =
+                        GameFormat::from_db_str(&format_str).unwrap_or(GameFormat::Classic90);
+                    let rows: u8 = r.get(5)?;
+                    let cols: u8 = r.get(6)?;
+                    Ok((id, code, b_id, created_at, format, rows, cols))
                 },
             )
             .map_err(|e: rusqlite::Error| format!("Search failed: {}", e))?;
 
         let mut results: Vec<TicketDto> = Vec::new();
         for row in rows.flatten() {
-            let (id, code, b_id, created_at) = row;
+            let (id, code, b_id, created_at, format, rows_val, cols_val) = row;
             let cells: Vec<TicketCell> = Self::fetch_ticket_cells(conn, id)?;
             results.push(TicketDto {
                 id,
                 code,
                 batch_id: b_id,
+                format,
+                rows: rows_val,
+                cols: cols_val,
                 cells,
                 created_at,
             });
@@ -401,22 +514,43 @@ mod tests {
         run_migrations(&conn).unwrap();
 
         let mut rng: OsRngSource = OsRngSource::new();
-        let batch1: TicketBatch =
-            TicketRepository::generate_batch(&mut conn, "Batch Alpha", 10, &mut rng, |_, _| {})
-                .unwrap();
+        let batch1: TicketBatch = TicketRepository::generate_batch(
+            &mut conn,
+            "Batch Alpha",
+            10,
+            None,
+            None,
+            &mut rng,
+            |_, _| {},
+        )
+        .unwrap();
         assert_eq!(batch1.requested_count, 10);
         assert_eq!(batch1.generated_count, 10);
+        assert_eq!(batch1.format, GameFormat::Classic90);
+        assert_eq!(batch1.rows, 3);
+        assert_eq!(batch1.cols, 9);
+        assert_eq!(batch1.song_count, 90);
 
         let page1: TicketPage =
             TicketRepository::list_batch_tickets(&conn, batch1.id, 0, 10).unwrap();
         assert_eq!(page1.total, 10);
         assert_eq!(page1.items[0].code, "T-000001");
+        assert_eq!(page1.items[0].format, GameFormat::Classic90);
+        assert_eq!(page1.items[0].rows, 3);
+        assert_eq!(page1.items[0].cols, 9);
         assert_eq!(page1.items[9].code, "T-000010");
 
         // Next batch continues sequence
-        let batch2: TicketBatch =
-            TicketRepository::generate_batch(&mut conn, "Batch Beta", 5, &mut rng, |_, _| {})
-                .unwrap();
+        let batch2: TicketBatch = TicketRepository::generate_batch(
+            &mut conn,
+            "Batch Beta",
+            5,
+            None,
+            None,
+            &mut rng,
+            |_, _| {},
+        )
+        .unwrap();
         let page2: TicketPage =
             TicketRepository::list_batch_tickets(&conn, batch2.id, 0, 5).unwrap();
         assert_eq!(page2.items[0].code, "T-000011");
@@ -430,7 +564,8 @@ mod tests {
 
         // 1. Generate one ticket normally
         let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(100);
-        TicketRepository::generate_batch(&mut conn, "Initial", 1, &mut rng, |_, _| {}).unwrap();
+        TicketRepository::generate_batch(&mut conn, "Initial", 1, None, None, &mut rng, |_, _| {})
+            .unwrap();
 
         // 2. Inject ConstantRandomSource that always generates duplicate layouts
         let mut const_rng: ConstantRandomSource = ConstantRandomSource::new(0);
@@ -438,6 +573,8 @@ mod tests {
             &mut conn,
             "Failing Batch",
             5,
+            None,
+            None,
             &mut const_rng,
             |_, _| {},
         );
@@ -457,13 +594,56 @@ mod tests {
         run_migrations(&conn).unwrap();
 
         let mut rng: OsRngSource = OsRngSource::new();
-        let batch: TicketBatch =
-            TicketRepository::generate_batch(&mut conn, "Batch To Delete", 3, &mut rng, |_, _| {})
-                .unwrap();
+        let batch: TicketBatch = TicketRepository::generate_batch(
+            &mut conn,
+            "Batch To Delete",
+            3,
+            None,
+            None,
+            &mut rng,
+            |_, _| {},
+        )
+        .unwrap();
 
         // Safe delete succeeds
         assert!(TicketRepository::delete_batch(&conn, batch.id).is_ok());
         let batches: Vec<TicketBatch> = TicketRepository::list_batches(&conn).unwrap();
         assert_eq!(batches.len(), 0);
+    }
+
+    #[test]
+    fn test_generate_song_grid_batch() {
+        let mut conn: Connection = Connection::open_in_memory().unwrap();
+        run_migrations(&conn).unwrap();
+
+        let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(888);
+        let batch: TicketBatch = TicketRepository::generate_batch(
+            &mut conn,
+            "Song Batch 45",
+            10,
+            Some(GameFormat::SongGrid),
+            Some(45),
+            &mut rng,
+            |_, _| {},
+        )
+        .unwrap();
+
+        assert_eq!(batch.format, GameFormat::SongGrid);
+        assert_eq!(batch.rows, 3);
+        assert_eq!(batch.cols, 5);
+        assert_eq!(batch.song_count, 45);
+
+        let page: TicketPage =
+            TicketRepository::list_batch_tickets(&conn, batch.id, 0, 10).unwrap();
+        assert_eq!(page.total, 10);
+        for ticket in page.items {
+            assert_eq!(ticket.format, GameFormat::SongGrid);
+            assert_eq!(ticket.rows, 3);
+            assert_eq!(ticket.cols, 5);
+            assert_eq!(ticket.cells.len(), 15);
+            for cell in ticket.cells {
+                assert!(cell.number >= 1 && cell.number <= 45);
+            }
+        }
     }
 }

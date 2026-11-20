@@ -1,30 +1,46 @@
+use crate::domain::format::GameFormat;
 use crate::domain::game::{CalledItem, GameSchemeState, GameState, GameStatus, GameSummary};
 use crate::domain::random::RandomSource;
 use crate::domain::schemes::SchemeType;
-use crate::domain::tambola::draw_engine::generate_draw_sequence;
+use crate::domain::tambola::draw_engine::generate_draw_sequence_for_count;
 use rusqlite::{params, Connection, OptionalExtension};
 use std::collections::HashMap;
 use std::str::FromStr;
 
 pub struct GameRepository;
 
-fn validate_draw_sequence_json(json_str: &str) -> Result<Vec<u8>, String> {
+type GameRowTuple = (
+    String,
+    i64,
+    String,
+    String,
+    u32,
+    u32,
+    String,
+    Option<String>,
+    Option<String>,
+    String,
+    u32,
+);
+
+fn validate_draw_sequence_json(json_str: &str, expected_count: u32) -> Result<Vec<u8>, String> {
     let seq: Vec<u8> = serde_json::from_str(json_str)
         .map_err(|e| format!("Corrupted draw sequence JSON: {}", e))?;
 
-    if seq.len() != 90 {
+    let count: usize = seq.len();
+    if count != (expected_count as usize) {
         return Err(format!(
-            "Corrupted draw sequence: expected exactly 90 numbers, got {}",
-            seq.len()
+            "Corrupted draw sequence: expected exactly {} numbers, got {}",
+            expected_count, count
         ));
     }
 
     let mut seen: [bool; 91] = [false; 91];
     for &num in &seq {
-        if !(1..=90).contains(&num) {
+        if num < 1 || (num as u32) > expected_count {
             return Err(format!(
-                "Corrupted draw sequence: number {} is out of valid range 1..=90",
-                num
+                "Corrupted draw sequence: number {} is out of valid range 1..={}",
+                num, expected_count
             ));
         }
         if seen[num as usize] {
@@ -65,48 +81,74 @@ impl GameRepository {
             return Err("An active or paused game already exists. Complete or end it before starting a new game.".to_string());
         }
 
-        // 2. Validate that all 90 media assets exist and are marked 'VALID' (is_valid = 1 and validated)
+        // 2. Query active format and song count
+        let active_format_str: String = tx
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'active_game_format';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap_or_else(|_| "CLASSIC_90".to_string());
+        let active_format: GameFormat =
+            GameFormat::from_db_str(&active_format_str).unwrap_or(GameFormat::Classic90);
+
+        let active_song_count: u32 = match active_format {
+            GameFormat::Classic90 => 90,
+            GameFormat::SongGrid => tx
+                .query_row(
+                    "SELECT value FROM app_settings WHERE key = 'active_song_count';",
+                    [],
+                    |r| r.get(0),
+                )
+                .ok()
+                .and_then(|s: String| s.parse::<u32>().ok())
+                .unwrap_or(45),
+        };
+
+        // 3. Validate that media assets 1..=active_song_count exist and are marked 'VALID'
         let valid_media_count: i64 = tx
             .query_row(
-                "SELECT COUNT(*) FROM media_assets WHERE is_valid = 1 AND last_validated_at IS NOT NULL;",
-                [],
+                "SELECT COUNT(*) FROM media_assets WHERE number <= ?1 AND is_valid = 1 AND last_validated_at IS NOT NULL;",
+                params![active_song_count],
                 |r| r.get(0),
             )
             .map_err(|e| format!("Failed to count valid media assets: {}", e))?;
 
-        if valid_media_count != 90 {
+        if valid_media_count != (active_song_count as i64) {
             return Err(format!(
-                "Cannot start game: all 90 media slots must be configured and valid (currently {} valid).",
-                valid_media_count
+                "Cannot start game: all {} media slots must be configured and valid (currently {} valid).",
+                active_song_count, valid_media_count
             ));
         }
 
-        // 3. Verify batch exists and count tickets
-        let batch_exists: bool = tx
+        // 4. Verify batch exists, check ticket count, and format match
+        let (batch_ticket_count, batch_format_str, batch_song_count): (i64, String, u32) = tx
             .query_row(
-                "SELECT EXISTS(SELECT 1 FROM ticket_batches WHERE id = ?1);",
+                "SELECT ticket_count, format, song_count FROM ticket_batches WHERE id = ?1;",
                 params![batch_id],
-                |r| r.get(0),
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
             )
-            .map_err(|e| format!("Failed to check ticket batch: {}", e))?;
+            .optional()
+            .map_err(|e| format!("Failed to check ticket batch: {}", e))?
+            .ok_or_else(|| format!("Ticket batch {} not found.", batch_id))?;
 
-        if !batch_exists {
-            return Err(format!("Ticket batch {} not found.", batch_id));
-        }
-
-        let ticket_count: i64 = tx
-            .query_row(
-                "SELECT COUNT(*) FROM tickets WHERE batch_id = ?1;",
-                params![batch_id],
-                |r| r.get(0),
-            )
-            .map_err(|e| format!("Failed to count batch tickets: {}", e))?;
-
-        if ticket_count == 0 {
+        if batch_ticket_count == 0 {
             return Err("Cannot start game: selected batch contains no tickets.".to_string());
         }
 
-        // 4. Verify that at least one active prize scheme exists
+        let batch_format: GameFormat =
+            GameFormat::from_db_str(&batch_format_str).unwrap_or(GameFormat::Classic90);
+        if batch_format != active_format || batch_song_count != active_song_count {
+            return Err(format!(
+                "BATCH_FORMAT_MISMATCH: Batch format {} ({} songs) does not match active game format {} ({} songs)",
+                batch_format.as_str(),
+                batch_song_count,
+                active_format.as_str(),
+                active_song_count
+            ));
+        }
+
+        // 5. Verify that at least one active prize scheme exists
         let active_schemes_count: i64 = tx
             .query_row(
                 "SELECT COUNT(*) FROM prize_schemes WHERE is_active = 1;",
@@ -121,7 +163,7 @@ impl GameRepository {
             );
         }
 
-        // 5. Generate monotonic game code G-YYYY-NNN per year
+        // 6. Generate monotonic game code G-YYYY-NNN per year
         let year: String = tx
             .query_row("SELECT strftime('%Y', 'now');", [], |r| r.get(0))
             .map_err(|e| format!("Failed to query current year: {}", e))?;
@@ -158,22 +200,22 @@ impl GameRepository {
 
         let game_code: String = format!("G-{}-{:03}", year, next_seq);
 
-        // 6. Generate 90-number draw sequence
-        let draw_seq: [u8; 90] = generate_draw_sequence(rng);
-        let draw_seq_json: String = serde_json::to_string(&draw_seq.to_vec())
+        // 7. Generate draw sequence for active song count
+        let draw_seq: Vec<u8> = generate_draw_sequence_for_count(active_song_count, rng);
+        let draw_seq_json: String = serde_json::to_string(&draw_seq)
             .map_err(|e| format!("Failed to serialize draw sequence: {}", e))?;
 
-        // 7. Insert game session (status ACTIVE, draw position 1)
+        // 8. Insert game session (status ACTIVE, draw position 1)
         tx.execute(
-            "INSERT INTO games (game_code, status, ticket_batch_id, draw_sequence_json, current_draw_position, started_at, created_at)
-             VALUES (?1, 'ACTIVE', ?2, ?3, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);",
-            params![game_code, batch_id, draw_seq_json],
+            "INSERT INTO games (game_code, status, ticket_batch_id, draw_sequence_json, current_draw_position, format, song_count, started_at, created_at)
+             VALUES (?1, 'ACTIVE', ?2, ?3, 1, ?4, ?5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);",
+            params![game_code, batch_id, draw_seq_json, active_format.as_str(), active_song_count],
         )
         .map_err(|e| format!("Failed to insert game: {}", e))?;
 
         let game_id: i64 = tx.last_insert_rowid();
 
-        // 8. Snapshot game tickets
+        // 9. Snapshot game tickets
         tx.execute(
             "INSERT INTO game_tickets (game_id, ticket_id)
              SELECT ?1, id FROM tickets WHERE batch_id = ?2;",
@@ -181,15 +223,15 @@ impl GameRepository {
         )
         .map_err(|e| format!("Failed to snapshot game tickets: {}", e))?;
 
-        // 9. Snapshot media assets
+        // 10. Snapshot media assets up to active song count
         tx.execute(
             "INSERT INTO game_media_snapshots (game_id, number, media_type, source_type, path_or_url, poster_path, title_gujarati)
-             SELECT ?1, number, media_type, source_type, path_or_url, poster_path, title_gujarati FROM media_assets;",
-            params![game_id],
+             SELECT ?1, number, media_type, source_type, path_or_url, poster_path, title_gujarati FROM media_assets WHERE number <= ?2;",
+            params![game_id, active_song_count],
         )
         .map_err(|e| format!("Failed to snapshot media assets: {}", e))?;
 
-        // 10. Snapshot active prize schemes
+        // 11. Snapshot active prize schemes
         tx.execute(
             "INSERT INTO game_schemes (game_id, scheme_id, name, scheme_type, rule_config_json, max_winners)
              SELECT ?1, id, name, scheme_type, rule_config_json, max_winners FROM prize_schemes WHERE is_active = 1
@@ -198,7 +240,7 @@ impl GameRepository {
         )
         .map_err(|e| format!("Failed to snapshot game schemes: {}", e))?;
 
-        // 11. Record first draw call (position 1)
+        // 12. Record first draw call (position 1)
         let first_number: u8 = draw_seq[0];
         tx.execute(
             "INSERT INTO game_calls (game_id, draw_position, number, drawn_at)
@@ -224,11 +266,11 @@ impl GameRepository {
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
             .map_err(|e| format!("Failed to start transaction: {}", e))?;
 
-        let (status_str, current_pos, draw_seq_json): (String, u32, String) = tx
+        let (status_str, current_pos, draw_seq_json, song_count): (String, u32, String, u32) = tx
             .query_row(
-                "SELECT status, current_draw_position, draw_sequence_json FROM games WHERE id = ?1;",
+                "SELECT status, current_draw_position, draw_sequence_json, song_count FROM games WHERE id = ?1;",
                 params![game_id],
-                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
             )
             .map_err(|e| format!("Failed to load game {}: {}", game_id, e))?;
 
@@ -253,11 +295,14 @@ impl GameRepository {
             return Self::get_game(conn, game_id);
         }
 
-        if current_pos >= 90 {
-            return Err("All 90 numbers have already been drawn.".to_string());
+        if current_pos >= song_count {
+            return Err(format!(
+                "All {} numbers have already been drawn.",
+                song_count
+            ));
         }
 
-        let draw_seq: Vec<u8> = validate_draw_sequence_json(&draw_seq_json)?;
+        let draw_seq: Vec<u8> = validate_draw_sequence_json(&draw_seq_json, song_count)?;
 
         let next_pos: u32 = current_pos + 1;
         let next_number: u8 = draw_seq[(next_pos - 1) as usize];
@@ -269,10 +314,10 @@ impl GameRepository {
         )
         .map_err(|e| format!("Failed to insert game call at position {}: {}", next_pos, e))?;
 
-        if next_pos == 90 {
+        if next_pos >= song_count {
             tx.execute(
-                "UPDATE games SET current_draw_position = 90, status = 'COMPLETED', ended_at = CURRENT_TIMESTAMP WHERE id = ?1;",
-                params![game_id],
+                "UPDATE games SET current_draw_position = ?2, status = 'COMPLETED', ended_at = CURRENT_TIMESTAMP WHERE id = ?1;",
+                params![game_id, song_count],
             )
             .map_err(|e| format!("Failed to update completed game status: {}", e))?;
         } else {
@@ -411,21 +456,13 @@ impl GameRepository {
             created_at,
             started_at,
             ended_at,
-        ): (
-            String,
-            i64,
-            String,
-            String,
-            u32,
-            u32,
-            String,
-            Option<String>,
-            Option<String>,
-        ) = conn
+            format_str,
+            song_count,
+        ): GameRowTuple = conn
             .query_row(
                 "SELECT g.game_code, g.ticket_batch_id, b.name, g.status, g.current_draw_position,
                         (SELECT COUNT(*) FROM game_tickets gt WHERE gt.game_id = g.id),
-                        g.created_at, g.started_at, g.ended_at
+                        g.created_at, g.started_at, g.ended_at, g.format, g.song_count
                  FROM games g
                  JOIN ticket_batches b ON g.ticket_batch_id = b.id
                  WHERE g.id = ?1;",
@@ -441,12 +478,16 @@ impl GameRepository {
                         r.get(6)?,
                         r.get(7)?,
                         r.get(8)?,
+                        r.get(9)?,
+                        r.get(10)?,
                     ))
                 },
             )
             .map_err(|e| format!("Game {} not found: {}", game_id, e))?;
 
         let status: GameStatus = GameStatus::from_db_str(&status_str)?;
+        let format: GameFormat =
+            GameFormat::from_db_str(&format_str).unwrap_or(GameFormat::Classic90);
 
         // Validate persisted draw sequence JSON integrity
         let draw_seq_json: String = conn
@@ -457,7 +498,7 @@ impl GameRepository {
             )
             .map_err(|e| format!("Failed to read draw sequence for game {}: {}", game_id, e))?;
 
-        validate_draw_sequence_json(&draw_seq_json)?;
+        validate_draw_sequence_json(&draw_seq_json, song_count)?;
 
         let game_summary = GameSummary {
             id: game_id,
@@ -467,6 +508,9 @@ impl GameRepository {
             status,
             current_draw_position: current_pos,
             total_tickets,
+            format,
+            song_count,
+            total_numbers: song_count,
             created_at,
             started_at,
             ended_at,
@@ -589,7 +633,7 @@ impl GameRepository {
             .prepare(
                 "SELECT g.id, g.game_code, g.ticket_batch_id, b.name, g.status, g.current_draw_position,
                         (SELECT COUNT(*) FROM game_tickets gt WHERE gt.game_id = g.id),
-                        g.created_at, g.started_at, g.ended_at
+                        g.created_at, g.started_at, g.ended_at, g.format, g.song_count
                  FROM games g
                  JOIN ticket_batches b ON g.ticket_batch_id = b.id
                  ORDER BY g.id DESC
@@ -609,6 +653,10 @@ impl GameRepository {
                 let created_at: String = r.get(7)?;
                 let started_at: Option<String> = r.get(8)?;
                 let ended_at: Option<String> = r.get(9)?;
+                let format_str: String = r.get(10)?;
+                let format: GameFormat =
+                    GameFormat::from_db_str(&format_str).unwrap_or(GameFormat::Classic90);
+                let song_count: u32 = r.get(11)?;
 
                 let status: GameStatus = match GameStatus::from_db_str(&status_str) {
                     Ok(s) => s,
@@ -623,6 +671,9 @@ impl GameRepository {
                     status,
                     current_draw_position: current_pos,
                     total_tickets,
+                    format,
+                    song_count,
+                    total_numbers: song_count,
                     created_at,
                     started_at,
                     ended_at,
@@ -706,8 +757,16 @@ mod tests {
 
         // Generate a ticket batch with 5 tickets
         let mut rng = DeterministicRandomSource::new(1234);
-        let batch =
-            TicketRepository::generate_batch(conn, "Test Batch", 5, &mut rng, |_, _| {}).unwrap();
+        let batch = TicketRepository::generate_batch(
+            conn,
+            "Test Batch",
+            5,
+            None,
+            None,
+            &mut rng,
+            |_, _| {},
+        )
+        .unwrap();
         batch.id
     }
 
@@ -1005,5 +1064,100 @@ mod tests {
             state.schemes[0].max_winners
         );
         assert_ne!(reloaded.schemes[0].max_winners, 999);
+    }
+
+    #[test]
+    fn test_song_grid_game_lifecycle_45_numbers() {
+        let mut conn = setup_test_db();
+        conn.execute(
+            "UPDATE app_settings SET value = 'SONG_GRID' WHERE key = 'active_game_format';",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "UPDATE app_settings SET value = '45' WHERE key = 'active_song_count';",
+            [],
+        )
+        .unwrap();
+
+        for num in 1..=45 {
+            MediaRepository::upsert(
+                &conn,
+                &SaveMediaInput {
+                    number: num,
+                    media_type: MediaType::Image,
+                    source_type: SourceType::Local,
+                    source: format!("C:/media/item_{}.jpg", num),
+                    thumbnail_source: None,
+                    title: format!("Song {}", num),
+                },
+            )
+            .unwrap();
+            conn.execute(
+                "UPDATE media_assets SET is_valid = 1, last_validated_at = CURRENT_TIMESTAMP WHERE number = ?1;",
+                params![num],
+            )
+            .unwrap();
+        }
+
+        let mut rng = DeterministicRandomSource::new(999);
+        let batch = TicketRepository::generate_batch(
+            &mut conn,
+            "SongGrid Batch 45",
+            5,
+            Some(GameFormat::SongGrid),
+            Some(45),
+            &mut rng,
+            |_, _| {},
+        )
+        .unwrap();
+
+        let state = GameRepository::create_game(&mut conn, batch.id, &mut rng).unwrap();
+        assert_eq!(state.game.format, GameFormat::SongGrid);
+        assert_eq!(state.game.song_count, 45);
+        assert_eq!(state.game.total_numbers, 45);
+        assert_eq!(state.game.status, GameStatus::Active);
+        assert_eq!(state.game.current_draw_position, 1);
+
+        let game_id = state.game.id;
+        for pos in 1..45 {
+            let next_state = GameRepository::draw_next(&mut conn, game_id, pos).unwrap();
+            if pos < 44 {
+                assert_eq!(next_state.game.status, GameStatus::Active);
+                assert_eq!(next_state.game.current_draw_position, pos + 1);
+            } else {
+                assert_eq!(next_state.game.status, GameStatus::Completed);
+                assert_eq!(next_state.game.current_draw_position, 45);
+                assert!(next_state.game.ended_at.is_some());
+            }
+        }
+
+        let post_draw = GameRepository::draw_next(&mut conn, game_id, 45);
+        assert!(post_draw.is_err());
+        let post_err = post_draw.unwrap_err();
+        assert!(post_err.contains("COMPLETED") || post_err.contains("All 45 numbers"));
+    }
+
+    #[test]
+    fn test_format_mismatch_rejection() {
+        let mut conn = setup_test_db();
+        populate_valid_media_and_batch(&mut conn);
+
+        let mut rng = DeterministicRandomSource::new(123);
+        let song_batch = TicketRepository::generate_batch(
+            &mut conn,
+            "Song Batch",
+            3,
+            Some(GameFormat::SongGrid),
+            Some(45),
+            &mut rng,
+            |_, _| {},
+        )
+        .unwrap();
+
+        let res = GameRepository::create_game(&mut conn, song_batch.id, &mut rng);
+        assert!(res.is_err());
+        let err = res.unwrap_err();
+        assert!(err.contains("BATCH_FORMAT_MISMATCH"));
     }
 }

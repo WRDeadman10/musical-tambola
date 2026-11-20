@@ -26,6 +26,11 @@ const MIGRATIONS: &[(i32, &str, &str)] = &[
         "0005_media_validation_codes",
         include_str!("../../migrations/0005_media_validation_codes.sql"),
     ),
+    (
+        6,
+        "0006_game_formats",
+        include_str!("../../migrations/0006_game_formats.sql"),
+    ),
 ];
 
 pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
@@ -106,7 +111,7 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let applied_version: i32 = run_migrations(&conn).expect("Migrations failed");
-        assert_eq!(applied_version, 5);
+        assert_eq!(applied_version, 6);
 
         let tables = [
             "app_settings",
@@ -145,10 +150,10 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let v1: i32 = run_migrations(&conn).expect("First migration run failed");
-        assert_eq!(v1, 5);
+        assert_eq!(v1, 6);
 
         let v2: i32 = run_migrations(&conn).expect("Second migration run failed");
-        assert_eq!(v2, 5);
+        assert_eq!(v2, 6);
     }
 
     #[test]
@@ -327,5 +332,55 @@ mod tests {
             second_fh_result.is_err(),
             "Second Full House win for same ticket must violate partial unique index"
         );
+    }
+
+    #[test]
+    fn test_migration_0006_game_formats_columns() {
+        let conn: Connection = Connection::open_in_memory().unwrap();
+        let applied: i32 = run_migrations(&conn).unwrap();
+        assert_eq!(applied, 6);
+
+        // Verify columns on ticket_batches
+        conn.execute(
+            "INSERT INTO ticket_batches (id, batch_code, name, ticket_count, format, rows, cols, song_count)
+             VALUES (1, 'B-0001', 'Batch 1', 10, 'SONG_GRID', 3, 5, 45);",
+            [],
+        )
+        .unwrap();
+
+        // Verify columns on tickets
+        conn.execute(
+            "INSERT INTO tickets (id, batch_id, ticket_code, layout_hash, format, rows, cols)
+             VALUES (1, 1, 'T-000001', 'hash1', 'SONG_GRID', 3, 5);",
+            [],
+        )
+        .unwrap();
+
+        // Verify columns on games
+        conn.execute(
+            "INSERT INTO games (id, game_code, status, ticket_batch_id, draw_sequence_json, current_draw_position, format, song_count)
+             VALUES (1, 'G-2026-001', 'READY', 1, '[]', 0, 'SONG_GRID', 45);",
+            [],
+        )
+        .unwrap();
+
+        // Verify app_settings defaults
+        let active_format: String = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'active_game_format';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(active_format, "CLASSIC_90");
+
+        let active_song_count: String = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'active_song_count';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(active_song_count, "45");
     }
 }

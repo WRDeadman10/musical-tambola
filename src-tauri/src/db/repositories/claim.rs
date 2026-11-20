@@ -542,6 +542,8 @@ mod tests {
             conn,
             "Claim Test Batch",
             ticket_count,
+            None,
+            None,
             &mut rng,
             |_, _| {},
         )
@@ -1220,9 +1222,16 @@ mod tests {
         );
 
         // 3. Ticket not in this game (generate batch 2, ticket from batch 2)
-        let batch_2 =
-            TicketRepository::generate_batch(&mut conn, "Other Batch", 1, &mut rng, |_, _| {})
-                .unwrap();
+        let batch_2 = TicketRepository::generate_batch(
+            &mut conn,
+            "Other Batch",
+            1,
+            None,
+            None,
+            &mut rng,
+            |_, _| {},
+        )
+        .unwrap();
         let t2_code: String = TicketRepository::list_batch_tickets(&conn, batch_2.id, 0, 10)
             .unwrap()
             .items[0]

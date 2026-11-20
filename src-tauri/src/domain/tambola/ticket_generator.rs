@@ -16,6 +16,17 @@ impl Ticket {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SongGridTicket {
+    pub cells: [[u8; 5]; 3],
+}
+
+impl SongGridTicket {
+    pub fn empty() -> Self {
+        Self { cells: [[0; 5]; 3] }
+    }
+}
+
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum TicketError {
     #[error("Ticket must have exactly 15 numbers, found {0}")]
@@ -43,6 +54,10 @@ pub enum TicketError {
     DuplicateNumber(u8),
     #[error("Failed to generate a valid ticket layout via backtracking")]
     LayoutGenerationFailed,
+    #[error("Song count {0} is invalid; must be between 15 and 90")]
+    InvalidSongCount(u32),
+    #[error("Song grid number {number} is out of bounds [1, {song_count}]")]
+    SongGridNumberOutOfRange { number: u8, song_count: u32 },
 }
 
 pub fn col_min(col: usize) -> u8 {
@@ -168,6 +183,84 @@ pub fn layout_hash(ticket: &Ticket) -> String {
     hasher.update(canonical.as_bytes());
     let result: sha2::digest::Output<Sha256> = hasher.finalize();
     format!("{:x}", result)
+}
+
+pub fn validate_song_grid_ticket(
+    ticket: &SongGridTicket,
+    song_count: u32,
+) -> Result<(), TicketError> {
+    if !(15..=90).contains(&song_count) {
+        return Err(TicketError::InvalidSongCount(song_count));
+    }
+
+    let mut seen: [bool; 91] = [false; 91];
+    for row in &ticket.cells {
+        for &num in row.iter() {
+            if num < 1 || (num as u32) > song_count {
+                return Err(TicketError::SongGridNumberOutOfRange {
+                    number: num,
+                    song_count,
+                });
+            }
+            if seen[num as usize] {
+                return Err(TicketError::DuplicateNumber(num));
+            }
+            seen[num as usize] = true;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn canonical_song_grid_layout(ticket: &SongGridTicket) -> String {
+    let mut rows: Vec<String> = Vec::with_capacity(3);
+    for row in &ticket.cells {
+        let mut row_str: String = String::with_capacity(15);
+        for (c, n) in row.iter().enumerate() {
+            if c > 0 {
+                row_str.push('|');
+            }
+            row_str.push_str(&n.to_string());
+        }
+        rows.push(row_str);
+    }
+    rows.join("\n")
+}
+
+pub fn song_grid_layout_hash(ticket: &SongGridTicket) -> String {
+    let canonical: String = canonical_song_grid_layout(ticket);
+    let mut hasher: Sha256 = Sha256::new();
+    hasher.update(canonical.as_bytes());
+    let result: sha2::digest::Output<Sha256> = hasher.finalize();
+    format!("{:x}", result)
+}
+
+pub fn generate_song_grid_ticket<R: RandomSource>(
+    song_count: u32,
+    rng: &mut R,
+) -> Result<SongGridTicket, TicketError> {
+    if !(15..=90).contains(&song_count) {
+        return Err(TicketError::InvalidSongCount(song_count));
+    }
+
+    let mut pool: Vec<u8> = (1..=(song_count as u8)).collect();
+    for i in (1..pool.len()).rev() {
+        let j: usize = rng.next_index(i + 1);
+        pool.swap(i, j);
+    }
+
+    let mut cells: [[u8; 5]; 3] = [[0; 5]; 3];
+    let mut idx: usize = 0;
+    for row in &mut cells {
+        for cell in row.iter_mut() {
+            *cell = pool[idx];
+            idx += 1;
+        }
+    }
+
+    let ticket: SongGridTicket = SongGridTicket { cells };
+    validate_song_grid_ticket(&ticket, song_count)?;
+    Ok(ticket)
 }
 
 fn backtrack_layout<R: RandomSource>(
@@ -392,5 +485,85 @@ mod tests {
 
         let res: Result<(), TicketError> = validate_ticket(&ticket);
         assert!(matches!(res, Err(TicketError::ColumnNotSorted { .. })));
+    }
+
+    #[test]
+    fn test_generate_10000_song_grid_tickets_all_valid() {
+        let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(777);
+        let mut hashes: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+        for _ in 0..10_000 {
+            let ticket: SongGridTicket = generate_song_grid_ticket(45, &mut rng).unwrap();
+            assert!(validate_song_grid_ticket(&ticket, 45).is_ok());
+            let hash: String = song_grid_layout_hash(&ticket);
+            hashes.insert(hash);
+        }
+
+        // With 45 choose 15 = 3.16e11 combinations and 15! permutations, 10,000 tickets will have 10,000 unique hashes
+        assert_eq!(hashes.len(), 10_000);
+    }
+
+    #[test]
+    fn test_song_grid_validation_rejects_duplicates_and_out_of_range() {
+        let mut valid_cells: [[u8; 5]; 3] =
+            [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [11, 12, 13, 14, 15]];
+        let t_valid: SongGridTicket = SongGridTicket { cells: valid_cells };
+        assert!(validate_song_grid_ticket(&t_valid, 45).is_ok());
+
+        // Duplicate number
+        valid_cells[0][0] = 2; // duplicate with [0][1]
+        let t_dup: SongGridTicket = SongGridTicket { cells: valid_cells };
+        assert!(matches!(
+            validate_song_grid_ticket(&t_dup, 45),
+            Err(TicketError::DuplicateNumber(2))
+        ));
+
+        // Out of range (> song_count)
+        valid_cells[0][0] = 46;
+        let t_oor: SongGridTicket = SongGridTicket { cells: valid_cells };
+        assert!(matches!(
+            validate_song_grid_ticket(&t_oor, 45),
+            Err(TicketError::SongGridNumberOutOfRange {
+                number: 46,
+                song_count: 45
+            })
+        ));
+
+        // Out of range (0)
+        valid_cells[0][0] = 0;
+        let t_zero: SongGridTicket = SongGridTicket { cells: valid_cells };
+        assert!(matches!(
+            validate_song_grid_ticket(&t_zero, 45),
+            Err(TicketError::SongGridNumberOutOfRange {
+                number: 0,
+                song_count: 45
+            })
+        ));
+
+        // Invalid song count
+        assert!(matches!(
+            validate_song_grid_ticket(&t_valid, 14),
+            Err(TicketError::InvalidSongCount(14))
+        ));
+        assert!(matches!(
+            validate_song_grid_ticket(&t_valid, 91),
+            Err(TicketError::InvalidSongCount(91))
+        ));
+    }
+
+    #[test]
+    fn test_song_grid_deterministic_reproducibility() {
+        let mut rng1: DeterministicRandomSource = DeterministicRandomSource::new(42);
+        let mut rng2: DeterministicRandomSource = DeterministicRandomSource::new(42);
+
+        let t1: SongGridTicket = generate_song_grid_ticket(45, &mut rng1).unwrap();
+        let t2: SongGridTicket = generate_song_grid_ticket(45, &mut rng2).unwrap();
+
+        assert_eq!(t1, t2);
+        assert_eq!(
+            canonical_song_grid_layout(&t1),
+            canonical_song_grid_layout(&t2)
+        );
+        assert_eq!(song_grid_layout_hash(&t1), song_grid_layout_hash(&t2));
     }
 }

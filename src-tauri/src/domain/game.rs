@@ -1,3 +1,4 @@
+use crate::domain::format::GameFormat;
 use crate::domain::schemes::SchemeType;
 use serde::{Deserialize, Serialize};
 
@@ -52,6 +53,9 @@ pub struct GameSummary {
     pub status: GameStatus,
     pub current_draw_position: u32,
     pub total_tickets: u32,
+    pub format: GameFormat,
+    pub song_count: u32,
+    pub total_numbers: u32,
     pub created_at: String,
     pub started_at: Option<String>,
     pub ended_at: Option<String>,

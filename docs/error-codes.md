@@ -42,7 +42,10 @@ All backend errors are serialized to the frontend in the standard envelope:
 | `GAME_NOT_ACTIVE` | — | There is no active game session to perform this action. |
 | `GAME_MEDIA_INVALID` | `validCount` | Cannot start game: fewer than 90 media items are validated (only {validCount} valid). |
 | `GAME_NO_ACTIVE_SCHEMES` | — | Cannot start game: no active prize schemes configured. |
-| `GAME_ALREADY_COMPLETED` | — | All 90 numbers have already been drawn for this game session. |
+| `GAME_ALREADY_COMPLETED` | — | All numbers have already been drawn for this game session. |
+| `BATCH_FORMAT_MISMATCH` | `expectedFormat`, `actualFormat` | Selected ticket batch format or song count does not match active game format. |
+| `FORMAT_LOCKED_GAME_ACTIVE` | — | Cannot change game format while a game is active or paused. |
+| `SONG_COUNT_INVALID` | `songCount` | Song count is invalid for the selected game format. |
 
 ---
 

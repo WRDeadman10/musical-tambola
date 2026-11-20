@@ -1,5 +1,6 @@
 use crate::db::repositories::media::MediaRepository;
 use crate::db::DbState;
+use crate::domain::format::GameFormat;
 use crate::domain::media::{MediaSlot, MediaValidationReport, SaveMediaInput, ValidationStatus};
 use crate::errors::AppError;
 use crate::services::media_validation::{summarize_report, validate_slot};
@@ -127,7 +128,33 @@ pub async fn validate_all_media(
     let slots: Vec<MediaSlot> = {
         let conn: MutexGuard<'_, Connection> =
             state.conn.lock().map_err(|_| AppError::lock_error())?;
-        MediaRepository::list_all(&conn).map_err(AppError::database_error)?
+
+        let format_str: String = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'active_game_format';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap_or_else(|_| "CLASSIC_90".to_string());
+        let format: GameFormat =
+            GameFormat::from_db_str(&format_str).unwrap_or(GameFormat::Classic90);
+
+        let song_count: u32 = conn
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'active_song_count';",
+                [],
+                |r| r.get(0),
+            )
+            .ok()
+            .and_then(|s: String| s.parse::<u32>().ok())
+            .unwrap_or_else(|| format.default_song_count());
+
+        let all_slots: Vec<MediaSlot> =
+            MediaRepository::list_all(&conn).map_err(AppError::database_error)?;
+        all_slots
+            .into_iter()
+            .filter(|s: &MediaSlot| (s.number as u32) <= song_count)
+            .collect()
     };
 
     let total: usize = slots.len();

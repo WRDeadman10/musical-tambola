@@ -191,13 +191,13 @@
 
 | Task ID | Title | Status | Assignee | Wave | Deliverables / Notes |
 |---------|-------|--------|----------|------|----------------------|
-| **BT-20** | Game Formats (`CLASSIC_90` & `SONG_GRID`) | IN_PROGRESS | AG (A) | Wave 1 | Migration 0006, 3×5 generator, format snapshot, songCount 15..90, draw engine |
-| **BT-21** | Pattern Engine & Mask Evaluators | TODO | AG (A) | Wave 1 | Migration 0007, 3×5 masks, EARLY_N, generic evaluator, multiple Full House |
-| **BT-22** | Host Control Panel Redesign | IN_PROGRESS | Codex (X) | Wave 1 | 3-column layout, large NEXT button, shortcuts, quick claim, countdown timer |
+| **BT-20** | Game Formats (`CLASSIC_90` & `SONG_GRID`) | DONE | AG (A) | Wave 1 | Migration 0006, 3×5 generator, format snapshot, songCount 15..90, draw engine |
+| **BT-22** | Host Control Panel Redesign | DONE | Codex (X) | Wave 1 | 3-column layout, large NEXT button, shortcuts, quick claim, countdown timer, Present toggle |
+| **BT-25** | Media Folder Scan/Apply & Posters Engine | IN_PROGRESS | AG (A) | Wave 1 | scan_media_folder, apply_media_assignments, save_media_poster, clear_media_poster |
+| **BT-24** | Media Folder Import UI & Auto Posters | IN_PROGRESS | Codex (X) | Wave 1 | Folder import wizard, segmented order, previews, scrubber, frame poster generator |
+| **BT-21** | Pattern Engine & Mask Evaluators | TODO | AG (A) | Wave 2 | Migration 0007, 3×5 masks, EARLY_N, generic evaluator, multiple Full House |
+| **BT-26** | Presentation Window Management & IPC | TODO | AG (A) | Wave 2 | Multi-window Tauri lifecycle, target display, presentation state sync |
 | **BT-23** | Projector Scenes & Presentation Display | TODO | Codex (X) | Wave 2 | Idle poster, media stage, number badge, countdown, prize announcement |
-| **BT-24** | Presentation Window Management & IPC | TODO | AG (A) | Wave 2 | Multi-window Tauri lifecycle, fullscreen target display, presentation state sync |
-| **BT-25** | Pattern Editor UI & Format Wizard | TODO | Codex (X) | Wave 2 | Visual 3×5 mask grid, preset selection, format picker in New Game wizard |
-| **BT-26** | Bulk Media Import, Backup/Restore, Admin PIN | TODO | AG (A) | Wave 3 | Auto-map 01..NN folder, CSV/XLSX parser, SQLite snapshot export, PIN lock |
 | **BT-27** | Ticket Printing & Lucky Draw UI | TODO | Codex (X) | Wave 3 | A4 sheet layout preview/PDF, Lucky Draw animated wheel/cards, branding themes |
 | **BT-28** | Full Regression & v1.0.1 Packaging | TODO | AG + Codex | Wave 4 | Acceptance tests for both formats, E2E flows, v1.0.1 NSIS installer |
 

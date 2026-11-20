@@ -445,6 +445,8 @@ mod tests {
             conn,
             "History Test Batch",
             ticket_count,
+            None,
+            None,
             &mut rng,
             |_, _| {},
         )

@@ -76,6 +76,33 @@ Wave 3:
 Wave 4:
 - BT-28 (AG + Codex) Full regression: acceptance tests for both formats, Playwright flows, installer v1.0.1.
 
+## 5a. Owner additions (2026-11-20, binding)
+
+1. **Folder-based media assignment.**
+   - The host picks a ROOT folder. The system scans it for supported images and videos and assigns them to slots 1..N.
+   - Order is chosen by buttons:
+     - **Number order:** natural sort, so 1, 2, 10 rather than 1, 10, 2
+     - **A→Z** and **Z→A**
+     - **Random**, which can be re-shuffled
+   - A preview table shows slot → file before anything is saved; Apply saves it in one transaction.
+   - Extra files are listed as unassigned. Too few files show a clear warning with the missing slot numbers.
+2. **Automatic video posters.**
+   - For every video, the system generates a poster from the **middle frame** automatically: the frontend seeks a hidden video to duration/2, draws it to a canvas and saves a JPEG through the backend into app-data/posters.
+   - The host can replace it by picking an image, or pick a different frame with a scrubber.
+   - Remote videos fall back to a placeholder when the frame can't be captured (CORS).
+3. **Presentable projector screen + dual-screen mode.**
+   - With 2 displays connected, Screen A (projector) shows ONLY the game: media, title banner, number badge, countdown, prize announcements and the idle poster.
+   - Screen B (host) shows the control panel: controls, the song list, the previous songs (history) and the NEXT song (host-only preview of the upcoming item in the persisted sequence).
+   - The presentation window auto-opens fullscreen on the secondary display when a game starts; it can be moved, reopened or closed from the host panel.
+   - With one display, a "Present" toggle switches between the host panel and the fullscreen audience view (Esc or a shortcut returns).
+4. **Ticket print templates with fixed regions.**
+   - Tickets print using a template. A default design ships, and the host can upload their own background artwork (PNG/JPG) for a fixed ticket size.
+   - The ticket grid, ticket code, event name and footer are drawn into FIXED regions defined by us, so any uploaded design lines up.
+   - A downloadable "template guide" image shows the regions for designers.
+   - There is a print preview, a choice of tickets per A4 page, and print or save as PDF.
+
+Wave priority update: the dual-screen presentation (5a.3) and folder assignment with posters (5a.1, 5a.2) move to Wave 2 immediately after Wave 1. Ticket templates (5a.4) are in Wave 3.
+
 ## 6. Non-negotiables carried from v1.0.0
 
 - Late claims are always rejected (chronological draw position). Eligibility rules are unchanged; Full House is identified by an is_full_house flag on the pattern, never by its name.
