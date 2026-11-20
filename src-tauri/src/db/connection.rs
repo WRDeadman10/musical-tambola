@@ -76,6 +76,13 @@ fn prune_old_pre_restores(base_dir: &Path, keep_count: usize) {
 }
 
 pub fn apply_staged_restore_if_present(base_dir: &Path) -> Result<(), String> {
+    apply_staged_restore_internal(base_dir, false)
+}
+
+pub fn apply_staged_restore_internal(
+    base_dir: &Path,
+    inject_copy_failure: bool,
+) -> Result<(), String> {
     let staging_dir: PathBuf = base_dir.join("restore_staging");
     let marker_file: PathBuf = base_dir.join("restore_staged.json");
 
@@ -157,8 +164,24 @@ pub fn apply_staged_restore_if_present(base_dir: &Path) -> Result<(), String> {
 
     if current_db.exists() {
         log::info!("Checkpointing current database WAL before moving...");
-        if let Ok(curr_conn) = Connection::open(&current_db) {
-            let _ = curr_conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
+        let checkpoint_result: Result<(), String> = (|| -> Result<(), String> {
+            let curr_conn: Connection =
+                Connection::open(&current_db).map_err(|e: rusqlite::Error| {
+                    format!("Failed to open database for checkpoint: {}", e)
+                })?;
+            curr_conn
+                .execute_batch("PRAGMA wal_checkpoint(TRUNCATE);")
+                .map_err(|e: rusqlite::Error| {
+                    format!("WAL checkpoint failed before restore: {}", e)
+                })?;
+            Ok(())
+        })();
+
+        if let Err(err) = checkpoint_result {
+            log::error!("Checkpoint failed: {}; aborting restore.", err);
+            let _ = fs::remove_dir_all(&staging_dir);
+            let _ = fs::remove_file(&marker_file);
+            return Err(err);
         }
     }
 
@@ -207,6 +230,10 @@ pub fn apply_staged_restore_if_present(base_dir: &Path) -> Result<(), String> {
 
     // (c) Copy staged files in, with (d) rollback on any error
     let apply_result: Result<(), String> = (|| -> Result<(), String> {
+        if inject_copy_failure {
+            return Err("Simulated disk copy failure".to_string());
+        }
+
         let _ = fs::create_dir_all(&data_dir);
         fs::copy(&staged_db, &current_db)
             .map_err(|e: std::io::Error| format!("Failed to copy restored database: {}", e))?;

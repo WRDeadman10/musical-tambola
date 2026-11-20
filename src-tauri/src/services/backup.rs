@@ -203,10 +203,29 @@ pub fn restore_backup_archive(
     restore_backup_archive_in_dir(zip_path_str, &app_data_dir, conn)
 }
 
+pub const DEFAULT_MAX_ZIP_ENTRIES: usize = 20_000;
+pub const DEFAULT_MAX_UNCOMPRESSED_SIZE: u64 = 2 * 1024 * 1024 * 1024; // 2 GB
+
 pub fn restore_backup_archive_in_dir(
     zip_path_str: &str,
     app_data_dir: &std::path::Path,
     conn: &Connection,
+) -> Result<RestoreResultDto, AppError> {
+    restore_backup_archive_with_limits(
+        zip_path_str,
+        app_data_dir,
+        conn,
+        DEFAULT_MAX_ZIP_ENTRIES,
+        DEFAULT_MAX_UNCOMPRESSED_SIZE,
+    )
+}
+
+pub fn restore_backup_archive_with_limits(
+    zip_path_str: &str,
+    app_data_dir: &std::path::Path,
+    conn: &Connection,
+    max_zip_entries: usize,
+    max_uncompressed_size: u64,
 ) -> Result<RestoreResultDto, AppError> {
     // 1. Guard: Cannot restore while game is ACTIVE or PAUSED
     let has_active_game: bool = conn
@@ -244,16 +263,13 @@ pub fn restore_backup_archive_in_dir(
         .map_err(|e| AppError::new("BACKUP_INVALID_FILE", format!("Invalid zip archive: {}", e)))?;
 
     // 2. Validate zip archive limits and path allowlist
-    const MAX_ZIP_ENTRIES: usize = 20_000;
-    const MAX_UNCOMPRESSED_SIZE: u64 = 2 * 1024 * 1024 * 1024; // 2 GB
-
-    if archive.len() > MAX_ZIP_ENTRIES {
+    if archive.len() > max_zip_entries {
         return Err(AppError::new(
             "BACKUP_INVALID_FILE",
             format!(
                 "Backup archive contains too many entries ({} > {})",
                 archive.len(),
-                MAX_ZIP_ENTRIES
+                max_zip_entries
             ),
         ));
     }
@@ -271,10 +287,13 @@ pub fn restore_backup_archive_in_dir(
         })?;
 
         total_uncompressed_size = total_uncompressed_size.saturating_add(entry.size());
-        if total_uncompressed_size > MAX_UNCOMPRESSED_SIZE {
+        if total_uncompressed_size > max_uncompressed_size {
             return Err(AppError::new(
                 "BACKUP_INVALID_FILE",
-                "Backup archive exceeds uncompressed size limit of 2 GB",
+                format!(
+                    "Backup archive exceeds uncompressed size limit of {} bytes",
+                    max_uncompressed_size
+                ),
             ));
         }
 
@@ -694,5 +713,191 @@ mod tests {
             .map(|c| c > 0)
             .unwrap();
         assert!(exists);
+    }
+
+    #[test]
+    fn test_simulated_copy_failure_rolls_back() {
+        let temp_dir: tempfile::TempDir = tempfile::tempdir().unwrap();
+        let app_data_dir: PathBuf = temp_dir.path().to_path_buf();
+
+        // 1. Original database with sentinel table
+        let data_dir: PathBuf = app_data_dir.join("data");
+        fs::create_dir_all(&data_dir).unwrap();
+        let original_db_path: PathBuf = data_dir.join("tambola.sqlite");
+        let orig_conn: Connection = Connection::open(&original_db_path).unwrap();
+        run_migrations(&orig_conn).unwrap();
+        orig_conn
+            .execute("CREATE TABLE rollback_sentinel (value INT);", [])
+            .unwrap();
+        orig_conn
+            .execute("INSERT INTO rollback_sentinel VALUES (123);", [])
+            .unwrap();
+        drop(orig_conn);
+
+        // 2. Staged valid database
+        let staging_dir: PathBuf = app_data_dir.join("restore_staging");
+        fs::create_dir_all(&staging_dir).unwrap();
+        let staged_conn: Connection = Connection::open(staging_dir.join("tambola.sqlite")).unwrap();
+        run_migrations(&staged_conn).unwrap();
+        staged_conn
+            .execute("CREATE TABLE staged_marker (val INT);", [])
+            .unwrap();
+        drop(staged_conn);
+
+        fs::write(
+            app_data_dir.join("restore_staged.json"),
+            b"{\"schemaVersion\":10}",
+        )
+        .unwrap();
+
+        // 3. Apply with simulated copy failure
+        let res: Result<(), String> =
+            crate::db::connection::apply_staged_restore_internal(&app_data_dir, true);
+        assert!(res.is_err());
+        assert!(res.unwrap_err().contains("Simulated disk copy failure"));
+
+        // 4. Verify original database content was preserved by rollback
+        let check_conn: Connection = Connection::open(&original_db_path).unwrap();
+        let val: i64 = check_conn
+            .query_row(
+                "SELECT value FROM rollback_sentinel;",
+                [],
+                |r: &rusqlite::Row<'_>| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(val, 123);
+
+        // Staged marker and directory are cleaned up
+        assert!(!staging_dir.exists());
+        assert!(!app_data_dir.join("restore_staged.json").exists());
+    }
+
+    #[test]
+    fn test_successful_restore_keeps_pre_restore_copy() {
+        let temp_dir: tempfile::TempDir = tempfile::tempdir().unwrap();
+        let app_data_dir: PathBuf = temp_dir.path().to_path_buf();
+
+        // 1. Original database with distinct content
+        let data_dir: PathBuf = app_data_dir.join("data");
+        fs::create_dir_all(&data_dir).unwrap();
+        let original_db_path: PathBuf = data_dir.join("tambola.sqlite");
+        let orig_conn: Connection = Connection::open(&original_db_path).unwrap();
+        run_migrations(&orig_conn).unwrap();
+        orig_conn
+            .execute("CREATE TABLE old_state (id INT);", [])
+            .unwrap();
+        orig_conn
+            .execute("INSERT INTO old_state VALUES (42);", [])
+            .unwrap();
+        drop(orig_conn);
+
+        // 2. Staged database with new state
+        let staging_dir: PathBuf = app_data_dir.join("restore_staging");
+        fs::create_dir_all(&staging_dir).unwrap();
+        let staged_conn: Connection = Connection::open(staging_dir.join("tambola.sqlite")).unwrap();
+        run_migrations(&staged_conn).unwrap();
+        staged_conn
+            .execute("CREATE TABLE new_state (id INT);", [])
+            .unwrap();
+        staged_conn
+            .execute("INSERT INTO new_state VALUES (99);", [])
+            .unwrap();
+        drop(staged_conn);
+
+        fs::write(
+            app_data_dir.join("restore_staged.json"),
+            b"{\"schemaVersion\":10}",
+        )
+        .unwrap();
+
+        // 3. Apply restore
+        crate::db::connection::apply_staged_restore_if_present(&app_data_dir).unwrap();
+
+        // 4. Verify current DB has new state
+        let current_conn: Connection = Connection::open(&original_db_path).unwrap();
+        let new_val: i64 = current_conn
+            .query_row("SELECT id FROM new_state;", [], |r: &rusqlite::Row<'_>| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(new_val, 99);
+        drop(current_conn);
+
+        // 5. Verify pre_restore folder contains OLD state
+        let entries = fs::read_dir(&app_data_dir).unwrap();
+        let mut found_pre_restore: Option<PathBuf> = None;
+        for entry in entries.flatten() {
+            let p: PathBuf = entry.path();
+            if p.is_dir() {
+                if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
+                    if name.starts_with("pre_restore_") {
+                        found_pre_restore = Some(p);
+                        break;
+                    }
+                }
+            }
+        }
+
+        assert!(found_pre_restore.is_some());
+        let pre_restore_dir: PathBuf = found_pre_restore.unwrap();
+        let pre_restore_db: PathBuf = pre_restore_dir.join("data").join("tambola.sqlite");
+        assert!(pre_restore_db.exists());
+
+        let pre_conn: Connection = Connection::open(&pre_restore_db).unwrap();
+        let old_val: i64 = pre_conn
+            .query_row("SELECT id FROM old_state;", [], |r: &rusqlite::Row<'_>| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(old_val, 42);
+    }
+
+    #[test]
+    fn test_zip_over_size_or_entry_cap_is_rejected() {
+        let temp_dir: tempfile::TempDir = tempfile::tempdir().unwrap();
+        let app_data_dir: PathBuf = temp_dir.path().to_path_buf();
+
+        let conn: Connection = Connection::open_in_memory().unwrap();
+        run_migrations(&conn).unwrap();
+
+        // Create a backup archive with 3 files
+        let test_zip: PathBuf = app_data_dir.join("test_limits.zip");
+        let zip_file: File = File::create(&test_zip).unwrap();
+        let mut zip: ZipWriter<File> = ZipWriter::new(zip_file);
+        let options: SimpleFileOptions =
+            SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+
+        zip.start_file("manifest.json", options).unwrap();
+        zip.write_all(b"{\"schemaVersion\":10}").unwrap();
+        zip.start_file("tambola.sqlite", options).unwrap();
+        zip.write_all(b"sample sqlite payload content exceeding tiny limit")
+            .unwrap();
+        zip.start_file("posters/p1.jpg", options).unwrap();
+        zip.write_all(b"poster byte content").unwrap();
+        zip.finish().unwrap();
+
+        // 1. Test entry cap: max_entries = 2 (archive has 3)
+        let err1: AppError = restore_backup_archive_with_limits(
+            &test_zip.to_string_lossy(),
+            &app_data_dir,
+            &conn,
+            2,
+            DEFAULT_MAX_UNCOMPRESSED_SIZE,
+        )
+        .unwrap_err();
+        assert_eq!(err1.code, "BACKUP_INVALID_FILE");
+        assert!(err1.message.contains("too many entries"));
+
+        // 2. Test size cap: max_uncompressed_size = 10 bytes (archive uncompressed size is ~90 bytes)
+        let err2: AppError = restore_backup_archive_with_limits(
+            &test_zip.to_string_lossy(),
+            &app_data_dir,
+            &conn,
+            DEFAULT_MAX_ZIP_ENTRIES,
+            10,
+        )
+        .unwrap_err();
+        assert_eq!(err2.code, "BACKUP_INVALID_FILE");
+        assert!(err2.message.contains("exceeds uncompressed size limit"));
     }
 }
