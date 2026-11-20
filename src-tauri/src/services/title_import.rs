@@ -23,6 +23,7 @@ pub struct TitleImportPreviewDto {
     pub valid_count: usize,
     pub invalid_count: usize,
     pub changed_count: usize,
+    pub out_of_format_range: Vec<u32>,
     pub rows: Vec<TitleImportRowDto>,
 }
 
@@ -196,6 +197,28 @@ pub fn preview_song_title_import_impl(
         existing_titles.insert(num, title);
     }
 
+    let format_str: String = conn
+        .query_row(
+            "SELECT value FROM app_settings WHERE key = 'active_game_format';",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or_else(|_| "CLASSIC_90".to_string());
+    let is_song_grid: bool = format_str == "SONG_GRID";
+    let active_song_count: u32 = if is_song_grid {
+        conn.query_row(
+            "SELECT value FROM app_settings WHERE key = 'active_song_count';",
+            [],
+            |r| r.get(0),
+        )
+        .ok()
+        .and_then(|s: String| s.parse::<u32>().ok())
+        .unwrap_or(45)
+    } else {
+        90
+    };
+
+    let mut out_of_format_range: Vec<u32> = Vec::new();
     let mut seen_slots: HashSet<u32> = HashSet::new();
     let mut preview_rows: Vec<TitleImportRowDto> = Vec::new();
 
@@ -228,6 +251,9 @@ pub fn preview_song_title_import_impl(
                 row_error = Some("Song title cannot exceed 200 characters".to_string());
             } else {
                 seen_slots.insert(number);
+                if is_song_grid && number > active_song_count {
+                    out_of_format_range.push(number);
+                }
             }
         }
 
@@ -260,6 +286,7 @@ pub fn preview_song_title_import_impl(
         valid_count,
         invalid_count,
         changed_count,
+        out_of_format_range,
         rows: preview_rows,
     })
 }
@@ -410,5 +437,35 @@ mod tests {
         }];
         let err2 = apply_song_title_import_impl(&empty_title_items, &mut conn).unwrap_err();
         assert_eq!(err2.code, "TITLE_EMPTY");
+    }
+
+    #[test]
+    fn test_preview_warns_out_of_format_range_for_song_grid() {
+        let conn: Connection = Connection::open_in_memory().unwrap();
+        run_migrations(&conn).unwrap();
+
+        // Switch to SONG_GRID with 45 songs
+        conn.execute(
+            "INSERT INTO app_settings (key, value) VALUES ('active_game_format', 'SONG_GRID')
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value;",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO app_settings (key, value) VALUES ('active_song_count', '45')
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value;",
+            [],
+        )
+        .unwrap();
+
+        let csv_content =
+            "Slot,Title\n10,Song Ten\n45,Song Forty-Five\n46,Song Forty-Six\n60,Song Sixty\n";
+        let preview =
+            preview_song_title_import_impl(csv_content.as_bytes(), "titles.csv", &conn).unwrap();
+
+        assert_eq!(preview.valid_count, 4);
+        assert_eq!(preview.invalid_count, 0);
+        // Slots 46 and 60 exceed song_count 45
+        assert_eq!(preview.out_of_format_range, vec![46, 60]);
     }
 }

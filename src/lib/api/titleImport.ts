@@ -15,6 +15,7 @@ export interface TitleImportPreview {
     invalidCount: number;
     changedCount: number;
     rows: TitleImportRow[];
+    outOfFormatRange?: number[];
 }
 
 export interface ApplyTitleImportItem {
