@@ -27,11 +27,12 @@ pub enum RangeSpec {
     Full,
     Satisfiable { start: u64, end: u64 },
     Unsatisfiable,
+    Empty,
 }
 
 pub fn parse_range_spec(range_header: Option<&str>, total_len: u64, is_video: bool) -> RangeSpec {
     if total_len == 0 {
-        return RangeSpec::Satisfiable { start: 0, end: 0 };
+        return RangeSpec::Empty;
     }
     const MAX_CHUNK: u64 = 4 * 1024 * 1024; // 4 MiB
 
@@ -252,6 +253,12 @@ pub fn handle_media_protocol<R: tauri::Runtime>(
     let range_spec: RangeSpec = parse_range_spec(range_header_str, total_len, is_video);
 
     match range_spec {
+        RangeSpec::Empty => Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, mime_type)
+            .header(header::CONTENT_LENGTH, "0")
+            .body(Vec::new())
+            .unwrap(),
         RangeSpec::Unsatisfiable => Response::builder()
             .status(StatusCode::RANGE_NOT_SATISFIABLE)
             .header(header::CONTENT_RANGE, format!("bytes */{}", total_len))
@@ -344,9 +351,10 @@ mod tests {
         );
 
         // 5. Empty file (total_len == 0)
+        assert_eq!(parse_range_spec(None, 0, false), RangeSpec::Empty);
         assert_eq!(
-            parse_range_spec(None, 0, false),
-            RangeSpec::Satisfiable { start: 0, end: 0 }
+            parse_range_spec(Some("bytes=0-100"), 0, false),
+            RangeSpec::Empty
         );
     }
 
