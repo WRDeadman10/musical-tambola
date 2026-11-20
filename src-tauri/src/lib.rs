@@ -9,6 +9,7 @@ use commands::game::{
     create_game, draw_next, end_game, get_active_game, get_game, list_games, pause_game,
     preflight_media, resume_game, set_fullscreen,
 };
+use commands::history::{get_dashboard_stats, list_claim_history, list_winners};
 use commands::media::{
     clear_media, get_media, list_media, pick_media_file, save_media, validate_all_media,
     validate_media,
@@ -86,6 +87,9 @@ pub fn run() {
             set_fullscreen,
             submit_claim,
             list_game_claims,
+            list_claim_history,
+            list_winners,
+            get_dashboard_stats,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");

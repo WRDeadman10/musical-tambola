@@ -235,3 +235,29 @@ Phase 6 introduces the Claim Validator and Winner Allocation engine (spec §9, �
   - Portable, decoupled pure logic covered by unit tests.
 - **Cons**:
   - Rebuilding `claims` table required versioned Migration 0003.
+
+---
+
+## ADR-010: Permanent Game History Preservation and Snapshot Integrity
+
+### Context
+Phase 7 introduces Winner History, Claim Audit History, and Dashboard Statistics (spec §4, §12). Tambola prize awards, game sessions, and claim audit trails represent historical event records. Accidental or intentional hard-deletion of games, claims, or winners would compromise prize auditing, dispute resolution, and historical game records. Furthermore, if a prize scheme is subsequently renamed in the administrative master table (`prize_schemes`), historical winner records must reflect the scheme name active when the game was played.
+
+### Decision
+1. **Never Delete History Guarantee**:
+   - Games, claims, and winners must never be hard-deleted through any API or user command.
+   - Foreign key `ON DELETE CASCADE` on `claims` and `winners` exists purely as relational hygiene; no command exposes game deletion.
+   - Deletion of `ticket_batches` is explicitly guarded: attempting to delete a batch whose tickets were assigned to games, claims, or winners returns an error (`TicketRepository::delete_batch`).
+2. **Snapshot Name Integrity**:
+   - All history and winner queries join against the immutable game snapshot (`game_schemes`) first: `COALESCE(gs.name, ps.name)`.
+   - Modifying or renaming a master prize scheme in `prize_schemes` does not alter the historical scheme name displayed on past winners or claims.
+3. **Optimized Read-Only Queries**:
+   - Migration 0004 introduces compound indexes (`idx_claims_status`, `idx_claims_ticket_code_submitted`, `idx_claims_claimed_at`, `idx_winners_awarded_at`, `idx_winners_claim_id`) for parameterized multi-attribute filtering and pagination.
+
+### Consequences
+- **Pros**:
+  - Irreversible auditability: past tournament outcomes and prize claims cannot be erased or distorted by configuration updates.
+  - Snapshot fidelity: historic game records match exactly what players and hosts saw during gameplay.
+  - Query performance: pagination and date-range filters remain performant across thousands of historical records.
+- **Cons**:
+  - Storage space is permanent (negligible for SQLite with local tambola sessions).

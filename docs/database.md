@@ -165,3 +165,4 @@ Migrations are managed in Rust using embedded SQL files tracked in a `schema_mig
 1. `0001_init.sql`: Core application tables, seed schemes, and initial settings.
 2. `0002_schemes_update.sql`: Added `description` and `updated_at` to `prize_schemes` with NOCASE unique index.
 3. `0003_claims_rebuild.sql`: Rebuilt `claims` table to record all attempts (including unknown tickets and schemes) with status and rejection codes; added database-level guards on `winners` table to enforce single non-Full-House, single Full House, and winner rank uniqueness.
+4. `0004_history_indexes.sql`: Performance indexes for winner history and claim audit trail queries: `idx_claims_status`, `idx_claims_ticket_code_submitted`, `idx_claims_claimed_at`, `idx_winners_awarded_at`, `idx_winners_claim_id`.

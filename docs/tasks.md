@@ -133,6 +133,28 @@
 
 | Task ID | Description | Status | Assignee | Notes |
 |---------|-------------|--------|----------|-------|
-| T6-F01 | Claim Desk modal / dialog | TODO | Codex | BT-13 |
-| T6-F02 | Claim submission & result display | TODO | Codex | Ticket visualizer with struck numbers |
-| T6-F03 | Claims audit history list | TODO | Codex | Newest first list |
+| T6-F01 | Claim Desk modal / dialog | DONE | Codex | BT-13 accepted & committed (`87c7ad3`) |
+| T6-F02 | Claim submission & result display | DONE | Codex | Ticket visualizer with struck numbers |
+| T6-F03 | Claims audit history list | DONE | Codex | Newest first list |
+
+---
+
+## Phase 7: Winner History, Audit, and Dashboard Statistics
+
+### Track 1: Backend / Rust (Assignee: AG — Implementer #1 & Git Owner)
+
+| Task ID | Description | Status | Assignee | Notes |
+|---------|-------------|--------|----------|-------|
+| T7-B01 | Migration 0004: Performance indexes for history & claims | DONE | AG (A) | `0004_history_indexes.sql` on claims status, ticket, timestamp, winners |
+| T7-B02 | History & Dashboard DTOs | DONE | AG (A) | `domain/history.rs`: HistoryFilter, ClaimHistoryRow, WinnerRow, Page, DashboardStats |
+| T7-B03 | History Repository with parameterized filtering & pagination | DONE | AG (A) | `db/repositories/history.rs`: list_claim_history, list_winners, get_dashboard_stats |
+| T7-B04 | Tauri commands & IPC registration | DONE | AG (A) | `commands/history.rs`: list_claim_history, list_winners, get_dashboard_stats registered in `lib.rs` |
+| T7-B05 | Comprehensive Cargo test suite (56 tests) | DONE | AG (A) | 56/56 Cargo tests pass (filters, pagination, date bounds, snapshot rename survival, dashboard stats, never delete history guarantee) |
+
+### Track 2: Frontend (Assignee: Codex — Implementer #2)
+
+| Task ID | Description | Status | Assignee | Notes |
+|---------|-------------|--------|----------|-------|
+| T7-F01 | Winner History page (/history) with tabs & filters | IN_PROGRESS | Codex | BT-15 |
+| T7-F02 | Ticket claim history modal dialog | IN_PROGRESS | Codex | BT-15 |
+| T7-F03 | Dashboard real stats cards & navigation | IN_PROGRESS | Codex | BT-15 |
