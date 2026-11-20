@@ -1727,4 +1727,483 @@ mod tests {
         assert_eq!(res_fh2_t2.winner_position, Some(1));
         assert_eq!(res_fh2_t2.qualification_position, Some(p_t2));
     }
+
+    fn populate_song_grid_media_and_batch(
+        conn: &mut Connection,
+        song_count: u32,
+        ticket_count: u32,
+        seed: u64,
+    ) -> i64 {
+        conn.execute(
+            "INSERT OR REPLACE INTO app_settings (key, value) VALUES ('active_game_format', 'SONG_GRID');",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT OR REPLACE INTO app_settings (key, value) VALUES ('active_song_count', ?1);",
+            params![song_count.to_string()],
+        )
+        .unwrap();
+
+        for num in 1..=(song_count as u8) {
+            MediaRepository::upsert(
+                conn,
+                &SaveMediaInput {
+                    number: num,
+                    media_type: MediaType::Image,
+                    source_type: SourceType::Local,
+                    source: format!("C:/media/song_{}.jpg", num),
+                    thumbnail_source: None,
+                    title: format!("ગીત {}", num),
+                },
+            )
+            .unwrap();
+
+            conn.execute(
+                "UPDATE media_assets SET is_valid = 1, last_validated_at = CURRENT_TIMESTAMP WHERE number = ?1;",
+                params![num],
+            )
+            .unwrap();
+        }
+
+        let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(seed);
+        let batch = TicketRepository::generate_batch(
+            conn,
+            "Song Batch",
+            ticket_count,
+            Some(GameFormat::SongGrid),
+            Some(song_count),
+            &mut rng,
+            |_, _| {},
+        )
+        .unwrap();
+
+        batch.id
+    }
+
+    #[test]
+    fn test_song_grid_late_claim_scenario() {
+        let mut conn: Connection = setup_test_db();
+        let batch_id: i64 = populate_song_grid_media_and_batch(&mut conn, 45, 1, 101);
+        let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(202);
+
+        let top_line_id: i64 = conn
+            .query_row(
+                "SELECT id FROM prize_schemes WHERE scheme_type = 'TOP_LINE';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+
+        let page = TicketRepository::list_batch_tickets(&conn, batch_id, 0, 1).unwrap();
+        let ticket_code: String = page.items[0].code.clone();
+        let ticket_dto = TicketRepository::get_ticket(&conn, &ticket_code).unwrap();
+        assert_eq!(ticket_dto.format, GameFormat::SongGrid);
+
+        let row0_nums: Vec<u8> = ticket_dto
+            .cells
+            .iter()
+            .filter(|c| c.row == 0)
+            .map(|c| c.number)
+            .collect();
+        assert_eq!(row0_nums.len(), 5);
+
+        // GAME 1: Claim at qualifying draw position P -> ACCEPTED
+        let g1 = GameRepository::create_game(&mut conn, batch_id, &mut rng).unwrap();
+        let g1_id: i64 = g1.game.id;
+        let g1_first: u8 = g1.current.unwrap().number;
+
+        let mut g1_seq: Vec<u8> = Vec::with_capacity(45);
+        let mut used1: [bool; 46] = [false; 46];
+        g1_seq.push(g1_first);
+        used1[g1_first as usize] = true;
+        for &n in &row0_nums {
+            if !used1[n as usize] {
+                g1_seq.push(n);
+                used1[n as usize] = true;
+            }
+        }
+        for n in 1..=45 {
+            if !used1[n as usize] {
+                g1_seq.push(n);
+                used1[n as usize] = true;
+            }
+        }
+
+        conn.execute(
+            "UPDATE games SET draw_sequence_json = ?1 WHERE id = ?2;",
+            params![serde_json::to_string(&g1_seq).unwrap(), g1_id],
+        )
+        .unwrap();
+
+        let mut qual_pos_g1: u32 = 0;
+        let mut drawn_cnt1: u32 = 0;
+        for (idx, &num) in g1_seq.iter().enumerate() {
+            if row0_nums.contains(&num) {
+                drawn_cnt1 += 1;
+                if drawn_cnt1 == 5 {
+                    qual_pos_g1 = (idx + 1) as u32;
+                    break;
+                }
+            }
+        }
+        assert!(qual_pos_g1 >= 5);
+
+        for p in 1..qual_pos_g1 {
+            GameRepository::draw_next(&mut conn, g1_id, p).unwrap();
+        }
+
+        // Claim at exact qualification position P in Game 1 -> ACCEPTED
+        let res_g1: ClaimResult =
+            ClaimRepository::submit_claim(&mut conn, g1_id, top_line_id, &ticket_code).unwrap();
+        assert_eq!(res_g1.status, "ACCEPTED");
+        assert_eq!(res_g1.winner_position, Some(1));
+        assert_eq!(res_g1.qualification_position, Some(qual_pos_g1));
+        assert_eq!(res_g1.current_draw_position, qual_pos_g1);
+
+        // End Game 1 to allow Game 2
+        GameRepository::end_game(&mut conn, g1_id).unwrap();
+
+        // GAME 2: Advance to P + 1 before claiming -> LATE_CLAIM
+        let g2 = GameRepository::create_game(&mut conn, batch_id, &mut rng).unwrap();
+        let g2_id: i64 = g2.game.id;
+        let g2_first: u8 = g2.current.unwrap().number;
+
+        let mut g2_seq: Vec<u8> = Vec::with_capacity(45);
+        let mut used2: [bool; 46] = [false; 46];
+        g2_seq.push(g2_first);
+        used2[g2_first as usize] = true;
+        for &n in &row0_nums {
+            if !used2[n as usize] {
+                g2_seq.push(n);
+                used2[n as usize] = true;
+            }
+        }
+        for n in 1..=45 {
+            if !used2[n as usize] {
+                g2_seq.push(n);
+                used2[n as usize] = true;
+            }
+        }
+
+        conn.execute(
+            "UPDATE games SET draw_sequence_json = ?1 WHERE id = ?2;",
+            params![serde_json::to_string(&g2_seq).unwrap(), g2_id],
+        )
+        .unwrap();
+
+        let mut qual_pos_g2: u32 = 0;
+        let mut drawn_cnt2: u32 = 0;
+        for (idx, &num) in g2_seq.iter().enumerate() {
+            if row0_nums.contains(&num) {
+                drawn_cnt2 += 1;
+                if drawn_cnt2 == 5 {
+                    qual_pos_g2 = (idx + 1) as u32;
+                    break;
+                }
+            }
+        }
+        assert!(qual_pos_g2 >= 5);
+
+        // Advance draws past P to P + 1
+        for p in 1..=qual_pos_g2 {
+            GameRepository::draw_next(&mut conn, g2_id, p).unwrap();
+        }
+
+        // Claim at P + 1 in Game 2 -> REJECTED (LateClaim)
+        let res_g2: ClaimResult =
+            ClaimRepository::submit_claim(&mut conn, g2_id, top_line_id, &ticket_code).unwrap();
+        assert_eq!(res_g2.status, "REJECTED");
+        assert_eq!(res_g2.rejection_code, Some(ClaimRejectionCode::LateClaim));
+        assert_eq!(res_g2.qualification_position, Some(qual_pos_g2));
+        assert_eq!(res_g2.current_draw_position, qual_pos_g2 + 1);
+        assert!(res_g2.winner_position.is_none());
+    }
+
+    #[test]
+    fn test_song_grid_already_won_full_house_scenario() {
+        let mut conn: Connection = setup_test_db();
+        let batch_id: i64 = populate_song_grid_media_and_batch(&mut conn, 45, 1, 303);
+        let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(404);
+
+        let full_house_id: i64 = conn
+            .query_row(
+                "SELECT id FROM prize_schemes WHERE scheme_type = 'FULL_HOUSE';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        let top_line_id: i64 = conn
+            .query_row(
+                "SELECT id FROM prize_schemes WHERE scheme_type = 'TOP_LINE';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+
+        let page = TicketRepository::list_batch_tickets(&conn, batch_id, 0, 1).unwrap();
+        let ticket_code: String = page.items[0].code.clone();
+        let ticket_dto = TicketRepository::get_ticket(&conn, &ticket_code).unwrap();
+        assert_eq!(ticket_dto.cells.len(), 15);
+
+        let r0_nums: Vec<u8> = ticket_dto
+            .cells
+            .iter()
+            .filter(|c| c.row == 0)
+            .map(|c| c.number)
+            .collect();
+        let r1_nums: Vec<u8> = ticket_dto
+            .cells
+            .iter()
+            .filter(|c| c.row == 1)
+            .map(|c| c.number)
+            .collect();
+        let r2_nums: Vec<u8> = ticket_dto
+            .cells
+            .iter()
+            .filter(|c| c.row == 2)
+            .map(|c| c.number)
+            .collect();
+
+        assert_eq!(r0_nums.len(), 5);
+        assert_eq!(r1_nums.len(), 5);
+        assert_eq!(r2_nums.len(), 5);
+
+        let game = GameRepository::create_game(&mut conn, batch_id, &mut rng).unwrap();
+        let game_id: i64 = game.game.id;
+        let first_num: u8 = game.current.unwrap().number;
+
+        // Construct sequence so both Top Line (row 0) and Full House (all 15)
+        // complete at the exact same draw position:
+        // 1. first_num (drawn by create_game)
+        // 2. r0_nums[0..4] (4 numbers of row 0)
+        // 3. r1_nums[0..5] (5 numbers of row 1)
+        // 4. r2_nums[0..5] (5 numbers of row 2)
+        // 5. r0_nums[4] (5th number of row 0 - triggers BOTH Top Line and Full House!)
+        // 6. Remaining numbers 1..=45
+        let trigger_num: u8 = r0_nums[4];
+        let mut seq: Vec<u8> = Vec::with_capacity(45);
+        let mut used: [bool; 46] = [false; 46];
+        seq.push(first_num);
+        used[first_num as usize] = true;
+
+        for &n in &r0_nums[0..4] {
+            if !used[n as usize] {
+                seq.push(n);
+                used[n as usize] = true;
+            }
+        }
+        for &n in &r1_nums {
+            if !used[n as usize] {
+                seq.push(n);
+                used[n as usize] = true;
+            }
+        }
+        for &n in &r2_nums {
+            if !used[n as usize] {
+                seq.push(n);
+                used[n as usize] = true;
+            }
+        }
+        if !used[trigger_num as usize] {
+            seq.push(trigger_num);
+            used[trigger_num as usize] = true;
+        }
+        for n in 1..=45 {
+            if !used[n as usize] {
+                seq.push(n);
+                used[n as usize] = true;
+            }
+        }
+
+        conn.execute(
+            "UPDATE games SET draw_sequence_json = ?1 WHERE id = ?2;",
+            params![serde_json::to_string(&seq).unwrap(), game_id],
+        )
+        .unwrap();
+
+        let p_qual: u32 = (seq.iter().position(|&n| n == trigger_num).unwrap() + 1) as u32;
+
+        // Advance draws to position p_qual where both Top Line and Full House complete
+        for p in 1..p_qual {
+            GameRepository::draw_next(&mut conn, game_id, p).unwrap();
+        }
+
+        // At draw p_qual, ticket claims Full House -> ACCEPTED
+        let res_fh: ClaimResult =
+            ClaimRepository::submit_claim(&mut conn, game_id, full_house_id, &ticket_code).unwrap();
+        assert_eq!(res_fh.status, "ACCEPTED");
+        assert_eq!(res_fh.winner_position, Some(1));
+        assert_eq!(res_fh.qualification_position, Some(p_qual));
+
+        // At the exact same draw p_qual, ticket tries to claim Top Line -> REJECTED (AlreadyWonFullHouse)
+        let res_tl: ClaimResult =
+            ClaimRepository::submit_claim(&mut conn, game_id, top_line_id, &ticket_code).unwrap();
+        assert_eq!(res_tl.status, "REJECTED");
+        assert_eq!(
+            res_tl.rejection_code,
+            Some(ClaimRejectionCode::AlreadyWonFullHouse)
+        );
+        assert_eq!(res_tl.qualification_position, Some(p_qual));
+        assert_eq!(res_tl.current_draw_position, p_qual);
+        assert!(res_tl.winner_position.is_none());
+    }
+
+    #[test]
+    fn test_song_grid_winner_limit_reached_scenario() {
+        let mut conn: Connection = setup_test_db();
+        let batch_id: i64 = populate_song_grid_media_and_batch(&mut conn, 45, 2, 505);
+        let mut rng: DeterministicRandomSource = DeterministicRandomSource::new(606);
+
+        let top_line_id: i64 = conn
+            .query_row(
+                "SELECT id FROM prize_schemes WHERE scheme_type = 'TOP_LINE';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+
+        let page = TicketRepository::list_batch_tickets(&conn, batch_id, 0, 2).unwrap();
+        let t1_code: String = page.items[0].code.clone();
+        let t2_code: String = page.items[1].code.clone();
+
+        // Get row 0 numbers for both tickets
+        let t1_dto = TicketRepository::get_ticket(&conn, &t1_code).unwrap();
+        let t2_dto = TicketRepository::get_ticket(&conn, &t2_code).unwrap();
+
+        let t1_row0: Vec<u8> = t1_dto
+            .cells
+            .iter()
+            .filter(|c| c.row == 0)
+            .map(|c| c.number)
+            .collect();
+        let t2_row0: Vec<u8> = t2_dto
+            .cells
+            .iter()
+            .filter(|c| c.row == 0)
+            .map(|c| c.number)
+            .collect();
+
+        // Harmonize so both tickets share trigger_number at row 0, col 4
+        let trigger_number: u8 = t1_row0[4];
+        let t2_old_num: u8 = t2_row0[4];
+
+        if t2_old_num != trigger_number {
+            let existing_pos: Option<(i64, i64)> = conn
+                .query_row(
+                    "SELECT row_idx, col_idx FROM ticket_cells WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_code = ?1) AND number = ?2;",
+                    params![t2_code, trigger_number],
+                    |r| Ok((r.get(0)?, r.get(1)?)),
+                )
+                .ok();
+
+            if let Some((old_r, old_c)) = existing_pos {
+                // Number 90 is unused in 45-song grid; use as temporary number to swap safely
+                conn.execute(
+                    "UPDATE ticket_cells SET number = 90 WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_code = ?1) AND row_idx = ?2 AND col_idx = ?3;",
+                    params![t2_code, old_r, old_c],
+                ).unwrap();
+                conn.execute(
+                    "UPDATE ticket_cells SET number = ?1 WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_code = ?2) AND row_idx = 0 AND col_idx = 4;",
+                    params![trigger_number, t2_code],
+                ).unwrap();
+                conn.execute(
+                    "UPDATE ticket_cells SET number = ?1 WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_code = ?2) AND row_idx = ?3 AND col_idx = ?4;",
+                    params![t2_old_num, t2_code, old_r, old_c],
+                ).unwrap();
+            } else {
+                conn.execute(
+                    "UPDATE ticket_cells SET number = ?1 WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_code = ?2) AND row_idx = 0 AND col_idx = 4;",
+                    params![trigger_number, t2_code],
+                ).unwrap();
+            }
+        }
+
+        // Re-read both row 0 lists
+        let t1_dto_updated = TicketRepository::get_ticket(&conn, &t1_code).unwrap();
+        let t2_dto_updated = TicketRepository::get_ticket(&conn, &t2_code).unwrap();
+        let t1_r0: Vec<u8> = t1_dto_updated
+            .cells
+            .iter()
+            .filter(|c| c.row == 0)
+            .map(|c| c.number)
+            .collect();
+        let t2_r0: Vec<u8> = t2_dto_updated
+            .cells
+            .iter()
+            .filter(|c| c.row == 0)
+            .map(|c| c.number)
+            .collect();
+
+        let game = GameRepository::create_game(&mut conn, batch_id, &mut rng).unwrap();
+        let game_id: i64 = game.game.id;
+        let first_num: u8 = game.current.unwrap().number;
+
+        // Construct draw sequence:
+        // First draw: first_num
+        // Next: t1's first 4 numbers (excluding trigger_number)
+        // Next: t2's first 4 numbers (excluding trigger_number)
+        // Then: trigger_number (which triggers completion for BOTH tickets at draw P!)
+        // Then: remaining numbers
+        let mut seq: Vec<u8> = Vec::with_capacity(45);
+        let mut used: [bool; 46] = [false; 46];
+        seq.push(first_num);
+        used[first_num as usize] = true;
+
+        for &n in &t1_r0 {
+            if n != trigger_number && !used[n as usize] {
+                seq.push(n);
+                used[n as usize] = true;
+            }
+        }
+        for &n in &t2_r0 {
+            if n != trigger_number && !used[n as usize] {
+                seq.push(n);
+                used[n as usize] = true;
+            }
+        }
+        if !used[trigger_number as usize] {
+            seq.push(trigger_number);
+            used[trigger_number as usize] = true;
+        }
+        for n in 1..=45 {
+            if !used[n as usize] {
+                seq.push(n);
+                used[n as usize] = true;
+            }
+        }
+
+        conn.execute(
+            "UPDATE games SET draw_sequence_json = ?1 WHERE id = ?2;",
+            params![serde_json::to_string(&seq).unwrap(), game_id],
+        )
+        .unwrap();
+
+        // Find position P where trigger_number is drawn
+        let p_qual: u32 = (seq.iter().position(|&n| n == trigger_number).unwrap() + 1) as u32;
+
+        // Advance draws to position p_qual
+        for p in 1..p_qual {
+            GameRepository::draw_next(&mut conn, game_id, p).unwrap();
+        }
+
+        // T1 claims Top Line at p_qual -> ACCEPTED (Winner position 1)
+        let res_t1: ClaimResult =
+            ClaimRepository::submit_claim(&mut conn, game_id, top_line_id, &t1_code).unwrap();
+        assert_eq!(res_t1.status, "ACCEPTED");
+        assert_eq!(res_t1.winner_position, Some(1));
+        assert_eq!(res_t1.qualification_position, Some(p_qual));
+
+        // T2 claims Top Line at the EXACT SAME draw p_qual -> REJECTED (WinnerLimitReached, max_winners = 1)
+        let res_t2: ClaimResult =
+            ClaimRepository::submit_claim(&mut conn, game_id, top_line_id, &t2_code).unwrap();
+        assert_eq!(res_t2.status, "REJECTED");
+        assert_eq!(
+            res_t2.rejection_code,
+            Some(ClaimRejectionCode::WinnerLimitReached)
+        );
+        assert_eq!(res_t2.qualification_position, Some(p_qual));
+        assert_eq!(res_t2.current_draw_position, p_qual);
+        assert!(res_t2.winner_position.is_none());
+    }
 }

@@ -266,15 +266,47 @@ impl MediaRepository {
             .transaction()
             .map_err(|e: rusqlite::Error| format!("Failed to begin transaction: {}", e))?;
 
+        let active_format_str: String = tx
+            .query_row(
+                "SELECT value FROM app_settings WHERE key = 'active_game_format';",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap_or_else(|_| "CLASSIC_90".to_string());
+        let max_allowed_number: u32 = if active_format_str == "SONG_GRID" {
+            tx.query_row(
+                "SELECT value FROM app_settings WHERE key = 'active_song_count';",
+                [],
+                |r| r.get(0),
+            )
+            .ok()
+            .and_then(|s: String| s.parse::<u32>().ok())
+            .unwrap_or(45)
+        } else {
+            90
+        };
+
         for a in assignments {
-            if !(1..=90).contains(&a.number) {
+            if a.number == 0 || (a.number as u32) > max_allowed_number {
                 return Err(format!(
-                    "Media slot number must be between 1 and 90, got {}",
-                    a.number
+                    "Media slot number must be between 1 and {}, got {}",
+                    max_allowed_number, a.number
                 ));
             }
 
             let path_buf = std::path::PathBuf::from(&a.path);
+            let ext = path_buf
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("")
+                .to_ascii_lowercase();
+            if !matches!(
+                ext.as_str(),
+                "jpg" | "jpeg" | "png" | "webp" | "gif" | "mp4" | "webm"
+            ) {
+                return Err(format!("File extension '{}' is not allowlisted", ext));
+            }
+
             let default_title = path_buf
                 .file_stem()
                 .and_then(|s| s.to_str())

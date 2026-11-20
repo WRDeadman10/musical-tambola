@@ -7,8 +7,9 @@ use crate::domain::media::{
 };
 use crate::errors::AppError;
 use crate::services::media_validation::{summarize_report, validate_slot};
-use rusqlite::Connection;
+use rusqlite::{params, Connection};
 use serde::Serialize;
+use std::path::Path;
 use std::sync::{Arc, MutexGuard};
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_dialog::DialogExt;
@@ -287,6 +288,28 @@ pub fn apply_media_assignments(
     MediaRepository::apply_assignments(&mut conn, &assignments).map_err(AppError::database_error)
 }
 
+fn cleanup_old_poster_if_unreferenced(conn: &Connection, old_path_str: Option<&str>) {
+    if let Some(old_path) = old_path_str {
+        let trimmed: &str = old_path.trim();
+        if trimmed.is_empty() {
+            return;
+        }
+        let count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM game_media_snapshots WHERE poster_path = ?1;",
+                params![trimmed],
+                |r| r.get(0),
+            )
+            .unwrap_or(0);
+        if count == 0 {
+            let p: &Path = Path::new(trimmed);
+            if p.exists() {
+                let _ = std::fs::remove_file(p);
+            }
+        }
+    }
+}
+
 #[tauri::command]
 pub fn save_media_poster(
     number: u8,
@@ -301,6 +324,33 @@ pub fn save_media_poster(
         ));
     }
 
+    if image_bytes.len() > 2 * 1024 * 1024 {
+        return Err(AppError::new(
+            "POSTER_TOO_LARGE",
+            format!(
+                "Poster size ({} bytes) exceeds maximum allowed limit of 2 MB",
+                image_bytes.len()
+            ),
+        ));
+    }
+
+    if image_bytes.len() < 3
+        || image_bytes[0] != 0xFF
+        || image_bytes[1] != 0xD8
+        || image_bytes[2] != 0xFF
+    {
+        return Err(AppError::new(
+            "POSTER_INVALID_JPEG",
+            "Poster must be a valid JPEG image (magic bytes FF D8 FF)",
+        ));
+    }
+
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(&image_bytes);
+    let hash_hex: String = format!("{:x}", hasher.finalize());
+    let sha8: &str = &hash_hex[0..8];
+
     let app_data_dir = app_handle
         .path()
         .app_data_dir()
@@ -310,20 +360,38 @@ pub fn save_media_poster(
         AppError::internal_error(format!("Failed to create posters directory: {}", e))
     })?;
 
-    let poster_file = posters_dir.join(format!("poster_{}.jpg", number));
+    let poster_file = posters_dir.join(format!("poster_{}_{}.jpg", number, sha8));
     std::fs::write(&poster_file, &image_bytes)
         .map_err(|e| AppError::internal_error(format!("Failed to write poster file: {}", e)))?;
 
     let poster_path_str: String = poster_file.to_string_lossy().to_string();
 
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
-    MediaRepository::save_poster(&conn, number, &poster_path_str).map_err(AppError::database_error)
+
+    let old_poster_path: Option<String> = conn
+        .query_row(
+            "SELECT poster_path FROM media_assets WHERE number = ?1;",
+            params![number],
+            |r| r.get(0),
+        )
+        .unwrap_or(None);
+
+    let result = MediaRepository::save_poster(&conn, number, &poster_path_str)
+        .map_err(AppError::database_error)?;
+
+    if let Some(old) = old_poster_path {
+        if old != poster_path_str {
+            cleanup_old_poster_if_unreferenced(&conn, Some(&old));
+        }
+    }
+
+    Ok(result)
 }
 
 #[tauri::command]
 pub fn clear_media_poster(
     number: u8,
-    app_handle: AppHandle,
+    _app_handle: AppHandle,
     state: State<'_, DbState>,
 ) -> Result<MediaSlot, AppError> {
     if !(1..=90).contains(&number) {
@@ -333,15 +401,17 @@ pub fn clear_media_poster(
         ));
     }
 
-    if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
-        let poster_file = app_data_dir
-            .join("posters")
-            .join(format!("poster_{}.jpg", number));
-        if poster_file.exists() {
-            let _ = std::fs::remove_file(&poster_file);
-        }
-    }
-
     let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+
+    let old_poster_path: Option<String> = conn
+        .query_row(
+            "SELECT poster_path FROM media_assets WHERE number = ?1;",
+            params![number],
+            |r| r.get(0),
+        )
+        .unwrap_or(None);
+
+    cleanup_old_poster_if_unreferenced(&conn, old_poster_path.as_deref());
+
     MediaRepository::clear_poster(&conn, number).map_err(AppError::database_error)
 }

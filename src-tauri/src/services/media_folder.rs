@@ -4,7 +4,10 @@ use crate::domain::media::{
 use crate::domain::random::{DeterministicRandomSource, OsRngSource, RandomSource};
 use std::collections::HashSet;
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
+
+pub const MAX_SCAN_FILES: usize = 5000;
 
 fn detect_media_type(ext: &str) -> Option<MediaType> {
     match ext.to_ascii_lowercase().as_str() {
@@ -12,6 +15,28 @@ fn detect_media_type(ext: &str) -> Option<MediaType> {
         "mp4" | "webm" => Some(MediaType::Video),
         _ => None,
     }
+}
+
+fn is_hidden_or_system(entry: &fs::DirEntry) -> bool {
+    let name = entry.file_name();
+    let name_str = name.to_string_lossy();
+    if name_str.starts_with('.') {
+        return true;
+    }
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        if let Ok(meta) = entry.metadata() {
+            const FILE_ATTRIBUTE_HIDDEN: u32 = 0x2;
+            const FILE_ATTRIBUTE_SYSTEM: u32 = 0x4;
+            if (meta.file_attributes() & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) != 0 {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 fn extract_slot_number(file_name: &str, max_count: u32) -> Option<u8> {
@@ -47,6 +72,7 @@ fn extract_slot_number(file_name: &str, max_count: u32) -> Option<u8> {
 
 fn collect_files_recursive(
     dir: &Path,
+    canonical_root: &Path,
     recursive: bool,
     list: &mut Vec<PathBuf>,
 ) -> Result<(), String> {
@@ -55,14 +81,38 @@ fn collect_files_recursive(
 
     for entry_res in entries {
         let entry = entry_res.map_err(|e| format!("Failed to read directory entry: {}", e))?;
-        let path = entry.path();
+        if is_hidden_or_system(&entry) {
+            continue;
+        }
 
+        let file_type = entry
+            .file_type()
+            .map_err(|e| format!("Failed to get file type: {}", e))?;
+        if file_type.is_symlink() {
+            continue;
+        }
+
+        let path = entry.path();
         if path.is_dir() {
             if recursive {
-                collect_files_recursive(&path, recursive, list)?;
+                if let Ok(canon_dir) = path.canonicalize() {
+                    if canon_dir.starts_with(canonical_root) {
+                        collect_files_recursive(&path, canonical_root, recursive, list)?;
+                    }
+                }
             }
         } else if path.is_file() {
-            list.push(path);
+            if list.len() >= MAX_SCAN_FILES {
+                return Err(format!(
+                    "Folder scan exceeded maximum file limit of {} files",
+                    MAX_SCAN_FILES
+                ));
+            }
+            if let Ok(canon_file) = path.canonicalize() {
+                if canon_file.starts_with(canonical_root) {
+                    list.push(path);
+                }
+            }
         }
     }
 
@@ -83,13 +133,42 @@ pub fn scan_media_folder(
         return Err(format!("Path is not a directory: {}", root_path.display()));
     }
 
+    let canonical_root = root_path
+        .canonicalize()
+        .map_err(|e| format!("Failed to canonicalize root directory: {}", e))?;
+
     let mut raw_paths: Vec<PathBuf> = Vec::new();
-    collect_files_recursive(root_path, recursive, &mut raw_paths)?;
+    collect_files_recursive(root_path, &canonical_root, recursive, &mut raw_paths)?;
 
     let mut files: Vec<ScannedMediaFile> = Vec::new();
     for p in raw_paths {
         let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("");
         if let Some(media_type) = detect_media_type(ext) {
+            let mut file = match fs::File::open(&p) {
+                Ok(f) => f,
+                Err(_) => continue,
+            };
+            let mut header = [0u8; 32];
+            let bytes_read = match file.read(&mut header) {
+                Ok(n) => n,
+                Err(_) => continue,
+            };
+            if bytes_read < 4 {
+                continue;
+            }
+
+            let sniffed =
+                crate::services::media_validation::sniff_magic_bytes(&header[..bytes_read]);
+            let is_valid = match (media_type, sniffed) {
+                (MediaType::Image, Some(fmt)) => fmt.is_image(),
+                (MediaType::Video, Some(fmt)) => fmt.is_video(),
+                _ => false,
+            };
+
+            if !is_valid {
+                continue;
+            }
+
             let file_name: String = p
                 .file_name()
                 .and_then(|n| n.to_str())
@@ -220,8 +299,26 @@ pub fn scan_media_folder(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
     use tempfile::tempdir;
+
+    fn create_valid_dummy_media(path: &Path) {
+        let ext: String = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+        let bytes: &[u8] = match ext.as_str() {
+            "jpg" | "jpeg" => &[
+                0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01,
+            ],
+            "png" => &[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
+            "mp4" => &[
+                0x00, 0x00, 0x00, 0x18, b'f', b't', b'y', b'p', b'm', b'p', b'4', b'2',
+            ],
+            _ => &[0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10],
+        };
+        fs::write(path, bytes).unwrap();
+    }
 
     #[test]
     fn test_extract_slot_number() {
@@ -238,11 +335,11 @@ mod tests {
         let dir = tempdir().unwrap();
         let path = dir.path();
 
-        File::create(path.join("01_intro.mp4")).unwrap();
-        File::create(path.join("03_song.jpg")).unwrap();
-        File::create(path.join("03_duplicate.png")).unwrap();
-        File::create(path.join("extra_unmatched.jpg")).unwrap();
-        File::create(path.join("readme.txt")).unwrap();
+        create_valid_dummy_media(&path.join("01_intro.mp4"));
+        create_valid_dummy_media(&path.join("03_song.jpg"));
+        create_valid_dummy_media(&path.join("03_duplicate.png"));
+        create_valid_dummy_media(&path.join("extra_unmatched.jpg"));
+        fs::write(path.join("readme.txt"), b"Not a media file").unwrap();
 
         let res = scan_media_folder(path, MediaFolderOrder::Number, false, None, 5).unwrap();
 
@@ -259,9 +356,9 @@ mod tests {
         let dir = tempdir().unwrap();
         let path = dir.path();
 
-        File::create(path.join("alpha.jpg")).unwrap();
-        File::create(path.join("beta.mp4")).unwrap();
-        File::create(path.join("gamma.png")).unwrap();
+        create_valid_dummy_media(&path.join("alpha.jpg"));
+        create_valid_dummy_media(&path.join("beta.mp4"));
+        create_valid_dummy_media(&path.join("gamma.png"));
 
         let asc_res = scan_media_folder(path, MediaFolderOrder::Asc, false, None, 2).unwrap();
         assert_eq!(asc_res.assignments.len(), 2);
@@ -285,10 +382,10 @@ mod tests {
         let dir = tempdir().unwrap();
         let path = dir.path();
 
-        File::create(path.join("a.jpg")).unwrap();
-        File::create(path.join("b.jpg")).unwrap();
-        File::create(path.join("c.jpg")).unwrap();
-        File::create(path.join("d.jpg")).unwrap();
+        create_valid_dummy_media(&path.join("a.jpg"));
+        create_valid_dummy_media(&path.join("b.jpg"));
+        create_valid_dummy_media(&path.join("c.jpg"));
+        create_valid_dummy_media(&path.join("d.jpg"));
 
         let res1 =
             scan_media_folder(path, MediaFolderOrder::Random, false, Some(12345), 4).unwrap();
@@ -305,8 +402,8 @@ mod tests {
         let sub = path.join("subdir");
         fs::create_dir(&sub).unwrap();
 
-        File::create(path.join("01.jpg")).unwrap();
-        File::create(sub.join("02.mp4")).unwrap();
+        create_valid_dummy_media(&path.join("01.jpg"));
+        create_valid_dummy_media(&sub.join("02.mp4"));
 
         let non_rec = scan_media_folder(path, MediaFolderOrder::Number, false, None, 2).unwrap();
         assert_eq!(non_rec.assignments.len(), 1);
@@ -314,5 +411,39 @@ mod tests {
         let rec = scan_media_folder(path, MediaFolderOrder::Number, true, None, 2).unwrap();
         assert_eq!(rec.assignments.len(), 2);
         assert_eq!(rec.missing_numbers.len(), 0);
+    }
+
+    #[test]
+    fn test_scan_media_folder_rejects_corrupted_magic_bytes() {
+        let dir = tempdir().unwrap();
+        let path = dir.path();
+
+        // Valid image
+        create_valid_dummy_media(&path.join("01_real.jpg"));
+        // Fake image with text content
+        fs::write(
+            path.join("02_fake.jpg"),
+            b"This is just plain text posing as jpeg",
+        )
+        .unwrap();
+
+        let res = scan_media_folder(path, MediaFolderOrder::Number, false, None, 2).unwrap();
+        assert_eq!(res.files.len(), 1);
+        assert_eq!(res.assignments.len(), 1);
+        assert_eq!(res.assignments[0].number, 1);
+    }
+
+    #[test]
+    fn test_scan_media_folder_skips_hidden_files() {
+        let dir = tempdir().unwrap();
+        let path = dir.path();
+
+        create_valid_dummy_media(&path.join("01_visible.jpg"));
+        create_valid_dummy_media(&path.join(".02_hidden.jpg"));
+
+        let res = scan_media_folder(path, MediaFolderOrder::Number, false, None, 2).unwrap();
+        assert_eq!(res.files.len(), 1);
+        assert_eq!(res.assignments.len(), 1);
+        assert_eq!(res.assignments[0].number, 1);
     }
 }
