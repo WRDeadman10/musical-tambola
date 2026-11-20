@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { MediaLibraryPage, mediaFormSchema } from "../features/media-library/MediaLibraryPage";
+import { MediaTable } from "../features/media-library/MediaTable";
 import { MediaSlot } from "../types/media";
 import { useAppStore } from "../stores/appStore";
 
@@ -33,6 +34,46 @@ function createSlot(number: number, overrides: Partial<MediaSlot> = {}): MediaSl
 }
 
 describe("MediaLibraryPage", () => {
+    it("renders localized validation codes and falls back to legacy messages", () => {
+        const translate = (key: string): string => {
+            if (key === "errors.MEDIA_REMOTE_HTTP_STATUS") {
+                return "Remote server returned HTTP status {{status}}.";
+            }
+            return key;
+        };
+
+        render(
+            <MediaTable
+                slots={[
+                    createSlot(1, {
+                        configured: true,
+                        validationStatus: "INVALID",
+                        validationMessage: "Legacy validation message",
+                        validationCode: "MEDIA_REMOTE_HTTP_STATUS",
+                        validationParams: { status: 404 },
+                    }),
+                    createSlot(2, {
+                        configured: true,
+                        validationStatus: "INVALID",
+                        validationMessage: "Legacy validation message",
+                    }),
+                ]}
+                highlightedNumber={null}
+                isLoading={false}
+                translate={translate}
+                language="en"
+                onEdit={vi.fn()}
+                onPreview={vi.fn()}
+                onValidate={vi.fn()}
+                onRemove={vi.fn()}
+                setRowRef={vi.fn()}
+            />,
+        );
+
+        expect(screen.getByText("Remote server returned HTTP status 404.")).toBeTruthy();
+        expect(screen.getByText("Legacy validation message")).toBeTruthy();
+    });
+
     it("validates remote URLs and absolute Windows paths", () => {
         const invalidRemote = mediaFormSchema.safeParse({
             number: 1,
