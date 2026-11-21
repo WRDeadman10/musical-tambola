@@ -71,6 +71,7 @@ const ALL_COMMANDS: &[&str] = &[
     "generate_media_posters",
     "get_game_win_forecast",
     "reset_all_data",
+    "reset_app_settings",
 ];
 
 fn main() {

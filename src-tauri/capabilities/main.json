@@ -78,6 +78,7 @@
     "allow-download-ffmpeg",
     "allow-generate-media-posters",
     "allow-get-game-win-forecast",
-    "allow-reset-all-data"
+    "allow-reset-all-data",
+    "allow-reset-app-settings"
   ]
 }

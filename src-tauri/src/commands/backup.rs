@@ -95,9 +95,11 @@ pub fn reset_all_data(
 
     let backup_dto: BackupResultDto = create_backup_archive_in_dir(None, &app_data_dir, &conn)?;
 
-    // 2. Wipe all tables safely in a single transaction
+    // 2. Wipe all tables safely in a single transaction with foreign keys off
+    conn.execute_batch("PRAGMA foreign_keys = OFF;")
+        .map_err(AppError::database_error)?;
     conn.execute_batch(
-        "PRAGMA foreign_keys = OFF;
+        "BEGIN IMMEDIATE;
          DELETE FROM claims;
          DELETE FROM lucky_draw_winners;
          DELETE FROM lucky_draws;
@@ -112,13 +114,98 @@ pub fn reset_all_data(
          DELETE FROM schemes;
          DELETE FROM app_settings;
          DELETE FROM schema_migrations;
-         PRAGMA foreign_keys = ON;",
+         COMMIT;",
     )
-    .map_err(AppError::database_error)?;
+    .map_err(|e| {
+        let _ = conn.execute_batch("ROLLBACK;");
+        let _ = conn.execute_batch("PRAGMA foreign_keys = ON;");
+        AppError::database_error(e)
+    })?;
+    conn.execute_batch("PRAGMA foreign_keys = ON;")
+        .map_err(AppError::database_error)?;
 
-    // 3. Re-run migrations fresh to seed default schemes and initial baseline schema
+    // 3. Delete poster files on disk (data/posters)
+    let posters_dir: std::path::PathBuf = app_data_dir.join("data").join("posters");
+    if posters_dir.exists() {
+        let _ = std::fs::remove_dir_all(&posters_dir);
+    }
+
+    // 4. Re-run migrations fresh to seed default schemes and initial baseline schema
     crate::db::migrations::run_migrations(&conn).map_err(|e: String| {
         AppError::internal_error(format!("Failed to re-run migrations: {}", e))
+    })?;
+
+    // Clear unlocked PIN session
+    pin_state.clear_session();
+
+    Ok(backup_dto)
+}
+
+#[tauri::command]
+pub fn reset_app_settings(
+    confirm: String,
+    pin: Option<String>,
+    window: Window,
+    app: AppHandle,
+    state: State<'_, DbState>,
+    pin_state: State<'_, AdminPinState>,
+) -> Result<BackupResultDto, AppError> {
+    crate::errors::require_main_window(&window)?;
+
+    if confirm.trim() != "RESET_APP_SETTINGS" {
+        return Err(AppError::new(
+            "RESET_SETTINGS_CONFIRM_REQUIRED",
+            "Confirmation text 'RESET_APP_SETTINGS' is required to perform settings reset",
+        ));
+    }
+
+    let conn: std::sync::MutexGuard<'_, rusqlite::Connection> = state
+        .conn
+        .lock()
+        .map_err(|_| AppError::new("LOCK_ERROR", "Failed to acquire database lock"))?;
+
+    // Check PIN requirement: if admin PIN is configured, verify the passed PIN or existing unlocked session
+    let pin_hash: Option<String> = conn
+        .query_row(
+            "SELECT value FROM app_settings WHERE key = 'admin_pin_hash';",
+            [],
+            |r: &rusqlite::Row<'_>| r.get(0),
+        )
+        .ok()
+        .filter(|s: &String| !s.trim().is_empty());
+
+    if let Some(ref stored_hash) = pin_hash {
+        let is_session_unlocked: bool = pin_state.is_session_valid();
+        if !is_session_unlocked {
+            pin_state.check_rate_limit()?;
+            let provided_pin: &str = pin.as_deref().unwrap_or("");
+            if !crate::services::admin_pin::verify_pin_hash(provided_pin, stored_hash)? {
+                pin_state.record_failure();
+                return Err(AppError::new(
+                    "ADMIN_PIN_INVALID",
+                    "Admin PIN is incorrect for settings reset",
+                ));
+            }
+        }
+    }
+
+    // 1. Create an automatic pre-reset backup in app_data_dir/backups
+    let app_data_dir: std::path::PathBuf =
+        app.path().app_data_dir().map_err(|e: tauri::Error| {
+            AppError::internal_error(format!("Failed to get app data dir: {}", e))
+        })?;
+
+    let backup_dto: BackupResultDto = create_backup_archive_in_dir(None, &app_data_dir, &conn)?;
+
+    // 2. Clear app_settings inside a transaction
+    conn.execute_batch(
+        "BEGIN IMMEDIATE;
+         DELETE FROM app_settings;
+         COMMIT;",
+    )
+    .map_err(|e| {
+        let _ = conn.execute_batch("ROLLBACK;");
+        AppError::database_error(e)
     })?;
 
     // Clear unlocked PIN session

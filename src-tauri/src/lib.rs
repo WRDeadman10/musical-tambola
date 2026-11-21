@@ -7,7 +7,7 @@ pub mod smoke;
 
 use commands::admin_pin::{clear_admin_pin, get_admin_pin_status, set_admin_pin, verify_admin_pin};
 use commands::app_info::{clear_idle_poster, get_app_info, set_app_setting, upload_idle_poster};
-use commands::backup::{create_backup, reset_all_data, restore_backup};
+use commands::backup::{create_backup, reset_all_data, reset_app_settings, restore_backup};
 use commands::claim::{list_game_claims, submit_claim};
 use commands::game::{
     create_game, draw_next, end_game, get_active_game, get_game, get_game_format,
@@ -139,6 +139,7 @@ pub fn run() {
             create_backup,
             restore_backup,
             reset_all_data,
+            reset_app_settings,
             set_admin_pin,
             verify_admin_pin,
             clear_admin_pin,
