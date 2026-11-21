@@ -219,8 +219,8 @@ describe("chests card", () => {
         for (const call of api.presentationCommand.mock.calls) {
             if (call[0] === "CHEST_REVEAL" && (call[1] as { win: boolean }).win) wins += 1;
         }
-        expect(wins).toBeLessThanOrEqual(2);
-        expect(screen.getByText(/Round finished|Pick a chest/)).toBeTruthy();
+        expect(wins).toBe(2);
+        expect(document.body.textContent).toContain("Round finished.");
     });
 
     it("reveal the rest is silent and the winners only leave the host at that moment", () => {
