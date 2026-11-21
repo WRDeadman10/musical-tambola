@@ -1,8 +1,11 @@
 pub mod claims;
+pub mod draw_order_helper;
 pub mod format;
 pub mod game;
 pub mod history;
 pub mod media;
+pub mod poster_path_helper;
 pub mod random;
 pub mod schemes;
 pub mod tambola;
+pub mod ticket_range_parser;

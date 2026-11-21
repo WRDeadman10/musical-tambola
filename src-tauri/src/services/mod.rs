@@ -1,6 +1,8 @@
 pub mod admin_pin;
 pub mod backup;
+pub mod download_size_formatter;
 pub mod ffmpeg;
+pub mod ffmpeg_version_parser;
 pub mod media_folder;
 pub mod media_protocol;
 pub mod media_validation;
