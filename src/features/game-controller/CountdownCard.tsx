@@ -47,20 +47,21 @@ export function CountdownCard({
     }, [remaining, running, duration]);
 
     return (
-        <section className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
-            <div className="flex items-center justify-between">
-                <h2 className="font-semibold">{translate("game.countdown")}</h2>
-                <span
-                    className={
-                        remaining < 5 ? "text-2xl font-bold text-red-400" : "text-2xl font-bold"
-                    }
-                >
-                    {remaining} {translate("hostPanel.seconds")}
-                </span>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
+        <section
+            aria-label={translate("game.countdown")}
+            className="flex items-center gap-3 rounded-2xl border border-zinc-700/70 bg-zinc-900 px-4 py-2"
+        >
+            <span
+                className={`min-w-[5.5rem] text-3xl font-extrabold tabular-nums ${
+                    remaining < 5 ? "text-red-400" : "text-white"
+                }`}
+            >
+                {remaining} {translate("hostPanel.seconds")}
+            </span>
+            <div className="flex gap-1">
                 {[15, 30, 45, 60].map((value: number) => (
                     <Button
+                        className="h-9 px-3 text-xs"
                         key={value}
                         variant={duration === value ? "default" : "outline"}
                         onClick={() => {
@@ -72,25 +73,27 @@ export function CountdownCard({
                         {value} {translate("hostPanel.seconds")}
                     </Button>
                 ))}
-                <Button
-                    variant="outline"
-                    onClick={() => {
-                        if (remaining <= 0) setRemaining(duration);
-                        setRunning((value: boolean) => !value);
-                    }}
-                >
-                    {running ? translate("game.stopTimer") : translate("game.startTimer")}
-                </Button>
-                <Button
-                    variant="ghost"
-                    onClick={() => {
-                        setRemaining(duration);
-                        setRunning(false);
-                    }}
-                >
-                    {translate("game.resetTimer")}
-                </Button>
             </div>
+            <Button
+                className="h-9 px-4"
+                variant="outline"
+                onClick={() => {
+                    if (remaining <= 0) setRemaining(duration);
+                    setRunning((value: boolean) => !value);
+                }}
+            >
+                {running ? translate("game.stopTimer") : translate("game.startTimer")}
+            </Button>
+            <Button
+                className="h-9 px-3"
+                variant="ghost"
+                onClick={() => {
+                    setRemaining(duration);
+                    setRunning(false);
+                }}
+            >
+                {translate("game.resetTimer")}
+            </Button>
         </section>
     );
 }

@@ -5,6 +5,8 @@
         "edition": "v{{version}} • ડેસ્કટોપ આવૃત્તિ"
     },
     "nav": {
+        "expand": "મેનુ ખોલો",
+        "collapse": "મેનુ નાનું કરો",
         "dashboard": "ડેશબોર્ડ",
         "mediaLibrary": "મીડિયા લાયબ્રેરી",
         "ticketGenerator": "ટિકિટ જનરેટર",
@@ -495,6 +497,11 @@
         "openClaimDesk": "વિગતવાર ક્લેમ ડેસ્ક ખોલો"
     },
     "hostPanel": {
+        "tabs": "હોસ્ટ સાધનો",
+        "tabClaim": "ક્લેમ",
+        "tabForecast": "ફોરકાસ્ટ",
+        "tabProjector": "પ્રોજેક્ટર",
+        "tabLucky": "લકી ડ્રો",
         "gameFinished": "ગેમ પૂરી થઈ",
         "gameFinishedHint": "બધા નંબર કાઢી લેવાયા છે. વિજેતાઓ વિજેતા ઇતિહાસમાં સચવાયા છે.",
         "viewWinners": "વિજેતા જુઓ",

@@ -31,30 +31,44 @@ export function AudiencePreview({
     };
     return (
         <section className="flex h-full min-h-96 flex-col gap-3">
-            <h2 className="text-lg font-semibold">{translate("hostPanel.audiencePreview")}</h2>
-            <MediaStage
-                item={state.current}
-                autoplay={autoplay}
-                volume={1}
-                translate={translate}
-                onTransport={sendTransport}
-                silent
-                fill
-            />
-            <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={toggleAnswer}>
-                    {showAnswer
-                        ? translate("hostPanel.hideAnswer")
-                        : translate("hostPanel.showAnswer")}
-                </Button>
-                <Button variant="outline" onClick={toggleNumber}>
-                    {translate("hostPanel.number")}
-                </Button>
+            <div className="relative flex min-h-0 flex-1 flex-col">
+                <span className="absolute left-3 top-3 z-10 rounded-full border border-zinc-700 bg-zinc-950/80 px-3 py-1 text-xs font-medium text-zinc-300 backdrop-blur">
+                    {translate("hostPanel.audiencePreview")}
+                </span>
+                {state.current !== null && (
+                    <span
+                        className="absolute right-3 top-3 z-10 grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-yellow-100 via-gold to-amber-600 text-3xl font-extrabold text-zinc-950 shadow-[0_8px_28px_rgb(255_200_87/0.45)]"
+                        data-testid="stage-ball"
+                    >
+                        {state.current.number}
+                    </span>
+                )}
+                <MediaStage
+                    item={state.current}
+                    autoplay={autoplay}
+                    volume={1}
+                    translate={translate}
+                    onTransport={sendTransport}
+                    silent
+                    fill
+                />
             </div>
-            <p className="text-xl font-semibold">
-                {showAnswer ? (state.current?.title ?? translate("game.noCurrent")) : "•••"}
-                {showNumber && state.current ? ` #${state.current.number}` : ""}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-700/70 bg-zinc-900 px-4 py-3">
+                <p className="text-2xl font-bold">
+                    {showAnswer ? (state.current?.title ?? translate("game.noCurrent")) : "•••"}
+                    {showNumber && state.current ? ` #${state.current.number}` : ""}
+                </p>
+                <div className="flex gap-2">
+                    <Button onClick={toggleAnswer}>
+                        {showAnswer
+                            ? translate("hostPanel.hideAnswer")
+                            : translate("hostPanel.showAnswer")}
+                    </Button>
+                    <Button variant="outline" onClick={toggleNumber}>
+                        {translate("hostPanel.number")}
+                    </Button>
+                </div>
+            </div>
         </section>
     );
 }

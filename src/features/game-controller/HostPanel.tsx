@@ -17,8 +17,11 @@ import { StatusBar } from "./StatusBar";
 import { useHostShortcuts } from "./useHostShortcuts";
 import { WinnersList } from "./WinnersList";
 import { LuckyDrawCard } from "./LuckyDrawCard";
+import { Tabs } from "../../components/ui/tabs";
 import { ForecastCard } from "./ForecastCard";
 import { useSoundEffects } from "../presentation/useSoundEffects";
+
+type HostTab = "claim" | "forecast" | "projector" | "lucky";
 
 export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.Element {
     const translate = useAppStore((state) => state.t);
@@ -37,6 +40,7 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
     const resetForNewCall: () => void = useHostPresentation((state) => state.resetForNewCall);
     const projectorConnected: boolean = useProjectorStatus();
     const [presentMode, setPresentMode] = useState<boolean>(false);
+    const [tab, setTab] = useState<HostTab>("claim");
     const [acceptedClaim, setAcceptedClaim] = useState<{
         schemeId: number;
         schemeName: string;
@@ -110,8 +114,7 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
         onNumber: toggleNumber,
         onClaim: focusClaim,
         onHelp: () => setHelpOpen(true),
-        onLuckyDraw: () =>
-            document.getElementById("lucky-draw")?.scrollIntoView({ behavior: "smooth" }),
+        onLuckyDraw: () => setTab("lucky"),
         dialogOpen: helpOpen,
     });
     if (model.state === null) return <div className="p-8">{translate("claims.noActiveGame")}</div>;
@@ -187,64 +190,83 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                     </div>
                 </section>
             )}
-            <div className="grid flex-1 gap-4 xl:min-h-0 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
+            <div className="grid flex-1 gap-4 xl:min-h-0 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
                 <div className="xl:min-h-0">
                     <AudiencePreview state={model.state} translate={translate} />
                 </div>
-                <div className="space-y-4 xl:min-h-0 xl:overflow-y-auto">
-                    <DrawControls
-                        status={model.state.game.status}
-                        busy={model.busy}
-                        endRequested={model.endRequested}
-                        translate={translate}
-                        onNext={() => void model.next()}
-                        onPause={togglePause}
-                        onEnd={() => model.setEndRequested(true)}
-                        onCancelEnd={() => model.setEndRequested(false)}
-                        onConfirmEnd={() => void model.end()}
+                <div className="flex flex-col gap-3 xl:min-h-0">
+                    <Tabs
+                        active={tab}
+                        label={translate("hostPanel.tabs")}
+                        onChange={(id: string) => setTab(id as HostTab)}
+                        tabs={[
+                            { id: "claim", label: translate("hostPanel.tabClaim") },
+                            { id: "forecast", label: translate("hostPanel.tabForecast") },
+                            { id: "projector", label: translate("hostPanel.tabProjector") },
+                            { id: "lucky", label: translate("hostPanel.tabLucky") },
+                        ]}
                     />
-                    <CountdownCard
-                        translate={translate}
-                        onChange={(seconds: number, countdownState: string): void => {
-                            Promise.resolve(
-                                presentationCommand("COUNTDOWN", {
-                                    seconds,
-                                    state: countdownState,
-                                }),
-                            ).catch((): void => undefined);
-                        }}
-                    />
-                    <WinnersList schemes={model.state.schemes} translate={translate} />
-                    <div id="lucky-draw">
-                        <LuckyDrawCard />
+                    <div className="space-y-4 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
+                        <div className={tab === "claim" ? "space-y-4" : "hidden"}>
+                            <QuickClaim
+                                onFocusRef={claimInput}
+                                onAccepted={(result) =>
+                                    setAcceptedClaim({
+                                        schemeId: result.schemeId,
+                                        schemeName: result.schemeName,
+                                        ticketCode: result.ticketCode,
+                                    })
+                                }
+                                onRejected={() => playSound("rejected")}
+                            />
+                            <WinnersList schemes={model.state.schemes} translate={translate} />
+                            <button
+                                className="text-sm text-indigo-300 underline"
+                                onClick={() => navigate("/claims")}
+                            >
+                                {translate("game.claimDesk")}
+                            </button>
+                        </div>
+                        <div className={tab === "forecast" ? "" : "hidden"}>
+                            <ForecastCard
+                                currentPosition={model.state.game.currentDrawPosition}
+                                gameId={model.state.game.id}
+                            />
+                        </div>
+                        <div className={tab === "projector" ? "" : "hidden"}>
+                            <HostProjectorCard state={model.state} acceptedClaim={acceptedClaim} />
+                        </div>
+                        <div className={tab === "lucky" ? "" : "hidden"} id="lucky-draw">
+                            <LuckyDrawCard />
+                        </div>
                     </div>
                 </div>
-                <div className="space-y-4 xl:min-h-0 xl:overflow-y-auto">
-                    <QuickClaim
-                        onFocusRef={claimInput}
-                        onAccepted={(result) =>
-                            setAcceptedClaim({
-                                schemeId: result.schemeId,
-                                schemeName: result.schemeName,
-                                ticketCode: result.ticketCode,
-                            })
-                        }
-                        onRejected={() => playSound("rejected")}
-                    />
-                    <ForecastCard
-                        currentPosition={model.state.game.currentDrawPosition}
-                        gameId={model.state.game.id}
-                    />
-                    <HostProjectorCard state={model.state} acceptedClaim={acceptedClaim} />
-                    <button
-                        className="text-sm text-indigo-300 underline"
-                        onClick={() => navigate("/claims")}
-                    >
-                        {translate("game.claimDesk")}
-                    </button>
-                </div>
             </div>
-            <SongList items={model.state.history} translate={translate} />
+            <footer className="relative flex flex-wrap items-center gap-4 rounded-2xl border border-zinc-700/70 bg-zinc-900 px-4 py-3">
+                <DrawControls
+                    status={model.state.game.status}
+                    busy={model.busy}
+                    endRequested={model.endRequested}
+                    translate={translate}
+                    onNext={() => void model.next()}
+                    onPause={togglePause}
+                    onEnd={() => model.setEndRequested(true)}
+                    onCancelEnd={() => model.setEndRequested(false)}
+                    onConfirmEnd={() => void model.end()}
+                />
+                <CountdownCard
+                    translate={translate}
+                    onChange={(seconds: number, countdownState: string): void => {
+                        Promise.resolve(
+                            presentationCommand("COUNTDOWN", {
+                                seconds,
+                                state: countdownState,
+                            }),
+                        ).catch((): void => undefined);
+                    }}
+                />
+                <SongList items={model.state.history} translate={translate} />
+            </footer>
             {model.error && <p className="text-red-400">{model.error}</p>}
             <ShortcutHelp
                 open={helpOpen}

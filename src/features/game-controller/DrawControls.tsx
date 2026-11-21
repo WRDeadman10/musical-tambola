@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "../../components/ui/button";
 import { GameStatus } from "../../types/game";
 
+/** The always-visible action group in the bottom bar of the host screen. */
 export function DrawControls({
     status,
     busy,
@@ -24,35 +25,37 @@ export function DrawControls({
     onConfirmEnd: () => void;
 }): React.JSX.Element {
     return (
-        <section className="space-y-3 text-center">
+        <section className="relative flex items-center gap-3">
             <Button
-                className="h-20 w-full text-3xl"
+                className="h-14 px-10 text-lg"
                 onClick={onNext}
                 disabled={busy || status !== "ACTIVE"}
             >
                 {translate("game.next")}
             </Button>
-            <p className="text-sm text-zinc-400">{translate("game.nextHint")}</p>
-            <div className="flex justify-center gap-2">
-                <Button
-                    variant="outline"
-                    onClick={onPause}
-                    disabled={busy || status === "COMPLETED"}
-                >
-                    {status === "PAUSED" ? translate("game.resume") : translate("game.pause")}
-                </Button>
-                <Button
-                    variant="destructive"
-                    onClick={onEnd}
-                    disabled={busy || status === "COMPLETED"}
-                >
-                    {translate("game.end")}
-                </Button>
-            </div>
+            <span className="hidden text-xs text-zinc-500 2xl:inline">
+                {translate("game.nextHint")}
+            </span>
+            <Button
+                className="h-14 px-6"
+                variant="outline"
+                onClick={onPause}
+                disabled={busy || status === "COMPLETED"}
+            >
+                {status === "PAUSED" ? translate("game.resume") : translate("game.pause")}
+            </Button>
+            <Button
+                className="h-14 px-6"
+                variant="destructive"
+                onClick={onEnd}
+                disabled={busy || status === "COMPLETED"}
+            >
+                {translate("game.end")}
+            </Button>
             {endRequested && (
-                <div className="rounded-lg border border-red-900 bg-red-950/40 p-3 text-left">
+                <div className="absolute bottom-full left-0 z-20 mb-3 w-96 rounded-2xl border border-red-800 bg-zinc-900 p-4 text-left shadow-[var(--shadow-card)]">
                     <p>{translate("game.endConfirm")}</p>
-                    <div className="mt-2 flex gap-2">
+                    <div className="mt-3 flex gap-2">
                         <Button variant="outline" onClick={onCancelEnd}>
                             {translate("common.cancel")}
                         </Button>

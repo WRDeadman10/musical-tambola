@@ -231,7 +231,7 @@ describe("game controller", () => {
     it("host panel shows the song list empty state", async () => {
         vi.mocked(gameApi.getActiveGame).mockResolvedValue(game);
         renderPage();
-        expect(await screen.findByText("Song list")).toBeTruthy();
+        expect(await screen.findByLabelText("Song list")).toBeTruthy();
         expect(screen.getByText("No songs drawn yet.")).toBeTruthy();
     });
 
@@ -308,7 +308,7 @@ describe("game controller", () => {
         );
         fireEvent.click(screen.getByRole("button", { name: /start timer/i }));
         act(() => vi.advanceTimersByTime(2000));
-        expect(screen.getByRole("heading").parentElement?.textContent).toContain("28 seconds");
+        expect(screen.getByLabelText("Countdown").textContent).toContain("28 seconds");
         expect(gameApi.drawNext).not.toHaveBeenCalled();
         vi.useRealTimers();
     });

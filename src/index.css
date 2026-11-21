@@ -1,5 +1,33 @@
 @import "tailwindcss";
 
+/*
+ * v1.0.3 design tokens. The neutral and accent scales are re-pointed here so every screen picks up
+ * the new surfaces at once; components then add elevation, glow and motion on top of them.
+ * Roles: 950 page, 900 raised surface, 800 hover/secondary, 700 border, 500/400/300 text steps.
+ */
+@theme {
+    --color-zinc-50: #f6f6fc;
+    --color-zinc-100: #ececf8;
+    --color-zinc-200: #d4d4e6;
+    --color-zinc-300: #b4b4cc;
+    --color-zinc-400: #9a9ab6;
+    --color-zinc-500: #7c7c9a;
+    --color-zinc-600: #454566;
+    --color-zinc-700: #2a2a45;
+    --color-zinc-800: #20203a;
+    --color-zinc-900: #11111c;
+    --color-zinc-950: #0a0a12;
+    --color-indigo-300: #b9b0ff;
+    --color-indigo-400: #9d90ff;
+    --color-indigo-500: #7c6cff;
+    --color-indigo-600: #6a58f2;
+    --color-indigo-700: #5645d6;
+    --color-gold: #ffc857;
+    --radius-card: 1rem;
+    --shadow-card: 0 10px 30px rgb(0 0 0 / 0.35);
+    --shadow-glow: 0 0 0 1px rgb(124 108 255 / 0.5), 0 8px 32px rgb(124 108 255 / 0.28);
+}
+
 @font-face {
     font-family: "Noto Sans Gujarati";
     src: url("./assets/fonts/NotoSansGujarati-Regular.woff2") format("woff2");
@@ -23,7 +51,7 @@
 
     body {
         font-family: var(--font-gujarati);
-        background-color: #09090b;
+        background-color: #0a0a12;
         color: #f4f4f5;
         margin: 0;
         padding: 0;
@@ -49,6 +77,32 @@
 
     textarea {
         min-height: 5rem;
+    }
+
+    /* Plain buttons that carry no classes get the outline button look. */
+    button:not([class]) {
+        min-height: 2.5rem;
+        border: 1px solid var(--color-zinc-700);
+        border-radius: 0.75rem;
+        background-color: rgb(17 17 28 / 0.6);
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--color-zinc-100);
+        cursor: pointer;
+        transition:
+            background-color 150ms,
+            border-color 150ms;
+    }
+
+    button:not([class]):hover {
+        border-color: var(--color-zinc-600);
+        background-color: var(--color-zinc-800);
+    }
+
+    button:not([class]):disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 
     input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,

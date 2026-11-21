@@ -5,6 +5,8 @@
         "edition": "v{{version}} • Desktop Edition"
     },
     "nav": {
+        "expand": "Expand menu",
+        "collapse": "Collapse menu",
         "dashboard": "Dashboard",
         "mediaLibrary": "Media Library",
         "ticketGenerator": "Ticket Generator",
@@ -495,6 +497,11 @@
         "openClaimDesk": "Open detailed Claim Desk"
     },
     "hostPanel": {
+        "tabs": "Host tools",
+        "tabClaim": "Claim",
+        "tabForecast": "Forecast",
+        "tabProjector": "Projector",
+        "tabLucky": "Lucky draw",
         "gameFinished": "Game finished",
         "gameFinishedHint": "Every number has been drawn. Winners are saved in Winner History.",
         "viewWinners": "View winners",
