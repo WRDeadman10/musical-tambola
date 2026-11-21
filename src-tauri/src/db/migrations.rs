@@ -623,17 +623,25 @@ mod tests {
 
         // 4. Assert ticket codes are cleanly backfilled to simple numbers
         let t1_code: String = conn
-            .query_row("SELECT ticket_code FROM tickets WHERE id = 1;", [], |r| r.get(0))
+            .query_row("SELECT ticket_code FROM tickets WHERE id = 1;", [], |r| {
+                r.get(0)
+            })
             .unwrap();
         assert_eq!(t1_code, "1");
 
         let t2_code: String = conn
-            .query_row("SELECT ticket_code FROM tickets WHERE id = 2;", [], |r| r.get(0))
+            .query_row("SELECT ticket_code FROM tickets WHERE id = 2;", [], |r| {
+                r.get(0)
+            })
             .unwrap();
         assert_eq!(t2_code, "42");
 
         let claim_code: String = conn
-            .query_row("SELECT ticket_code_submitted FROM claims WHERE id = 1;", [], |r| r.get(0))
+            .query_row(
+                "SELECT ticket_code_submitted FROM claims WHERE id = 1;",
+                [],
+                |r| r.get(0),
+            )
             .unwrap();
         assert_eq!(claim_code, "42");
     }

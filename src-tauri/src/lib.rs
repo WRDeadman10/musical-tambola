@@ -7,11 +7,12 @@ pub mod smoke;
 
 use commands::admin_pin::{clear_admin_pin, get_admin_pin_status, set_admin_pin, verify_admin_pin};
 use commands::app_info::{clear_idle_poster, get_app_info, set_app_setting, upload_idle_poster};
-use commands::backup::{create_backup, restore_backup};
+use commands::backup::{create_backup, reset_all_data, restore_backup};
 use commands::claim::{list_game_claims, submit_claim};
 use commands::game::{
-    create_game, draw_next, end_game, get_active_game, get_game, get_game_format, list_games,
-    pause_game, preflight_media, resume_game, set_fullscreen, set_game_format,
+    create_game, draw_next, end_game, get_active_game, get_game, get_game_format,
+    get_game_win_forecast, list_games, pause_game, preflight_media, resume_game, set_fullscreen,
+    set_game_format,
 };
 use commands::history::{get_dashboard_stats, list_claim_history, list_winners};
 use commands::lucky_draw::{create_lucky_draw, draw_lucky_winner, list_lucky_draws};
@@ -137,10 +138,12 @@ pub fn run() {
             clear_idle_poster,
             create_backup,
             restore_backup,
+            reset_all_data,
             set_admin_pin,
             verify_admin_pin,
             clear_admin_pin,
             get_admin_pin_status,
+            get_game_win_forecast,
             preview_song_title_import,
             apply_song_title_import,
             get_ffmpeg_status,

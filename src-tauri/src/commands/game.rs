@@ -5,7 +5,9 @@ use crate::domain::format::{GameFormat, GameFormatConfig, SetGameFormatInput};
 use crate::domain::game::{GameState, GameSummary};
 use crate::domain::media::MediaValidationReport;
 use crate::domain::random::OsRngSource;
+use crate::domain::win_forecast::GameWinForecastDto;
 use crate::errors::AppError;
+use crate::services::win_forecast::WinForecastService;
 use rusqlite::{params, Connection};
 use std::sync::MutexGuard;
 use tauri::{AppHandle, Emitter, Manager, State, Window};
@@ -434,4 +436,18 @@ pub fn set_game_format(
         rows: input.format.rows(),
         cols: input.format.cols(),
     })
+}
+
+#[tauri::command]
+pub fn get_game_win_forecast(
+    game_id: i64,
+    state: State<'_, DbState>,
+) -> Result<GameWinForecastDto, AppError> {
+    let conn: MutexGuard<'_, Connection> = state
+        .conn
+        .lock()
+        .map_err(|_| AppError::new("LOCK_ERROR", "Failed to acquire database lock"))?;
+
+    WinForecastService::get_game_win_forecast(&conn, game_id)
+        .map_err(|e| AppError::new("WIN_FORECAST_ERROR", e))
 }

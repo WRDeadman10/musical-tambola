@@ -9,3 +9,4 @@ pub mod random;
 pub mod schemes;
 pub mod tambola;
 pub mod ticket_range_parser;
+pub mod win_forecast;
