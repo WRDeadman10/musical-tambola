@@ -32,6 +32,7 @@ export function QuickClaim({
             ) : (
                 <>
                     <select
+                        aria-label={t("claims.selectScheme") ?? "Select scheme"}
                         className="w-full rounded border border-zinc-700 bg-zinc-950 p-2"
                         value={model.selectedScheme}
                         onChange={(event) => model.setSelectedScheme(Number(event.target.value))}

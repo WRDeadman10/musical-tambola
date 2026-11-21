@@ -546,6 +546,7 @@
         "itsPrize": "its prize",
         "ticketLabel": "Ticket",
         "schemeLabel": "Scheme",
+        "selectScheme": "Select winning scheme",
         "qualificationPosition": "Qualification position",
         "currentDrawPosition": "Current draw position",
         "ticketId": "Ticket ID",
