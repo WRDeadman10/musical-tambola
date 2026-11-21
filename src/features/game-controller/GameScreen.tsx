@@ -55,7 +55,7 @@ export function GameScreen({
             <MediaStage
                 item={state.current}
                 autoplay={useAppStore.getState().appInfo?.videoAutoplay !== false}
-                volume={useAppStore.getState().appInfo?.defaultVideoVolume ?? 1}
+                volume={(useAppStore.getState().appInfo?.defaultVideoVolume ?? 80) / 100}
                 translate={translate}
             />
             <h1 className="text-4xl font-bold">

@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { AppInfo, getAppInfo } from "./lib/api";
+import { useAppStore } from "./stores/appStore";
 import { Sidebar } from "./components/layout/Sidebar";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
@@ -16,6 +18,26 @@ import { SetupGuard } from "./components/layout/SetupGuard";
 
 function AppRoutes(): React.JSX.Element {
     const location = useLocation();
+    const setAppInfo = useAppStore((state) => state.setAppInfo);
+
+    // Load the saved settings (language, theme, flags) as soon as the app starts,
+    // for the host window and the projector window alike.
+    useEffect(() => {
+        let active: boolean = true;
+        getAppInfo()
+            .then((info: AppInfo): void => {
+                if (active) {
+                    setAppInfo(info);
+                }
+            })
+            .catch((error: unknown): void => {
+                console.warn("Could not load saved settings at startup:", error);
+            });
+        return (): void => {
+            active = false;
+        };
+    }, [setAppInfo]);
+
     if (location.pathname === "/present") return <PresentationPage />;
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">

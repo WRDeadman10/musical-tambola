@@ -2,13 +2,15 @@ import { invoke } from "@tauri-apps/api/core";
 
 export interface AppInfo {
     version: string;
-    data_dir: string;
-    db_path: string;
-    schema_version: number;
+    dataDir: string;
+    dbPath: string;
+    schemaVersion: number;
     language: string;
     theme: string;
     settings?: Record<string, unknown>;
+    /** Autoplay media when a call is drawn (the backend stores this as "true"/"false"). */
     videoAutoplay?: boolean;
+    /** Default playback volume, 0-100. */
     defaultVideoVolume?: number;
     showInternalNumbers?: boolean;
     useGujaratiNumerals?: boolean;
@@ -21,8 +23,51 @@ export interface AppInfo {
     soundProjector?: string;
 }
 
+/**
+ * The backend stores every setting as text, so flags arrive as "true"/"false" and
+ * numbers as "80". Converting them once here keeps "false" from being treated as true.
+ */
+export type RawAppInfo = Omit<
+    AppInfo,
+    "videoAutoplay" | "defaultVideoVolume" | "showInternalNumbers" | "useGujaratiNumerals"
+> & {
+    videoAutoplay?: string | boolean;
+    defaultVideoVolume?: string | number;
+    showInternalNumbers?: string | boolean;
+    useGujaratiNumerals?: string | boolean;
+};
+
+function toBoolean(value: unknown, fallback: boolean): boolean {
+    if (value === true || value === "true") {
+        return true;
+    }
+    if (value === false || value === "false") {
+        return false;
+    }
+    return fallback;
+}
+
+function toNumber(value: unknown, fallback: number): number {
+    if (value === undefined || value === null || value === "") {
+        return fallback;
+    }
+    const parsed: number = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+export function normalizeAppInfo(raw: RawAppInfo): AppInfo {
+    return {
+        ...raw,
+        videoAutoplay: toBoolean(raw.videoAutoplay, true),
+        defaultVideoVolume: Math.max(0, Math.min(100, toNumber(raw.defaultVideoVolume, 80))),
+        showInternalNumbers: toBoolean(raw.showInternalNumbers, false),
+        useGujaratiNumerals: toBoolean(raw.useGujaratiNumerals, false),
+    };
+}
+
 export async function getAppInfo(): Promise<AppInfo> {
-    return await invoke<AppInfo>("get_app_info");
+    const raw: RawAppInfo = await invoke<RawAppInfo>("get_app_info");
+    return normalizeAppInfo(raw);
 }
 
 export async function setAppSetting(key: string, value: string): Promise<void> {

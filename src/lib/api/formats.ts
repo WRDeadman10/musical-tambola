@@ -9,5 +9,6 @@ export async function setGameFormat(
     format: GameFormat,
     songCount: number,
 ): Promise<GameFormatInfo> {
-    return await invoke<GameFormatInfo>("set_game_format", { format, songCount });
+    // The backend command takes one argument named `input` that wraps both values.
+    return await invoke<GameFormatInfo>("set_game_format", { input: { format, songCount } });
 }

@@ -27,16 +27,16 @@ describe("useAppStore & Localization", () => {
     it("updates app info properly", () => {
         useAppStore.getState().setAppInfo({
             version: "0.1.0",
-            data_dir: "C:\\mock\\data",
-            db_path: "C:\\mock\\data\\tambola.sqlite",
-            schema_version: 1,
+            dataDir: "C:\\mock\\data",
+            dbPath: "C:\\mock\\data\\tambola.sqlite",
+            schemaVersion: 1,
             language: "gu",
             theme: "dark",
         });
 
         const state = useAppStore.getState();
         expect(state.appInfo?.version).toBe("0.1.0");
-        expect(state.appInfo?.schema_version).toBe(1);
+        expect(state.appInfo?.schemaVersion).toBe(1);
         expect(state.language).toBe("gu");
     });
 });

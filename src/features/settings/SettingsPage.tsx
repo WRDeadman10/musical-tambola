@@ -299,13 +299,13 @@ export const SettingsPage: React.FC = () => {
                 <CardContent className="space-y-2 text-sm">
                     {[
                         [t("settings.version"), appInfo?.version ?? "—"],
-                        [t("settings.schemaVersion"), appInfo?.schema_version ?? "—"],
+                        [t("settings.schemaVersion"), appInfo?.schemaVersion ?? "—"],
                         [
                             t("settings.dbStatus"),
                             appInfo && error === null ? t("settings.dbOk") : t("settings.dbError"),
                         ],
-                        [t("settings.dataDir"), appInfo?.data_dir ?? "—"],
-                        [t("settings.dbPath"), appInfo?.db_path ?? "—"],
+                        [t("settings.dataDir"), appInfo?.dataDir ?? "—"],
+                        [t("settings.dbPath"), appInfo?.dbPath ?? "—"],
                     ].map(([label, value]) => (
                         <div key={String(label)} className="flex justify-between">
                             <span>{label}</span>

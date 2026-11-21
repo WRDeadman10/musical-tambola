@@ -64,9 +64,9 @@ function SoundSuite(): React.JSX.Element {
 }
 const info = (extra: Record<string, unknown> = {}) => ({
     version: "1",
-    data_dir: "",
-    db_path: "",
-    schema_version: 1,
+    dataDir: "",
+    dbPath: "",
+    schemaVersion: 1,
     language: "en",
     theme: "dark",
     ...extra,

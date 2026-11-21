@@ -15,9 +15,9 @@ vi.mock("../lib/api/presentation", () => ({ presentationCommand: vi.fn() }));
 
 const appInfo = {
     version: "1.0.0",
-    data_dir: "C:\\AppData\\data",
-    db_path: "C:\\AppData\\data\\tambola.sqlite",
-    schema_version: 4,
+    dataDir: "C:\\AppData\\data",
+    dbPath: "C:\\AppData\\data\\tambola.sqlite",
+    schemaVersion: 4,
     language: "en",
     theme: "dark",
     settings: { show_internal_numbers: false },

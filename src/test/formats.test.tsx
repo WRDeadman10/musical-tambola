@@ -28,8 +28,7 @@ describe("game formats", () => {
         api.invoke.mockResolvedValue({ format: "SONG_GRID", songCount: 45 });
         await setGameFormat("SONG_GRID", 45);
         expect(api.invoke).toHaveBeenCalledWith("set_game_format", {
-            format: "SONG_GRID",
-            songCount: 45,
+            input: { format: "SONG_GRID", songCount: 45 },
         });
         expect(await getGameFormat()).toEqual({ format: "SONG_GRID", songCount: 45 });
     });
@@ -37,10 +36,9 @@ describe("game formats", () => {
         api.invoke.mockRejectedValueOnce("FORMAT_LOCKED_GAME_ACTIVE");
         await expect(setGameFormat("SONG_GRID", 45)).rejects.toBe("FORMAT_LOCKED_GAME_ACTIVE");
     });
-    it("media library shows only song count slots", () => {
-        const slots: number[] = Array.from({ length: 45 }, (_value, index) => index + 1);
-        expect(slots).toHaveLength(45);
-    });
+    // Placeholder removed: the previous version only measured a list it built itself.
+    // Needs a real render of MediaLibraryPage with get_game_format mocked to 45.
+    it.todo("media library shows only song count slots");
     it("ticket grid renders 3x5 song grid without blanks", () => {
         render(<TicketGrid ticket={ticket} mediaByNumber={new Map()} />);
         expect(screen.getAllByTestId("ticket-cell")).toHaveLength(15);
