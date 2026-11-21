@@ -12,7 +12,7 @@ use tauri::{AppHandle, Emitter, Manager, State, Window};
 
 pub fn handle_multimonitor_presentation_on_game_start(
     app: &AppHandle,
-    window: &Window,
+    _window: &Window,
     state: &State<'_, DbState>,
 ) {
     if let Ok(monitors) = app.available_monitors() {
@@ -51,12 +51,18 @@ pub fn handle_multimonitor_presentation_on_game_start(
             }
 
             if auto_open {
-                let _ = crate::commands::presentation::open_presentation(
-                    Some(target_idx),
-                    window.clone(),
-                    app.clone(),
-                    state.clone(),
-                );
+                // Window creation must happen off the main thread (this runs inside a command).
+                let app_for_window: AppHandle = app.clone();
+                std::thread::spawn(move || {
+                    let db_state: State<'_, DbState> = app_for_window.state::<DbState>();
+                    if let Err(error) = crate::commands::presentation::open_presentation_inner(
+                        Some(target_idx),
+                        &app_for_window,
+                        &db_state,
+                    ) {
+                        eprintln!("Could not auto-open the presentation window: {:?}", error);
+                    }
+                });
             } else {
                 let _ = app.emit(
                     "presentation-suggested",

@@ -260,6 +260,32 @@ pub fn new_poster_temp_file() -> std::io::Result<tempfile::NamedTempFile> {
         .tempfile()
 }
 
+/// Container duration can be longer than the video stream (for example a longer audio track), so
+/// a frame at the container midpoint may not exist. Try earlier positions before giving up.
+pub fn poster_fallback_timestamps(midpoint: f64) -> Vec<f64> {
+    let mut stamps: Vec<f64> = vec![midpoint, midpoint / 4.0, 0.0];
+    stamps.dedup_by(|a, b| (*a - *b).abs() < 0.001);
+    stamps
+}
+
+fn extract_with_fallbacks(
+    video_path: &Path,
+    midpoint: f64,
+    output_jpeg_path: &Path,
+    app_handle: &AppHandle,
+) -> Result<(), AppError> {
+    let mut last_error: Option<AppError> = None;
+    for stamp in poster_fallback_timestamps(midpoint) {
+        match extract_video_frame(video_path, stamp, output_jpeg_path, app_handle) {
+            Ok(()) => return Ok(()),
+            Err(error) => last_error = Some(error),
+        }
+    }
+    Err(last_error.unwrap_or_else(|| {
+        AppError::new("POSTER_GENERATION_FAILED", "No frame could be extracted")
+    }))
+}
+
 pub fn extract_video_frame(
     video_path: &Path,
     timestamp_secs: f64,
@@ -589,8 +615,8 @@ pub fn generate_media_posters_impl(
                 }
             };
 
-            let extract_res =
-                extract_video_frame(&video_path, midpoint, temp_jpeg.path(), app_handle);
+            let extract_res: Result<(), AppError> =
+                extract_with_fallbacks(&video_path, midpoint, temp_jpeg.path(), app_handle);
             if let Err(e) = extract_res {
                 chunk_results.push((slot.number, Err(format!("{}: {}", e.code, e.message))));
                 continue;
@@ -674,6 +700,12 @@ pub fn generate_media_posters_impl(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_poster_fallback_timestamps_go_earlier_and_end_at_zero() {
+        assert_eq!(poster_fallback_timestamps(12.0), vec![12.0, 3.0, 0.0]);
+        assert_eq!(poster_fallback_timestamps(0.0), vec![0.0]);
+    }
 
     #[test]
     fn test_poster_temp_file_has_jpg_extension_so_ffmpeg_can_pick_the_muxer() {

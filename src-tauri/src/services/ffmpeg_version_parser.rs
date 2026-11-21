@@ -10,6 +10,7 @@ pub struct FfmpegVersionInfo {
 /// - "ffmpeg version 7.1-essentials_build-www.gyan.dev Copyright (c) 2000-2024..."
 /// - "ffmpeg version n6.0 Copyright (c) 2000-2023..."
 /// - "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021..."
+///
 /// Unknown formats return None.
 pub fn parse_ffmpeg_version_line(first_line: &str) -> Option<FfmpegVersionInfo> {
     let trimmed = first_line.trim();
@@ -21,7 +22,9 @@ pub fn parse_ffmpeg_version_line(first_line: &str) -> Option<FfmpegVersionInfo> 
     let version_token = after_prefix.split_whitespace().next()?;
 
     // Strip leading 'n' or 'N' (common in git tag builds like n6.0)
-    let clean_token = version_token.strip_prefix(['n', 'N']).unwrap_or(version_token);
+    let clean_token = version_token
+        .strip_prefix(['n', 'N'])
+        .unwrap_or(version_token);
 
     // Extract numeric major/minor before any dashes or build tags
     let numeric_part = clean_token.split('-').next()?;

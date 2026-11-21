@@ -146,14 +146,24 @@ pub fn list_displays(app: AppHandle) -> Result<Vec<DisplayInfoDto>, AppError> {
 }
 
 #[tauri::command]
-pub fn open_presentation(
+pub async fn open_presentation(
     display_index: Option<usize>,
     window: Window,
     app: AppHandle,
     state: State<'_, DbState>,
 ) -> Result<(), AppError> {
     crate::errors::require_main_window(&window)?;
+    open_presentation_inner(display_index, &app, &state)
+}
 
+/// Creating a window blocks until the main thread builds it, so this must never run on the main
+/// thread: a synchronous command would deadlock the whole app on Windows.
+pub fn open_presentation_inner(
+    display_index: Option<usize>,
+    app: &AppHandle,
+    state: &State<'_, DbState>,
+) -> Result<(), AppError> {
+    let app: AppHandle = app.clone();
     let target_idx: usize = match display_index {
         Some(idx) => {
             let conn: MutexGuard<'_, Connection> =

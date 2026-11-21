@@ -22,7 +22,9 @@ pub fn generate_seeded_draw_order(count: u32, seed: u64) -> Result<Vec<u8>, Draw
 
     for i in (1..pool.len()).rev() {
         // Knuth 64-bit LCG
-        rng_state = rng_state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        rng_state = rng_state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         let j: usize = ((rng_state >> 32) as usize) % (i + 1);
         pool.swap(i, j);
     }
@@ -36,9 +38,18 @@ mod tests {
 
     #[test]
     fn test_draw_order_bounds_rejection() {
-        assert_eq!(generate_seeded_draw_order(14, 42), Err(DrawOrderError::InvalidCount(14)));
-        assert_eq!(generate_seeded_draw_order(91, 42), Err(DrawOrderError::InvalidCount(91)));
-        assert_eq!(generate_seeded_draw_order(0, 42), Err(DrawOrderError::InvalidCount(0)));
+        assert_eq!(
+            generate_seeded_draw_order(14, 42),
+            Err(DrawOrderError::InvalidCount(14))
+        );
+        assert_eq!(
+            generate_seeded_draw_order(91, 42),
+            Err(DrawOrderError::InvalidCount(91))
+        );
+        assert_eq!(
+            generate_seeded_draw_order(0, 42),
+            Err(DrawOrderError::InvalidCount(0))
+        );
     }
 
     #[test]

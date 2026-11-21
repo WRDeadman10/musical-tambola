@@ -46,20 +46,44 @@ mod tests {
     fn test_valid_poster_paths() {
         let base = Path::new("C:/appdata/posters");
         let path = build_poster_file_path(base, 42, "a1b2c3d4").unwrap();
-        assert_eq!(path, PathBuf::from("C:/appdata/posters/poster_42_a1b2c3d4.jpg"));
+        assert_eq!(
+            path,
+            PathBuf::from("C:/appdata/posters/poster_42_a1b2c3d4.jpg")
+        );
 
         let path_upper = build_poster_file_path(base, 1, "A1B2C3D4").unwrap();
-        assert_eq!(path_upper, PathBuf::from("C:/appdata/posters/poster_1_a1b2c3d4.jpg"));
+        assert_eq!(
+            path_upper,
+            PathBuf::from("C:/appdata/posters/poster_1_a1b2c3d4.jpg")
+        );
     }
 
     #[test]
     fn test_invalid_poster_parameters() {
         let base = Path::new("C:/appdata/posters");
-        assert_eq!(build_poster_file_path(base, 0, "a1b2c3d4"), Err(PosterPathError::InvalidSlot(0)));
-        assert_eq!(build_poster_file_path(base, 91, "a1b2c3d4"), Err(PosterPathError::InvalidSlot(91)));
-        assert_eq!(build_poster_file_path(base, 5, "short"), Err(PosterPathError::InvalidHash));
-        assert_eq!(build_poster_file_path(base, 5, "not_hex!"), Err(PosterPathError::InvalidHash));
-        assert_eq!(build_poster_file_path(base, 5, "a1b2c3d4e5f6"), Err(PosterPathError::InvalidHash));
-        assert_eq!(build_poster_file_path(Path::new(""), 5, "a1b2c3d4"), Err(PosterPathError::EmptyDirectory));
+        assert_eq!(
+            build_poster_file_path(base, 0, "a1b2c3d4"),
+            Err(PosterPathError::InvalidSlot(0))
+        );
+        assert_eq!(
+            build_poster_file_path(base, 91, "a1b2c3d4"),
+            Err(PosterPathError::InvalidSlot(91))
+        );
+        assert_eq!(
+            build_poster_file_path(base, 5, "short"),
+            Err(PosterPathError::InvalidHash)
+        );
+        assert_eq!(
+            build_poster_file_path(base, 5, "not_hex!"),
+            Err(PosterPathError::InvalidHash)
+        );
+        assert_eq!(
+            build_poster_file_path(base, 5, "a1b2c3d4e5f6"),
+            Err(PosterPathError::InvalidHash)
+        );
+        assert_eq!(
+            build_poster_file_path(Path::new(""), 5, "a1b2c3d4"),
+            Err(PosterPathError::EmptyDirectory)
+        );
     }
 }

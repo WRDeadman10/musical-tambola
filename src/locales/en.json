@@ -2,7 +2,7 @@
     "app": {
         "title": "Media Tambola",
         "subtitle": "Audio-Visual 90-Ball Tambola System",
-        "edition": "v0.1.0 • Desktop Edition"
+        "edition": "v{{version}} • Desktop Edition"
     },
     "nav": {
         "dashboard": "Dashboard",

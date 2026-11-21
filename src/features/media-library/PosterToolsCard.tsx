@@ -21,6 +21,12 @@ interface PosterToolsCardProps {
 
 type PendingAction = "GENERATE_MISSING" | "GENERATE_ALL" | "DOWNLOAD";
 
+/** `ffmpeg version 9.0-full_build-www...` becomes `9.0-full_build-www...` without the copyright tail. */
+function shortVersion(raw: string): string {
+    const match: RegExpMatchArray | null = raw.match(/version\s+(\S+)/i);
+    return match !== null ? match[1] : raw.slice(0, 40);
+}
+
 function megabytes(bytes: number): string {
     return (bytes / (1024 * 1024)).toFixed(1);
 }
@@ -117,7 +123,7 @@ export function PosterToolsCard({ onPostersChanged }: PosterToolsCardProps): Rea
         status === null
             ? t("media.ffmpeg.checking")
             : status.available
-              ? `${t("media.ffmpeg.ready")}${status.version ? ` (${status.version})` : ""}`
+              ? `${t("media.ffmpeg.ready")}${status.version ? ` (${shortVersion(status.version)})` : ""}`
               : t("media.ffmpeg.missing");
     const downloadPercent: number =
         download !== null && download.totalBytes !== null && download.totalBytes > 0

@@ -74,20 +74,11 @@ mod tests {
         let range1 = parse_ticket_code_range("T-000001..T-000005").unwrap();
         assert_eq!(
             range1,
-            vec![
-                "T-000001",
-                "T-000002",
-                "T-000003",
-                "T-000004",
-                "T-000005"
-            ]
+            vec!["T-000001", "T-000002", "T-000003", "T-000004", "T-000005"]
         );
 
         let range2 = parse_ticket_code_range("42..45").unwrap();
-        assert_eq!(
-            range2,
-            vec!["T-000042", "T-000043", "T-000044", "T-000045"]
-        );
+        assert_eq!(range2, vec!["T-000042", "T-000043", "T-000044", "T-000045"]);
 
         let single = parse_ticket_code_range("T-000100..T-000100").unwrap();
         assert_eq!(single, vec!["T-000100"]);
@@ -95,12 +86,33 @@ mod tests {
 
     #[test]
     fn test_invalid_and_failing_closed_ranges() {
-        assert_eq!(parse_ticket_code_range(""), Err(TicketRangeError::EmptyRange));
-        assert_eq!(parse_ticket_code_range("T-000001"), Err(TicketRangeError::MissingDelimiter));
-        assert_eq!(parse_ticket_code_range("T-000001.."), Err(TicketRangeError::InvalidEndpoint("".to_string())));
-        assert_eq!(parse_ticket_code_range("T-000010..T-000005"), Err(TicketRangeError::InvertedRange { start: 10, end: 5 }));
-        assert_eq!(parse_ticket_code_range("T-000000..T-000005"), Err(TicketRangeError::InvalidEndpoint("T-000000".to_string())));
-        assert_eq!(parse_ticket_code_range("abc..xyz"), Err(TicketRangeError::InvalidEndpoint("abc".to_string())));
-        assert_eq!(parse_ticket_code_range("1..20000"), Err(TicketRangeError::SpanTooLarge(20000)));
+        assert_eq!(
+            parse_ticket_code_range(""),
+            Err(TicketRangeError::EmptyRange)
+        );
+        assert_eq!(
+            parse_ticket_code_range("T-000001"),
+            Err(TicketRangeError::MissingDelimiter)
+        );
+        assert_eq!(
+            parse_ticket_code_range("T-000001.."),
+            Err(TicketRangeError::InvalidEndpoint("".to_string()))
+        );
+        assert_eq!(
+            parse_ticket_code_range("T-000010..T-000005"),
+            Err(TicketRangeError::InvertedRange { start: 10, end: 5 })
+        );
+        assert_eq!(
+            parse_ticket_code_range("T-000000..T-000005"),
+            Err(TicketRangeError::InvalidEndpoint("T-000000".to_string()))
+        );
+        assert_eq!(
+            parse_ticket_code_range("abc..xyz"),
+            Err(TicketRangeError::InvalidEndpoint("abc".to_string()))
+        );
+        assert_eq!(
+            parse_ticket_code_range("1..20000"),
+            Err(TicketRangeError::SpanTooLarge(20000))
+        );
     }
 }

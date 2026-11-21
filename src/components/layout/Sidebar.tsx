@@ -21,6 +21,7 @@ interface NavItem {
 export const Sidebar: React.FC = () => {
     const location = useLocation();
     const t = useAppStore((state) => state.t);
+    const version: string = useAppStore((state) => state.appInfo?.version ?? "");
 
     const navItems: NavItem[] = [
         {
@@ -86,7 +87,7 @@ export const Sidebar: React.FC = () => {
             </nav>
 
             <div className="p-4 border-t border-zinc-800 text-xs text-zinc-500 text-center">
-                {t("app.edition")}
+                {t("app.edition").replace("{{version}}", version).replace("v • ", "")}
             </div>
         </aside>
     );
