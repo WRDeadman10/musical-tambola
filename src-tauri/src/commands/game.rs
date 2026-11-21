@@ -405,9 +405,14 @@ pub fn set_game_format(
         ));
     }
 
-    let chosen_song_count: u32 = input
-        .song_count
-        .unwrap_or_else(|| input.format.default_song_count());
+    let chosen_song_count: u32 = match input.song_count {
+        Some(count) if input.format == GameFormat::SongGrid && count == 90 => {
+            // When switching to Song Grid or if count is uncustomized 90 from Classic, default to 45
+            GameFormat::SongGrid.default_song_count()
+        }
+        Some(count) => count,
+        None => input.format.default_song_count(),
+    };
 
     let valid_song_count: u32 = input
         .format
@@ -434,4 +439,42 @@ pub fn set_game_format(
         rows: input.format.rows(),
         cols: input.format.cols(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_song_grid_default_replaces_reused_classic_90() {
+        let input_switching: SetGameFormatInput = SetGameFormatInput {
+            format: GameFormat::SongGrid,
+            song_count: Some(90),
+        };
+
+        let chosen_song_count: u32 = match input_switching.song_count {
+            Some(count) if input_switching.format == GameFormat::SongGrid && count == 90 => {
+                GameFormat::SongGrid.default_song_count()
+            }
+            Some(count) => count,
+            None => input_switching.format.default_song_count(),
+        };
+
+        assert_eq!(chosen_song_count, 45);
+
+        let input_explicit: SetGameFormatInput = SetGameFormatInput {
+            format: GameFormat::SongGrid,
+            song_count: Some(67),
+        };
+
+        let chosen_explicit: u32 = match input_explicit.song_count {
+            Some(count) if input_explicit.format == GameFormat::SongGrid && count == 90 => {
+                GameFormat::SongGrid.default_song_count()
+            }
+            Some(count) => count,
+            None => input_explicit.format.default_song_count(),
+        };
+
+        assert_eq!(chosen_explicit, 67);
+    }
 }
