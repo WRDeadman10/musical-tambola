@@ -414,6 +414,7 @@
         }
     },
     "errors": {
+        "unknown": "Something went wrong. Please try again.",
         "UNKNOWN_ERROR": "An unexpected error occurred.",
         "NO_ACTIVE_GAME": "No active game.",
         "GAME_NOT_ACCEPTING_CLAIMS": "This game is not accepting claims.",
@@ -519,6 +520,8 @@
         "openClaimDesk": "Open detailed Claim Desk"
     },
     "hostPanel": {
+        "hideNumber": "Hide number",
+        "showNumber": "Show number",
         "tabChests": "Chests",
         "claimTimer": "Claim timer",
         "claimTimerHelp": "A countdown for players to call out a claim after a number is drawn. It also shows on the projector when you start it.",
