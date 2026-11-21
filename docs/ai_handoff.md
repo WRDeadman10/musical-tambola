@@ -134,3 +134,8 @@
 - Replaced the `it.todo` with two real MediaLibraryPage tests (Song Grid 45 rows, Classic 90 rows); mutation-checked.
 - Not verified: the layout in the real window or at 1366x768 (no visual run yet). Media Library ffmpeg UI (status, download prompt, generate previews) is NOT done: waiting for AG's BT-35 commands (`get_ffmpeg_status`, `download_ffmpeg`, `generate_media_posters`) to be committed with their DTOs.
 - Modified: HostPanel.tsx, StatusBar.tsx, SongList.tsx, MediaStage.tsx, SettingsPage.tsx, index.css, formats.test.tsx, mediaLibrary.test.tsx.
+
+## v1.0.2 BT-35 frontend - Video previews (Claude)
+- New `src/lib/api/ffmpeg.ts` (get_ffmpeg_status, download_ffmpeg, generate_media_posters with `{ input }`, events `ffmpeg-download-progress` and `poster-progress`) and `PosterToolsCard` in the Media Library: shows ffmpeg status, "Generate previews" (only missing), "Regenerate all previews", download only after an in-app confirmation dialog, progress, failed list.
+- Tests: `src/test/posterTools.test.tsx` (6); mutation-checked the confirm gate. IPC contract test passes with the new commands.
+- Not done: the old canvas-based poster generation after folder import is still in `MediaLibraryPage` (posterGeneration.ts); switch it to the backend once ffmpeg is confirmed working in the real app. Real download/generation untested in the built app.

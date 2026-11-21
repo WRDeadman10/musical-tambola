@@ -260,6 +260,21 @@
             "extra": "Unassigned files",
             "apply": "Apply assignments"
         },
+        "ffmpeg": {
+            "title": "Video previews (ffmpeg)",
+            "checking": "Checking ffmpeg...",
+            "ready": "ffmpeg is ready",
+            "missing": "ffmpeg is not installed",
+            "generateMissing": "Generate previews",
+            "regenerateAll": "Regenerate all previews",
+            "download": "Download ffmpeg",
+            "downloading": "Downloading ffmpeg",
+            "generated": "{{count}} previews generated",
+            "failed": "{{count}} could not be generated",
+            "confirmTitle": "Download ffmpeg?",
+            "confirmBody": "ffmpeg is needed to create video previews. The app will download the official Windows build (about 30-40 MB), check its SHA-256 checksum and store it in the app data folder for reuse. Nothing else is installed. Continue?",
+            "confirmDownload": "Download"
+        },
         "poster": {
             "title": "Edit poster",
             "noVideo": "This slot has no video source.",

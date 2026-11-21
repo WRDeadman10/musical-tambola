@@ -29,6 +29,7 @@ import { getGameFormat } from "../../lib/api/formats";
 import { listenToPresentationCommand } from "../../lib/api/presentation";
 import { GameFormat } from "../../types/game";
 import { TitleImportCard } from "./TitleImportCard";
+import { PosterToolsCard } from "./PosterToolsCard";
 
 export { mediaFormSchema } from "./MediaEditDialog";
 
@@ -243,6 +244,7 @@ export const MediaLibraryPage: React.FC = () => {
                 </div>
             </header>
             <TitleImportCard />
+            <PosterToolsCard onPostersChanged={refreshSlots} />
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <StatCard
                     label={t("media.stats.configured")}

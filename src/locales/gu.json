@@ -260,6 +260,21 @@
             "extra": "ન ફાળવેલી ફાઇલો",
             "apply": "ફાળવણી લાગુ કરો"
         },
+        "ffmpeg": {
+            "title": "વિડિયો પ્રીવ્યૂ (ffmpeg)",
+            "checking": "ffmpeg તપાસી રહ્યા છીએ...",
+            "ready": "ffmpeg તૈયાર છે",
+            "missing": "ffmpeg ઇન્સ્ટોલ નથી",
+            "generateMissing": "પ્રીવ્યૂ બનાવો",
+            "regenerateAll": "બધા પ્રીવ્યૂ ફરી બનાવો",
+            "download": "ffmpeg ડાઉનલોડ કરો",
+            "downloading": "ffmpeg ડાઉનલોડ થઈ રહ્યું છે",
+            "generated": "{{count}} પ્રીવ્યૂ બન્યા",
+            "failed": "{{count}} બની શક્યા નહીં",
+            "confirmTitle": "ffmpeg ડાઉનલોડ કરવું છે?",
+            "confirmBody": "વિડિયો પ્રીવ્યૂ બનાવવા ffmpeg જોઈએ છે. એપ સત્તાવાર Windows બિલ્ડ (લગભગ 30-40 MB) ડાઉનલોડ કરશે, તેનો SHA-256 ચેકસમ તપાસશે અને ફરી વાપરવા માટે એપ ડેટા ફોલ્ડરમાં રાખશે. બીજું કંઈ ઇન્સ્ટોલ થશે નહીં. ચાલુ રાખીએ?",
+            "confirmDownload": "ડાઉનલોડ કરો"
+        },
         "poster": {
             "title": "પોસ્ટર સંપાદિત કરો",
             "noVideo": "આ સ્લોટમાં વિડિયો સ્રોત નથી.",
