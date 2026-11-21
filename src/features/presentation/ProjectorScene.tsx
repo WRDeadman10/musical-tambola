@@ -38,7 +38,7 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
     if (state.scene === "SPLASH" && state.current !== null) {
         return (
             <div className="flex h-full items-center justify-center">
-                <div className="grid aspect-square h-[min(70vh,70vw)] place-items-center rounded-full bg-gradient-to-br from-yellow-100 via-gold to-amber-600 text-[min(32vw,22rem)] font-black text-zinc-950 shadow-[0_30px_120px_rgb(255_200_87/0.45)]">
+                <div className="grid aspect-square h-[min(70vh,70vw)] place-items-center rounded-full bg-gradient-to-br from-yellow-100 via-gold to-amber-600 text-[min(32vw,22rem)] font-black text-on-gold shadow-[0_30px_120px_rgb(255_200_87/0.45)]">
                     {state.current.number}
                 </div>
             </div>
@@ -91,7 +91,7 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
                 </div>
             )}
             {state.showNumber && (
-                <div className="absolute right-10 top-10 grid h-44 w-44 place-items-center rounded-full bg-gradient-to-br from-yellow-100 via-gold to-amber-600 text-8xl font-black text-zinc-950 shadow-[0_16px_60px_rgb(255_200_87/0.5)]">
+                <div className="absolute right-10 top-10 grid h-44 w-44 place-items-center rounded-full bg-gradient-to-br from-yellow-100 via-gold to-amber-600 text-8xl font-black text-on-gold shadow-[0_16px_60px_rgb(255_200_87/0.5)]">
                     {state.current.number}
                 </div>
             )}

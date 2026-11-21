@@ -109,7 +109,7 @@ export function TicketBatchesPage(): React.JSX.Element {
     return (
         <div className="space-y-6 p-6 xl:p-8">
             <header>
-                <h2 className="text-3xl font-bold text-white">{t("tickets.batchesTitle")}</h2>
+                <h2 className="text-3xl font-bold text-ink">{t("tickets.batchesTitle")}</h2>
             </header>
             {error !== null && <p className="text-sm text-red-400">{error}</p>}
             <div className="grid gap-4 lg:grid-cols-3">

@@ -52,7 +52,7 @@ export const DashboardPage: React.FC = () => {
         <div className="p-8 max-w-6xl mx-auto space-y-8">
             <header className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-white">
+                    <h2 className="text-3xl font-bold tracking-tight text-ink">
                         {t("dashboard.title")}
                     </h2>
                     <p className="text-zinc-400 mt-1">{t("dashboard.welcome")}</p>
@@ -69,7 +69,7 @@ export const DashboardPage: React.FC = () => {
                         <Film className="w-5 h-5 text-indigo-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-extrabold text-white">
+                        <div className="text-3xl font-extrabold text-ink">
                             {stats === null
                                 ? "—"
                                 : `${formatNumber(stats.mediaValid, language, useGujaratiNumerals)} / ${formatNumber(stats.mediaTotal, language, useGujaratiNumerals)}`}
@@ -88,7 +88,7 @@ export const DashboardPage: React.FC = () => {
                         <Ticket className="w-5 h-5 text-amber-400" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-extrabold text-white">
+                        <div className="text-3xl font-extrabold text-ink">
                             {stats === null
                                 ? "—"
                                 : formatNumber(stats.totalTickets, language, useGujaratiNumerals)}
@@ -131,7 +131,7 @@ export const DashboardPage: React.FC = () => {
             {stats?.activeGame !== null && stats?.activeGame !== undefined && (
                 <Card className="flex items-center justify-between p-6">
                     <div>
-                        <h3 className="text-lg font-semibold text-white">
+                        <h3 className="text-lg font-semibold text-ink">
                             {t("dashboard.quickStatus")}
                         </h3>
                         <p className="text-sm text-zinc-400 mt-1">

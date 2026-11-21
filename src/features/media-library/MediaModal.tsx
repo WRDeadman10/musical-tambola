@@ -25,7 +25,7 @@ export function MediaModal({ title, onClose, children }: MediaModalProps): React
                 onMouseDown={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
             >
                 <div className="mb-5 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-white">{title}</h2>
+                    <h2 className="text-lg font-semibold text-ink">{title}</h2>
                     <Button
                         variant="ghost"
                         size="icon"

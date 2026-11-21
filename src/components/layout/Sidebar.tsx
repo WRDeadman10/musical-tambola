@@ -80,12 +80,12 @@ export const Sidebar: React.FC = () => {
             <div
                 className={`flex items-center gap-3 border-b border-zinc-700/70 ${collapsed ? "justify-center px-0 py-4" : "px-5 py-5"}`}
             >
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-extrabold text-white shadow-[var(--shadow-glow)]">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-extrabold text-on-accent shadow-[var(--shadow-glow)]">
                     MT
                 </span>
                 {!collapsed && (
                     <div className="min-w-0">
-                        <h1 className="truncate text-base font-bold tracking-tight text-white">
+                        <h1 className="truncate text-base font-bold tracking-tight text-ink">
                             {t("app.title")}
                         </h1>
                         <p className="truncate text-[11px] text-zinc-400">{t("app.subtitle")}</p>
@@ -102,8 +102,8 @@ export const Sidebar: React.FC = () => {
                             aria-label={collapsed ? label : undefined}
                             className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${collapsed ? "justify-center" : ""} ${
                                 isActive
-                                    ? "bg-indigo-500/15 text-white ring-1 ring-indigo-400/40"
-                                    : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                    ? "bg-indigo-500/15 text-ink ring-1 ring-indigo-400/40"
+                                    : "text-zinc-400 hover:bg-zinc-800 hover:text-ink"
                             }`}
                             key={item.path}
                             title={label}
@@ -119,7 +119,7 @@ export const Sidebar: React.FC = () => {
             <div className="space-y-2 border-t border-zinc-700/70 p-3">
                 <button
                     aria-label={collapsed ? t("nav.expand") : t("nav.collapse")}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-ink"
                     onClick={toggle}
                     type="button"
                 >

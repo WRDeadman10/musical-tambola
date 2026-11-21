@@ -31,8 +31,8 @@ export function Tabs({ tabs, active, onChange, label, className }: TabsProps): R
                     className={cn(
                         "flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors",
                         tab.id === active
-                            ? "bg-indigo-500/15 text-white ring-1 ring-indigo-400/40"
-                            : "text-zinc-400 hover:bg-zinc-800 hover:text-white",
+                            ? "bg-indigo-500/15 text-ink ring-1 ring-indigo-400/40"
+                            : "text-zinc-400 hover:bg-zinc-800 hover:text-ink",
                     )}
                     key={tab.id}
                     onClick={() => onChange(tab.id)}

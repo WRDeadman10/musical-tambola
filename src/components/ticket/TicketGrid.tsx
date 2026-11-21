@@ -71,11 +71,11 @@ export function TicketGrid({
                                 />
                             )}
                             {!printable && media?.mediaType === "VIDEO" && thumb !== null && (
-                                <Video className="absolute right-0.5 top-0.5 h-3 w-3 text-white" />
+                                <Video className="absolute right-0.5 top-0.5 h-3 w-3 text-ink" />
                             )}
                             {number !== undefined && (
                                 <span
-                                    className={`z-10 line-clamp-2 break-words px-0.5 text-center text-xs font-medium leading-tight ${printable ? "text-black" : "text-white"}`}
+                                    className={`z-10 line-clamp-2 break-words px-0.5 text-center text-xs font-medium leading-tight ${printable ? "text-black" : "text-ink"}`}
                                     title={media?.title ?? undefined}
                                 >
                                     {showNumbers || (fallbackToNumber && !media?.title)

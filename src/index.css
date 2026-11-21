@@ -23,6 +23,9 @@
     --color-indigo-600: #6a58f2;
     --color-indigo-700: #5645d6;
     --color-gold: #ffc857;
+    --color-ink: #ffffff;
+    --color-on-accent: #ffffff;
+    --color-on-gold: #1b1330;
     --radius-card: 1rem;
     --shadow-card: 0 10px 30px rgb(0 0 0 / 0.35);
     --shadow-glow: 0 0 0 1px rgb(124 108 255 / 0.5), 0 8px 32px rgb(124 108 255 / 0.28);
@@ -51,8 +54,8 @@
 
     body {
         font-family: var(--font-gujarati);
-        background-color: #0a0a12;
-        color: #f4f4f5;
+        background-color: var(--color-zinc-950);
+        color: var(--color-zinc-100);
         margin: 0;
         padding: 0;
         overflow-x: hidden;
@@ -65,10 +68,10 @@
     select,
     textarea {
         min-height: 2.5rem;
-        border: 1px solid #3f3f46;
+        border: 1px solid var(--color-zinc-700);
         border-radius: 0.375rem;
-        background-color: #09090b;
-        color: #f4f4f5;
+        background-color: var(--color-zinc-950);
+        color: var(--color-zinc-100);
         padding: 0.375rem 0.75rem;
         font: inherit;
         user-select: text;
@@ -122,20 +125,20 @@
 
     input::placeholder,
     textarea::placeholder {
-        color: #71717a;
+        color: var(--color-zinc-500);
     }
 
     input[type="file"] {
         font: inherit;
-        color: #d4d4d8;
+        color: var(--color-zinc-300);
     }
 
     input[type="file"]::file-selector-button {
         margin-right: 0.75rem;
-        border: 1px solid #3f3f46;
+        border: 1px solid var(--color-zinc-700);
         border-radius: 0.375rem;
-        background-color: #18181b;
-        color: #f4f4f5;
+        background-color: var(--color-zinc-900);
+        color: var(--color-zinc-100);
         padding: 0.375rem 0.75rem;
         cursor: pointer;
     }
@@ -145,6 +148,33 @@
     input[type="range"] {
         accent-color: #6366f1;
     }
+}
+
+/* Light theme: the same roles with the neutral scale turned over. The projector stays dark. */
+html.light {
+    --color-zinc-50: #14142a;
+    --color-zinc-100: #1c1c36;
+    --color-zinc-200: #2c2c4a;
+    --color-zinc-300: #4a4a68;
+    --color-zinc-400: #686886;
+    --color-zinc-500: #8a8aa6;
+    --color-zinc-600: #b4b4cc;
+    --color-zinc-700: #d6d6ea;
+    --color-zinc-800: #e8e8f6;
+    --color-zinc-900: #ffffff;
+    --color-zinc-950: #f3f3fa;
+    --color-indigo-300: #5b49e0;
+    --color-indigo-400: #6a58f2;
+    --color-ink: #14142a;
+    --color-red-300: #b4233a;
+    --color-red-400: #c0243d;
+    --color-amber-300: #8a5200;
+    --color-amber-400: #9a5b00;
+    --color-emerald-200: #0b5e3c;
+    --color-emerald-300: #0f6f49;
+    --color-emerald-400: #0f7a4f;
+    --color-sky-300: #0b6aa8;
+    --shadow-card: 0 10px 30px rgb(40 40 90 / 0.12);
 }
 
 /* Scrolling ticker on the projector: text enters from the right and leaves on the left. */

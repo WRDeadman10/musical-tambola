@@ -58,7 +58,7 @@ function Thumbnail({ slot }: { slot: MediaSlot }): React.JSX.Element {
     return slot.mediaType === "VIDEO" ? (
         <div className="relative h-12 w-16 overflow-hidden rounded bg-zinc-800">
             <img className="h-full w-full object-cover" src={source} alt="" />
-            <Video className="absolute bottom-1 right-1 h-4 w-4 rounded bg-black/70 p-0.5 text-white" />
+            <Video className="absolute bottom-1 right-1 h-4 w-4 rounded bg-black/70 p-0.5 text-ink" />
         </div>
     ) : (
         <img className="h-12 w-16 rounded bg-zinc-800 object-cover" src={source} alt="" />

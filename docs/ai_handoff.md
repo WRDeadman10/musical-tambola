@@ -213,3 +213,8 @@ Next phases (plan in docs/V103_REDESIGN_PLAN.md): Settings cards and form rows, 
 
 ## Claims by simple ticket number, real exe (Claude, scratch copy, DATA LOCK C)
 Forecast for the new game: Early Five 26@8, Four Corners 4@23, Top Line 18@29, Middle Line 3@23, Bottom Line 4@31, Full House 42@39. Real results: Early Five by ticket "26" one draw early -> REJECTED NOT_COMPLETED; at draw 8 -> ACCEPTED; duplicate -> REJECTED ALREADY_WON_SCHEME; "999" -> REJECTED TICKET_NOT_FOUND; old code "T-000026" is still recognized (REJECTED ALREADY_WON_SCHEME); Middle Line "3" at draw 23 -> ACCEPTED; Top Line "18" one draw late (qualified at 29) -> REJECTED LATE_CLAIM. The forecast matched the claim rules exactly. Scratch run kept in `com.mediatambola.app.scratch-claims-run`.
+
+## v1.0.3 light theme and startup theme (Claude)
+- The saved theme was never applied at startup (only when visiting Settings). `useThemeClass` (App) now sets `html.light`/`html.dark` from the saved theme (system follows the OS) and keeps `/present` dark. Tests in `src/test/theme.test.tsx`.
+- Colour roles: `text-ink` replaces `text-white` (white in dark, near-black in light), `text-on-accent` stays white on gradient buttons, `text-on-gold` stays dark on gold balls. `html.light` in `src/index.css` turns the zinc scale over and darkens red/amber/emerald/sky text steps. Checked in stub screenshots of the host cockpit and media library; not yet checked in the built exe or on every screen.
+- Gujarati check at 1366x768 (game, settings, generator): nothing clipped.

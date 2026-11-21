@@ -83,7 +83,7 @@ export const HistoryPage: React.FC = () => {
     return (
         <div className="p-8 max-w-6xl mx-auto space-y-6">
             <header>
-                <h2 className="text-3xl font-bold text-white">{t("history.title")}</h2>
+                <h2 className="text-3xl font-bold text-ink">{t("history.title")}</h2>
                 <p className="text-zinc-400 mt-1">{t("history.description")}</p>
             </header>
             <Card>

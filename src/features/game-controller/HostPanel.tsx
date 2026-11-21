@@ -149,7 +149,7 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
             >
                 <button
                     aria-pressed={presentMode}
-                    className="rounded-md border border-indigo-500 px-3 py-1.5 text-sm font-medium text-indigo-200 hover:bg-indigo-500/10"
+                    className="rounded-md border border-indigo-500 px-3 py-1.5 text-sm font-medium text-indigo-300 hover:bg-indigo-500/10"
                     onClick={() => setPresentMode((value) => !value)}
                     type="button"
                 >
@@ -181,7 +181,7 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                             {translate("hostPanel.viewWinners")}
                         </button>
                         <button
-                            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
+                            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-on-accent hover:bg-indigo-500"
                             onClick={model.startOver}
                             type="button"
                         >

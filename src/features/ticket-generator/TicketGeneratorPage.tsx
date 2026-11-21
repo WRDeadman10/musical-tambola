@@ -104,7 +104,7 @@ export function TicketGeneratorPage(): React.JSX.Element {
     return (
         <div className="space-y-6 p-6 xl:p-8">
             <header>
-                <h2 className="text-3xl font-bold text-white">{t("tickets.generatorTitle")}</h2>
+                <h2 className="text-3xl font-bold text-ink">{t("tickets.generatorTitle")}</h2>
                 <p className="text-sm text-zinc-400">{t("tickets.generatorSubtitle")}</p>
             </header>
             <div className="grid gap-6 xl:grid-cols-[minmax(0,26rem)_1fr]">
@@ -222,9 +222,7 @@ export function TicketGeneratorPage(): React.JSX.Element {
                     )}
                     <Card>
                         <CardContent className="space-y-3 p-6">
-                            <h3 className="font-semibold text-white">
-                                {t("tickets.recentBatches")}
-                            </h3>
+                            <h3 className="font-semibold text-ink">{t("tickets.recentBatches")}</h3>
                             {batches.length === 0 ? (
                                 <p className="text-sm text-zinc-400">{t("tickets.noBatches")}</p>
                             ) : (

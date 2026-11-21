@@ -14,7 +14,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
         const variantStyles: Record<string, string> = {
             default:
-                "bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-[var(--shadow-glow)] hover:brightness-110 active:brightness-95",
+                "bg-gradient-to-br from-indigo-500 to-violet-500 text-on-accent shadow-[var(--shadow-glow)] hover:brightness-110 active:brightness-95",
             destructive: "bg-red-500/15 text-red-300 ring-1 ring-red-500/50 hover:bg-red-500/25",
             outline:
                 "border border-zinc-700 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-800 text-zinc-100",

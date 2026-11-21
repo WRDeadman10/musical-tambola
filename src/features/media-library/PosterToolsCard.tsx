@@ -135,7 +135,7 @@ export function PosterToolsCard({ onPostersChanged }: PosterToolsCardProps): Rea
             <CardContent className="space-y-3 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h3 className="font-semibold text-white">{t("media.ffmpeg.title")}</h3>
+                        <h3 className="font-semibold text-ink">{t("media.ffmpeg.title")}</h3>
                         <p
                             className={`text-sm ${status?.available ? "text-emerald-300" : "text-zinc-400"}`}
                             data-testid="ffmpeg-status"

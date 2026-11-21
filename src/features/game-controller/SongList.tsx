@@ -18,7 +18,7 @@ export function SongList({
                         <div
                             className={`grid h-12 min-w-12 shrink-0 place-items-center rounded-full text-base font-bold ${
                                 index === 0
-                                    ? "bg-gradient-to-br from-yellow-100 via-gold to-amber-600 text-zinc-950 shadow-[0_6px_20px_rgb(255_200_87/0.4)]"
+                                    ? "bg-gradient-to-br from-yellow-100 via-gold to-amber-600 text-on-gold shadow-[0_6px_20px_rgb(255_200_87/0.4)]"
                                     : "border border-zinc-700 bg-zinc-800 text-zinc-300"
                             }`}
                             key={item.position}

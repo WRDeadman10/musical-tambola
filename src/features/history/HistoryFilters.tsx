@@ -23,13 +23,13 @@ export const HistoryFilters: React.FC<Props> = ({
 }) => (
     <div className="grid gap-3 md:grid-cols-4">
         <input
-            className="h-9 rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-sm text-white"
+            className="h-9 rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-sm text-ink"
             placeholder={t("history.ticketFilter")}
             value={ticketCode}
             onChange={(event) => onChange("ticketCode", event.target.value)}
         />
         <select
-            className="h-9 rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-sm text-white"
+            className="h-9 rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-sm text-ink"
             value={schemeType}
             onChange={(event) => onChange("schemeType", event.target.value)}
         >
@@ -40,7 +40,7 @@ export const HistoryFilters: React.FC<Props> = ({
         </select>
         {tab === "claims" && (
             <select
-                className="h-9 rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-sm text-white"
+                className="h-9 rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-sm text-ink"
                 value={status}
                 onChange={(event) => onChange("status", event.target.value)}
             >
@@ -53,14 +53,14 @@ export const HistoryFilters: React.FC<Props> = ({
             <input
                 aria-label={t("history.dateFrom")}
                 type="date"
-                className="h-9 min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-sm text-white"
+                className="h-9 min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-sm text-ink"
                 value={dateFrom}
                 onChange={(event) => onChange("dateFrom", event.target.value)}
             />
             <input
                 aria-label={t("history.dateTo")}
                 type="date"
-                className="h-9 min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-sm text-white"
+                className="h-9 min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-sm text-ink"
                 value={dateTo}
                 onChange={(event) => onChange("dateTo", event.target.value)}
             />

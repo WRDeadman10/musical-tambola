@@ -53,7 +53,7 @@ export function CountdownCard({
         >
             <span
                 className={`min-w-[5.5rem] text-3xl font-extrabold tabular-nums ${
-                    remaining < 5 ? "text-red-400" : "text-white"
+                    remaining < 5 ? "text-red-400" : "text-ink"
                 }`}
             >
                 {remaining} {translate("hostPanel.seconds")}

@@ -9,7 +9,7 @@ function Badge({ className, variant = "default", ...props }: BadgeProps): React.
     const variantStyles: Record<string, string> = {
         default: "border-transparent bg-indigo-500/20 text-indigo-200 ring-1 ring-indigo-400/40",
         secondary: "border-transparent bg-zinc-800 text-zinc-300 hover:bg-zinc-700",
-        destructive: "border-transparent bg-red-600 text-white shadow hover:bg-red-500",
+        destructive: "border-transparent bg-red-600 text-on-accent shadow hover:bg-red-500",
         outline: "border-zinc-700 text-zinc-300",
         success:
             "border-transparent bg-emerald-600/20 text-emerald-400 border border-emerald-500/30",

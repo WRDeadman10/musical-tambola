@@ -44,7 +44,7 @@ function StatCard({ label, value, icon }: StatCardProps): React.JSX.Element {
             <CardContent className="flex items-center justify-between p-4">
                 <div>
                     <div className="text-xs text-zinc-500">{label}</div>
-                    <div className="mt-1 text-2xl font-bold text-white">{value}</div>
+                    <div className="mt-1 text-2xl font-bold text-ink">{value}</div>
                 </div>
                 <div className="rounded-md bg-indigo-500/10 p-2 text-indigo-400">{icon}</div>
             </CardContent>
@@ -214,7 +214,7 @@ export const MediaLibraryPage: React.FC = () => {
         <div className="space-y-6 p-6 xl:p-8">
             <header className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-white">
+                    <h2 className="text-3xl font-bold tracking-tight text-ink">
                         {t("media.title")}
                     </h2>
                     <p className="mt-1 text-sm text-zinc-400">{t("media.subtitle")}</p>
@@ -342,7 +342,7 @@ export const MediaLibraryPage: React.FC = () => {
                                 ] as MediaFilter[]
                             ).map((option: MediaFilter) => (
                                 <button
-                                    className={`rounded-md px-3 py-1.5 text-xs font-medium ${filter === option ? "bg-indigo-600 text-white" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"}`}
+                                    className={`rounded-md px-3 py-1.5 text-xs font-medium ${filter === option ? "bg-indigo-600 text-on-accent" : "text-zinc-400 hover:bg-zinc-800 hover:text-ink"}`}
                                     key={option}
                                     onClick={() => setFilter(option)}
                                 >

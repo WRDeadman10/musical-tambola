@@ -15,10 +15,13 @@ import { HistoryPage } from "./features/history/HistoryPage";
 import { PresentationPage } from "./features/presentation/PresentationPage";
 import { PrintTicketsPage } from "./features/ticket-printing/PrintTicketsPage";
 import { SetupGuard } from "./components/layout/SetupGuard";
+import { useThemeClass } from "./lib/useThemeClass";
 
 function AppRoutes(): React.JSX.Element {
     const location = useLocation();
     const setAppInfo = useAppStore((state) => state.setAppInfo);
+    const theme: string = useAppStore((state) => state.theme);
+    useThemeClass(theme, location.pathname !== "/present");
 
     // Load the saved settings (language, theme, flags) as soon as the app starts,
     // for the host window and the projector window alike.
