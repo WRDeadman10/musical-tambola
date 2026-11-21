@@ -61,6 +61,7 @@ export function LuckyDrawCard(): React.JSX.Element {
                 <h2 className="text-lg font-semibold">{translate("luckyDraw.title")}</h2>
                 <span className="text-xs text-slate-400">{translate("luckyDraw.shortcut")}</span>
             </div>
+            <p className="text-sm text-zinc-400">{translate("luckyDraw.about")}</p>
             <div className="flex gap-2">
                 <button type="button" onClick={() => setSource("NAMES")}>
                     {translate("luckyDraw.names")}
@@ -105,8 +106,12 @@ export function LuckyDrawCard(): React.JSX.Element {
             )}
             {error && <p role="alert">{error}</p>}
             {winner && (
-                <p aria-live="polite">
-                    {translate("luckyDraw.winner")}: <strong>{winner.value}</strong>
+                <p
+                    aria-live="polite"
+                    className="anim-pop anim-glow rounded-2xl border border-gold/50 bg-gold/10 px-4 py-3 text-lg"
+                >
+                    {translate("luckyDraw.winner")}:{" "}
+                    <strong className="text-gold">{winner.value}</strong>
                 </p>
             )}
             <h3>{translate("luckyDraw.history")}</h3>

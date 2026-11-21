@@ -95,6 +95,55 @@ export function applyPresentationCommand(
             };
         case "LUCKY_DRAW":
             return { ...state, scene: "LUCKY_DRAW", luckyDraw: readLuckyDraw(event.payload) };
+        case "CHESTS_SHOW": {
+            const count: number = Math.max(
+                2,
+                Math.min(12, Math.floor(asNumber(event.payload.count, 3))),
+            );
+            return {
+                ...state,
+                scene: "CHESTS",
+                chests: {
+                    count,
+                    prize: asString(event.payload.prize, ""),
+                    picking: null,
+                    revealed: {},
+                },
+            };
+        }
+        case "CHEST_PICK": {
+            if (state.chests === null || state.chests === undefined) {
+                return state;
+            }
+            const index: number = Math.floor(asNumber(event.payload.index, -1));
+            if (index < 0 || index >= state.chests.count || index in state.chests.revealed) {
+                return state;
+            }
+            return { ...state, chests: { ...state.chests, picking: index } };
+        }
+        case "CHEST_REVEAL": {
+            if (state.chests === null || state.chests === undefined) {
+                return state;
+            }
+            const index: number = Math.floor(asNumber(event.payload.index, -1));
+            if (index < 0 || index >= state.chests.count) {
+                return state;
+            }
+            return {
+                ...state,
+                chests: {
+                    ...state.chests,
+                    picking: state.chests.picking === index ? null : state.chests.picking,
+                    revealed: { ...state.chests.revealed, [index]: event.payload.win === true },
+                },
+            };
+        }
+        case "CHESTS_HIDE":
+            return {
+                ...state,
+                scene: state.current === null ? "IDLE" : "MEDIA",
+                chests: null,
+            };
         case "PLAY":
             // Back to the media screen and ask the video to start again.
             return {

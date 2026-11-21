@@ -133,4 +133,13 @@ describe("SettingsPage", () => {
             expect(mockedFormats.setGameFormat).toHaveBeenCalledWith("SONG_GRID", 45),
         );
     });
+
+    it("the Animations switch saves animations_enabled", async () => {
+        render(<SettingsPage />);
+        const box = await screen.findByLabelText(/Animations/);
+        fireEvent.click(box);
+        await waitFor(() =>
+            expect(mockedApi.setAppSetting).toHaveBeenCalledWith("animations_enabled", "false"),
+        );
+    });
 });

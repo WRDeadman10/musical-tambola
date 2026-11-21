@@ -1,7 +1,7 @@
 import { CalledItem, GameState } from "./game";
 
 export type PresentationScene =
-    "IDLE" | "MEDIA" | "SPLASH" | "COUNTDOWN" | "ANNOUNCE" | "LUCKY_DRAW";
+    "IDLE" | "MEDIA" | "SPLASH" | "COUNTDOWN" | "ANNOUNCE" | "LUCKY_DRAW" | "CHESTS";
 
 export interface PresentationCountdown {
     seconds: number;
@@ -38,6 +38,17 @@ export interface PresentationState {
     playNonce?: number;
     /** Latest transport action from the host's audience preview; the projector follows it. */
     videoControl?: VideoControl;
+    chests?: PresentationChests | null;
+}
+
+/** What the audience sees of the chest game. The winning chests are only revealed one by one. */
+export interface PresentationChests {
+    count: number;
+    prize: string;
+    /** The chest being opened right now (drumroll plays), or null. */
+    picking: number | null;
+    /** Opened chests: index -> whether it held the prize. */
+    revealed: Record<number, boolean>;
 }
 
 export type VideoAction = "PLAY" | "PAUSE" | "SEEK" | "SYNC";
@@ -61,6 +72,10 @@ export type PresentationCommandName =
     | "SET_VOLUME"
     | "PLAY"
     | "VIDEO"
+    | "CHESTS_SHOW"
+    | "CHEST_PICK"
+    | "CHEST_REVEAL"
+    | "CHESTS_HIDE"
     | "LUCKY_DRAW"
     | "SETTINGS_CHANGED"
     | "CLAIM_RESULT"

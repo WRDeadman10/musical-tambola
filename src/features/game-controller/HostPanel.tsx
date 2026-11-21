@@ -19,9 +19,10 @@ import { WinnersList } from "./WinnersList";
 import { LuckyDrawCard } from "./LuckyDrawCard";
 import { Tabs } from "../../components/ui/tabs";
 import { ForecastCard } from "./ForecastCard";
+import { ChestsCard } from "../chests/ChestsCard";
 import { useSoundEffects } from "../presentation/useSoundEffects";
 
-type HostTab = "claim" | "forecast" | "projector" | "lucky";
+type HostTab = "claim" | "forecast" | "projector" | "lucky" | "chests";
 
 export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.Element {
     const translate = useAppStore((state) => state.t);
@@ -204,6 +205,7 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                             { id: "forecast", label: translate("hostPanel.tabForecast") },
                             { id: "projector", label: translate("hostPanel.tabProjector") },
                             { id: "lucky", label: translate("hostPanel.tabLucky") },
+                            { id: "chests", label: translate("hostPanel.tabChests") },
                         ]}
                     />
                     <div className="space-y-4 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
@@ -238,6 +240,9 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                         </div>
                         <div className={tab === "lucky" ? "anim-fade" : "hidden"} id="lucky-draw">
                             <LuckyDrawCard />
+                        </div>
+                        <div className={tab === "chests" ? "anim-fade" : "hidden"}>
+                            <ChestsCard />
                         </div>
                     </div>
                 </div>

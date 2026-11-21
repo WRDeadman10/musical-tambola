@@ -102,6 +102,10 @@ export function PresentationPage(): React.JSX.Element {
             if (command.command === "CLAIM_RESULT")
                 playSound(command.payload.status === "ACCEPTED" ? "accepted" : "rejected");
             if (command.command === "LUCKY_DRAW") playSound("lucky");
+            if (command.command === "CHEST_PICK") playSound("drumroll");
+            if (command.command === "CHEST_REVEAL" && command.payload.silent !== true) {
+                playSound(command.payload.win === true ? "chestWin" : "chestEmpty");
+            }
             if (command.command === "SETTINGS_CHANGED") void getAppInfo().then(setAppInfo);
             if (mounted && command.command === "SET_VOLUME") {
                 const nextVolume: number = Number(command.payload.volume);

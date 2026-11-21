@@ -55,6 +55,26 @@
         "checkTicket": "Check a ticket number",
         "noWins": "This ticket does not win any prize"
     },
+    "chests": {
+        "title": "Treasure chests",
+        "about": "Closed chests, fewer winners than chests. Pick a chest, hear the drumroll, then see what is inside. Nothing opens by itself.",
+        "count": "Number of chests",
+        "winners": "Winning chests",
+        "prize": "Prize (optional)",
+        "prizePlaceholder": "For example: Free dinner",
+        "start": "Start round",
+        "chest": "Chest",
+        "win": "Winner!",
+        "empty": "Empty",
+        "openingLabel": "Opening...",
+        "pickOne": "Pick a chest to open.",
+        "opening": "Opening... drumroll.",
+        "finished": "Round finished.",
+        "revealRest": "Reveal the rest",
+        "end": "End round",
+        "errorCount": "Use 2 to 12 chests.",
+        "errorWinners": "Winning chests must be at least 1 and fewer than the number of chests."
+    },
     "settings": {
         "animations": "Animations",
         "animationsHint": "Turn off if the game feels slow on this computer.",
@@ -499,6 +519,7 @@
         "openClaimDesk": "Open detailed Claim Desk"
     },
     "hostPanel": {
+        "tabChests": "Chests",
         "claimTimer": "Claim timer",
         "claimTimerHelp": "A countdown for players to call out a claim after a number is drawn. It also shows on the projector when you start it.",
         "tabs": "Host tools",
@@ -547,6 +568,7 @@
         "exitPresent": "Exit present mode"
     },
     "luckyDraw": {
+        "about": "Two or more players claim the same prize at the same time and every claim is valid? Type their ticket numbers, one per line, and the system picks one lucky winner.",
         "title": "Lucky draw",
         "shortcut": "Shortcut: L",
         "source": "Draw source",

@@ -1,7 +1,10 @@
 import { useCallback, useRef } from "react";
 import { useAppStore } from "../../stores/appStore";
+import { playSynth, SynthEffect } from "./sfx";
 
-export type SoundEffect = "draw" | "reveal" | "accepted" | "rejected" | "lucky";
+export type SoundEffect = "draw" | "reveal" | "accepted" | "rejected" | "lucky" | SynthEffect;
+
+const SYNTH_EFFECTS: string[] = ["drumroll", "chestWin", "chestEmpty"];
 
 /** True while this window is itself acting as the audience screen (single-screen Present mode). */
 function isPresentingHere(): boolean {
@@ -29,8 +32,16 @@ export function useSoundEffects(): (effect: SoundEffect) => void {
             const key: string = `${effect}:${Date.now()}`;
             if (lastPlayed.current === key) return;
             lastPlayed.current = key;
+            const volume: number = Math.max(
+                0,
+                Math.min(1, Number(appInfo?.soundVolume ?? 70) / 100),
+            );
+            if (SYNTH_EFFECTS.includes(effect)) {
+                playSynth(effect as SynthEffect, volume);
+                return;
+            }
             const audio: HTMLAudioElement = new Audio(`http://media.localhost/sound/${effect}`);
-            audio.volume = Math.max(0, Math.min(1, Number(appInfo?.soundVolume ?? 70) / 100));
+            audio.volume = volume;
             void audio.play().catch(() => undefined);
         },
         [appInfo],
