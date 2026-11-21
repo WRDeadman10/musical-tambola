@@ -10,7 +10,6 @@ import {
     CardContent,
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
 import { getDashboardStats } from "../../lib/api/history";
 import { DashboardStats } from "../../types/history";
 import { formatNumber } from "../../lib/i18n";
@@ -57,7 +56,6 @@ export const DashboardPage: React.FC = () => {
                     </h2>
                     <p className="text-zinc-400 mt-1">{t("dashboard.welcome")}</p>
                 </div>
-                <Badge variant="success">{t("dashboard.phaseStatus")}</Badge>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -134,9 +132,7 @@ export const DashboardPage: React.FC = () => {
                         <h3 className="text-lg font-semibold text-ink">
                             {t("dashboard.quickStatus")}
                         </h3>
-                        <p className="text-sm text-zinc-400 mt-1">
-                            {t("dashboard.foundationReady")}
-                        </p>
+                        <p className="text-sm text-zinc-400 mt-1">{t("dashboard.activeGame")}</p>
                     </div>
                     <Button
                         onClick={() => navigate("/game")}
