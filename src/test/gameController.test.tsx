@@ -205,8 +205,9 @@ describe("game controller", () => {
         expect(presentButton.getAttribute("aria-pressed")).toBe("false");
         fireEvent.click(presentButton);
         expect(
-            screen.getByRole("button", { name: "Exit present mode" }).getAttribute("aria-pressed"),
-        ).toBe("true");
+            screen.getByRole("button", { name: "Exit present mode", pressed: true }),
+        ).toBeTruthy();
+        expect(screen.getByTestId("present-overlay")).toBeTruthy();
     });
 
     it("host panel shows the song list empty state", async () => {
