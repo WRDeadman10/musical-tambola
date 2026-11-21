@@ -8,7 +8,7 @@ use crate::services::backup::{
 use tauri::{AppHandle, Manager, State, Window};
 
 #[tauri::command]
-pub fn create_backup(
+pub async fn create_backup(
     target_path: Option<String>,
     window: Window,
     app: AppHandle,
@@ -23,7 +23,7 @@ pub fn create_backup(
 }
 
 #[tauri::command]
-pub fn restore_backup(
+pub async fn restore_backup(
     path: String,
     window: Window,
     app: AppHandle,
@@ -40,7 +40,7 @@ pub fn restore_backup(
 }
 
 #[tauri::command]
-pub fn reset_all_data(
+pub async fn reset_all_data(
     confirm: String,
     pin: Option<String>,
     window: Window,
@@ -185,7 +185,7 @@ pub fn reset_preference_rows(conn: &rusqlite::Connection) -> rusqlite::Result<()
 }
 
 #[tauri::command]
-pub fn reset_app_settings(
+pub async fn reset_app_settings(
     confirm: String,
     pin: Option<String>,
     window: Window,

@@ -75,6 +75,10 @@ describe("every backend command is allowed for the main window", () => {
         "download_ffmpeg",
         "preflight_media",
         "validate_all_media",
+        "create_backup",
+        "restore_backup",
+        "reset_all_data",
+        "reset_app_settings",
     ];
 
     it("declares every slow or window-creating command as async", () => {
