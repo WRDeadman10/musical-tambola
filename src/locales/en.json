@@ -142,7 +142,19 @@
         "confirmDelete": "Delete this ticket batch?",
         "search": "Search ticket code",
         "previous": "Previous",
-        "next": "Next"
+        "next": "Next",
+        "formatClassic": "Classic 90-ball",
+        "formatSongGrid": "Song Grid",
+        "nameRequired": "Enter a batch name.",
+        "countRange": "Enter a number between 1 and 10,000.",
+        "willGenerate": "This will generate",
+        "generated": "Batch created",
+        "viewBatches": "View tickets",
+        "printBatch": "Print tickets",
+        "recentBatches": "Recent batches",
+        "noBatches": "No batches yet. Generate your first batch.",
+        "ticketCount": "tickets",
+        "batchEmpty": "No tickets match."
     },
     "printing": {
         "title": "Print tickets",

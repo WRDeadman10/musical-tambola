@@ -9,6 +9,9 @@ interface TicketGridProps {
     mediaByNumber: Map<number, MediaSlot>;
     markedNumbers?: Set<number>;
     showNumbers?: boolean;
+    showCode?: boolean;
+    fallbackToNumber?: boolean;
+    printable?: boolean;
     onClick?: () => void;
 }
 const EMPTY_MARKED_NUMBERS: Set<number> = new Set<number>();
@@ -18,6 +21,9 @@ export function TicketGrid({
     mediaByNumber,
     markedNumbers = EMPTY_MARKED_NUMBERS,
     showNumbers = false,
+    showCode = true,
+    fallbackToNumber = false,
+    printable = false,
     onClick,
 }: TicketGridProps): React.JSX.Element {
     const songGrid: boolean = ticket.format === "SONG_GRID";
@@ -28,45 +34,59 @@ export function TicketGrid({
     return (
         <button
             type="button"
-            className={`grid w-full gap-1 rounded-lg border border-zinc-700 bg-zinc-950 p-1 text-left ${songGrid ? "aspect-[5/3] grid-cols-5" : "aspect-[9/3] grid-cols-9"}`}
+            className={`flex w-full flex-col gap-1 rounded-lg border p-2 text-left ${printable ? "h-full border-black bg-transparent" : "border-zinc-700 bg-zinc-950"}`}
             onClick={onClick}
         >
-            {Array.from({ length: 3 * columns }, (_value: undefined, index: number) => {
-                const row: number = Math.floor(index / columns);
-                const col: number = index % columns;
-                const number: number | undefined = cells.get(`${row}-${col}`);
-                const media: MediaSlot | undefined =
-                    number === undefined ? undefined : mediaByNumber.get(number);
-                const thumb: string | null =
-                    media === undefined ? null : getMediaThumbnailSource(media);
-                const marked: boolean = number !== undefined && markedNumbers.has(number);
-                return (
-                    <span
-                        className={`relative flex min-w-0 items-center justify-center overflow-hidden rounded border ${number === undefined ? "border-zinc-900 bg-zinc-900/60" : marked ? "border-emerald-400 bg-emerald-950/60" : "border-zinc-700 bg-zinc-800"}`}
-                        key={`${row}-${col}`}
-                        data-testid="ticket-cell"
-                    >
-                        {thumb !== null && (
-                            <img
-                                className="absolute inset-0 h-full w-full object-cover opacity-40"
-                                src={thumb}
-                                alt=""
-                            />
-                        )}
-                        {media?.mediaType === "VIDEO" && thumb !== null && (
-                            <Video className="absolute right-0.5 top-0.5 h-3 w-3 text-white" />
-                        )}
-                        {number !== undefined && (
-                            <span
-                                className="z-10 truncate px-1 text-center text-[10px] text-white"
-                                title={media?.title ?? undefined}
-                            >
-                                {showNumbers ? number : (media?.title ?? "")}
-                            </span>
-                        )}
-                    </span>
-                );
-            })}
+            {showCode && (
+                <span
+                    className="font-mono text-sm font-semibold tracking-wide text-indigo-300"
+                    data-testid="ticket-code"
+                >
+                    {ticket.code}
+                </span>
+            )}
+            <span
+                className={`grid w-full gap-1 ${songGrid ? "aspect-[5/3] grid-cols-5" : "aspect-[9/3] grid-cols-9"}`}
+            >
+                {Array.from({ length: 3 * columns }, (_value: undefined, index: number) => {
+                    const row: number = Math.floor(index / columns);
+                    const col: number = index % columns;
+                    const number: number | undefined = cells.get(`${row}-${col}`);
+                    const media: MediaSlot | undefined =
+                        number === undefined ? undefined : mediaByNumber.get(number);
+                    const thumb: string | null =
+                        media === undefined ? null : getMediaThumbnailSource(media);
+                    const marked: boolean = number !== undefined && markedNumbers.has(number);
+                    return (
+                        <span
+                            className={`relative flex min-w-0 items-center justify-center overflow-hidden rounded border ${printable ? (number === undefined ? "border-black/30 bg-black/10" : "border-black bg-white") : number === undefined ? "border-zinc-900 bg-zinc-900/60" : marked ? "border-emerald-400 bg-emerald-950/60" : "border-zinc-700 bg-zinc-800"}`}
+                            key={`${row}-${col}`}
+                            data-testid="ticket-cell"
+                        >
+                            {thumb !== null && (
+                                <img
+                                    className="absolute inset-0 h-full w-full object-cover opacity-40"
+                                    src={thumb}
+                                    alt=""
+                                />
+                            )}
+                            {!printable && media?.mediaType === "VIDEO" && thumb !== null && (
+                                <Video className="absolute right-0.5 top-0.5 h-3 w-3 text-white" />
+                            )}
+                            {number !== undefined && (
+                                <span
+                                    className={`z-10 line-clamp-2 break-words px-0.5 text-center text-xs font-medium leading-tight ${printable ? "text-black" : "text-white"}`}
+                                    title={media?.title ?? undefined}
+                                >
+                                    {showNumbers || (fallbackToNumber && !media?.title)
+                                        ? number
+                                        : (media?.title ?? "")}
+                                </span>
+                            )}
+                        </span>
+                    );
+                })}
+            </span>
         </button>
     );
 }

@@ -150,7 +150,7 @@ export function TicketBatchesPage(): React.JSX.Element {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <h3 className="text-xl font-semibold">{selected.name}</h3>
                         <input
-                            className="h-9 rounded border border-zinc-700 bg-zinc-950 px-3"
+                            className="h-10 w-64 rounded-md border border-zinc-700 bg-zinc-950 px-3 text-zinc-100 focus:border-indigo-500 focus:outline-none"
                             placeholder={t("tickets.search")}
                             value={query}
                             onChange={(event) => {
@@ -159,7 +159,17 @@ export function TicketBatchesPage(): React.JSX.Element {
                             }}
                         />
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    {shownTickets.length === 0 && (
+                        <p className="text-sm text-zinc-400">{t("tickets.batchEmpty")}</p>
+                    )}
+                    <div
+                        className={
+                            (selected.format ?? activeFormat) === "SONG_GRID"
+                                ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+                                : "grid gap-4 lg:grid-cols-2 2xl:grid-cols-3"
+                        }
+                        data-testid="ticket-list"
+                    >
                         {shownTickets.map((ticket) => (
                             <div key={ticket.id}>
                                 <TicketGrid

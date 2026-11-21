@@ -1,10 +1,24 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { TicketGeneratorPage } from "../features/ticket-generator/TicketGeneratorPage";
 import { TicketBatchesPage } from "../features/ticket-batches/TicketBatchesPage";
 import * as ticketApi from "../lib/api/tickets";
 import * as mediaApi from "../lib/api/media";
-import { TicketBatch } from "../types/ticket";
+import { MemoryRouter } from "react-router-dom";
+import { beforeEach } from "vitest";
+import { useAppStore } from "../stores/appStore";
+
+vi.mock("../lib/api/formats", () => ({
+    getGameFormat: vi.fn().mockResolvedValue({ format: "CLASSIC_90", songCount: 45 }),
+}));
+
+function renderGenerator(): void {
+    render(
+        <MemoryRouter>
+            <TicketGeneratorPage />
+        </MemoryRouter>,
+    );
+}
 
 vi.mock("../lib/api/tickets", () => ({
     generateTicketBatch: vi.fn(),
@@ -20,7 +34,13 @@ vi.mock("../lib/api/media", () => ({
 }));
 
 describe("ticket pages", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        useAppStore.setState({ language: "en" });
+    });
+
     it("validates the generator count and submits a valid batch", async () => {
+        vi.mocked(ticketApi.listTicketBatches).mockResolvedValue([]);
         vi.mocked(ticketApi.generateTicketBatch).mockResolvedValue({
             id: 1,
             name: "Evening",
@@ -29,21 +49,35 @@ describe("ticket pages", () => {
             createdAt: "now",
         });
 
-        render(<TicketGeneratorPage />);
-        const initialButtons = screen.getAllByRole("button");
-        fireEvent.click(initialButtons[initialButtons.length - 1]);
-        const generatorInputs = screen.getAllByRole("spinbutton");
-        fireEvent.change(generatorInputs[0], { target: { value: "10001" } });
-        const invalidSubmitButtons = screen.getAllByRole("button");
-        fireEvent.click(invalidSubmitButtons[invalidSubmitButtons.length - 1]);
-        await waitFor(() => expect(ticketApi.generateTicketBatch).not.toHaveBeenCalled());
+        renderGenerator();
+        const countInput = screen.getByLabelText("Number of tickets");
+        fireEvent.change(countInput, { target: { value: "10001" } });
+        fireEvent.change(screen.getByLabelText("Batch name"), { target: { value: "Evening" } });
+        fireEvent.click(screen.getByRole("button", { name: "Generate tickets" }));
+        expect(await screen.findByText("Enter a number between 1 and 10,000.")).toBeTruthy();
+        expect(ticketApi.generateTicketBatch).not.toHaveBeenCalled();
 
-        fireEvent.change(screen.getAllByRole("textbox")[0], { target: { value: "Evening" } });
-        fireEvent.change(screen.getAllByRole("spinbutton")[0], { target: { value: "2" } });
-        const validSubmitButtons = screen.getAllByRole("button");
-        fireEvent.click(validSubmitButtons[validSubmitButtons.length - 1]);
+        fireEvent.change(countInput, { target: { value: "2" } });
+        fireEvent.click(screen.getByRole("button", { name: "Generate tickets" }));
         await waitFor(() =>
             expect(ticketApi.generateTicketBatch).toHaveBeenCalledWith("Evening", 2),
+        );
+        expect(await screen.findByText(/Batch created: Evening/)).toBeTruthy();
+    });
+
+    it("shows the active format, presets and recent batches on the generator page", async () => {
+        vi.mocked(ticketApi.listTicketBatches).mockResolvedValue([
+            { id: 1, name: "Evening", requestedCount: 50, generatedCount: 50, createdAt: "now" },
+        ]);
+        renderGenerator();
+        expect(await screen.findByText("Evening")).toBeTruthy();
+        expect(screen.getByText("50/50")).toBeTruthy();
+        expect(screen.getByTestId("generator-format").textContent).toBe("Classic 90-ball");
+        fireEvent.click(screen.getByRole("button", { name: "500" }));
+        await waitFor(() =>
+            expect((screen.getByLabelText("Number of tickets") as HTMLInputElement).value).toBe(
+                "500",
+            ),
         );
     });
 
@@ -76,7 +110,8 @@ describe("ticket pages", () => {
         expect(await screen.findByText("batch is used by a game")).toBeTruthy();
     });
 
-    it("renders generation progress and locks the modal while running", async () => {
+    it("renders generation progress and locks the form while running", async () => {
+        vi.mocked(ticketApi.listTicketBatches).mockResolvedValue([]);
         let progressCallback: ((value: { done: number; total: number }) => void) | null = null;
         vi.mocked(ticketApi.listenToTicketGenerationProgress).mockImplementation(
             async (callback) => {
@@ -84,34 +119,19 @@ describe("ticket pages", () => {
                 return () => undefined;
             },
         );
-        let resolveGeneration: ((value: TicketBatch) => void) | null = null;
-        vi.mocked(ticketApi.generateTicketBatch).mockReturnValue(
-            new Promise((resolve) => {
-                resolveGeneration = resolve;
-            }),
-        );
-        render(<TicketGeneratorPage />);
-        fireEvent.click(screen.getAllByRole("button")[screen.getAllByRole("button").length - 1]);
-        fireEvent.change(screen.getAllByRole("textbox")[0], { target: { value: "Evening" } });
-        fireEvent.change(screen.getAllByRole("spinbutton")[0], { target: { value: "2" } });
-        fireEvent.click(screen.getAllByRole("button")[screen.getAllByRole("button").length - 1]);
+        vi.mocked(ticketApi.generateTicketBatch).mockReturnValue(new Promise(() => undefined));
+        renderGenerator();
+        fireEvent.change(screen.getByLabelText("Batch name"), { target: { value: "Evening" } });
+        fireEvent.change(screen.getByLabelText("Number of tickets"), { target: { value: "2" } });
+        fireEvent.click(screen.getByRole("button", { name: "Generate tickets" }));
         await waitFor(() => expect(ticketApi.generateTicketBatch).toHaveBeenCalled());
-        (progressCallback as unknown as (value: { done: number; total: number }) => void)({
-            done: 1,
-            total: 2,
+        act(() => {
+            (progressCallback as unknown as (value: { done: number; total: number }) => void)({
+                done: 1,
+                total: 2,
+            });
         });
-        await waitFor(() =>
-            expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("1"),
-        );
-        expect(
-            screen.getAllByRole("button").some((button) => (button as HTMLButtonElement).disabled),
-        ).toBe(true);
-        (resolveGeneration as unknown as (value: TicketBatch) => void)({
-            id: 1,
-            name: "Evening",
-            requestedCount: 2,
-            generatedCount: 2,
-            createdAt: "now",
-        });
+        expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("1");
+        expect((screen.getByLabelText("Batch name") as HTMLInputElement).disabled).toBe(true);
     });
 });

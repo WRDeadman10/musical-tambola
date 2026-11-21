@@ -142,7 +142,19 @@
         "confirmDelete": "આ ટિકિટ બેચ કાઢી નાખવો છે?",
         "search": "ટિકિટ કોડ શોધો",
         "previous": "પહેલાં",
-        "next": "આગળ"
+        "next": "આગળ",
+        "formatClassic": "ક્લાસિક 90-બોલ",
+        "formatSongGrid": "સોંગ ગ્રિડ",
+        "nameRequired": "બેચનું નામ લખો.",
+        "countRange": "1 થી 10,000 વચ્ચેની સંખ્યા લખો.",
+        "willGenerate": "આટલી બનશે",
+        "generated": "બેચ બની ગયો",
+        "viewBatches": "ટિકિટ જુઓ",
+        "printBatch": "ટિકિટ પ્રિન્ટ કરો",
+        "recentBatches": "તાજેતરના બેચ",
+        "noBatches": "હજી કોઈ બેચ નથી. પહેલો બેચ બનાવો.",
+        "ticketCount": "ટિકિટ",
+        "batchEmpty": "કોઈ ટિકિટ મળી નથી."
     },
     "printing": {
         "title": "ટિકિટ છાપો",

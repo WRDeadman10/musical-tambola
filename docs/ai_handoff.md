@@ -116,3 +116,13 @@
   - `cargo clippy -- -D warnings`: PASS.
   - `cargo test`: PASS (123 unit + 2 acceptance = 125 total).
 
+
+## v1.0.2 BT-38 - Tickets (Claude, frontend)
+- Every `TicketGrid` shows its ticket code (`data-testid="ticket-code"`); cell text is larger and wraps to two lines.
+- Ticket Generator is now a real page: inline form (name, count, presets 50/100/200/500/1000), format summary, progress bar, success banner with links, recent batches list. Native form validation is off (`noValidate`) so the localized zod messages show.
+- Batch view: layout depends on the batch format (Classic 2-3 columns, Song Grid 2-3 columns), empty state added.
+- Print: new `features/ticket-printing/PrintableTicket.tsx` places event name, ticket code, grid and footer in the `TICKET_TEMPLATE_REGIONS` percentages on a 2:1 card; the print page now loads real media titles (falls back to the number). `@media print` in `src/index.css` hides the sidebar/controls and breaks pages per A4.
+- Tests: `src/test/printLayout.test.tsx` (new), `src/test/ticketPages.test.tsx` rewritten with role/label queries. Mutation-checked the ticket-code test.
+- Modified: TicketGrid.tsx, TicketGeneratorPage.tsx, TicketBatchesPage.tsx, PrintTicketsPage.tsx, PrintableTicket.tsx (new), index.css, en.json, gu.json, ticketPages/printLayout tests.
+- Not done: no real print/PDF check of the A4 output in the built app; no ticket-ID search by number range UI beyond the existing search box.
+- Next recommended task: BT-39 (game screen fit-to-viewport, app-wide input/select styling, Settings cards).

@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/ui/button";
-import { TicketGrid } from "../../components/ticket/TicketGrid";
+import { PrintableTicket } from "./PrintableTicket";
+import { listMedia } from "../../lib/api/media";
+import { MediaSlot } from "../../types/media";
 import { listBatchTickets, listTicketBatches } from "../../lib/api/tickets";
 import {
     deleteTemplate,
@@ -28,6 +30,16 @@ export function PrintTicketsPage(): React.JSX.Element {
     const [from, setFrom] = useState<string>("");
     const [to, setTo] = useState<string>("");
     const [perPage, setPerPage] = useState<number>(1);
+    const [media, setMedia] = useState<Map<number, MediaSlot>>(new Map<number, MediaSlot>());
+    const eventName: string = useAppStore((state) => state.appInfo?.eventName ?? "");
+    const footerText: string = useAppStore((state) => state.appInfo?.tickerText ?? "");
+    useEffect(() => {
+        void listMedia()
+            .then((slots: MediaSlot[]) =>
+                setMedia(new Map<number, MediaSlot>(slots.map((slot) => [slot.number, slot]))),
+            )
+            .catch((): void => undefined);
+    }, []);
     useEffect(() => {
         void Promise.all([listTicketBatches(), listTemplates(), getActiveTemplate()]).then(
             ([loadedBatches, loadedTemplates, loadedActive]) => {
@@ -85,10 +97,10 @@ export function PrintTicketsPage(): React.JSX.Element {
     };
     return (
         <div className="space-y-6 p-8">
-            <header>
+            <header className="print-hide">
                 <h2 className="text-3xl font-bold">{t("printing.title")}</h2>
             </header>
-            <section className="space-y-3 rounded border border-zinc-800 p-4">
+            <section className="print-hide flex flex-wrap items-end gap-3 rounded border border-zinc-800 p-4">
                 <select
                     aria-label={t("printing.batch")}
                     value={batchId}
@@ -132,26 +144,24 @@ export function PrintTicketsPage(): React.JSX.Element {
             <section className="space-y-4">
                 {pages.map((page, pageIndex) => (
                     <div
-                        className="ticket-print-page bg-white p-4 text-black"
+                        className="ticket-print-page space-y-3 bg-white p-4 text-black"
+                        data-testid="print-page"
                         key={pageIndex}
-                        style={{
-                            backgroundImage: active?.backgroundUrl
-                                ? `url(${active.backgroundUrl})`
-                                : undefined,
-                        }}
                     >
                         {page.map((ticket) => (
-                            <TicketGrid
+                            <PrintableTicket
                                 key={ticket.id}
                                 ticket={ticket}
-                                mediaByNumber={new Map()}
-                                showNumbers
+                                mediaByNumber={media}
+                                eventName={eventName}
+                                footerText={footerText}
+                                backgroundUrl={active?.backgroundUrl ?? null}
                             />
                         ))}
                     </div>
                 ))}
             </section>
-            <section className="space-y-2 rounded border border-zinc-800 p-4">
+            <section className="print-hide space-y-2 rounded border border-zinc-800 p-4">
                 <h3>{t("printing.templates")}</h3>
                 <input
                     aria-label={t("printing.upload")}
