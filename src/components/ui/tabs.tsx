@@ -20,7 +20,7 @@ export function Tabs({ tabs, active, onChange, label, className }: TabsProps): R
         <div
             aria-label={label}
             className={cn(
-                "flex gap-1 rounded-2xl border border-zinc-700/70 bg-zinc-900 p-1.5",
+                "flex gap-1 overflow-hidden rounded-2xl border border-zinc-700/70 bg-zinc-900 p-1.5",
                 className,
             )}
             role="tablist"
@@ -29,7 +29,7 @@ export function Tabs({ tabs, active, onChange, label, className }: TabsProps): R
                 <button
                     aria-selected={tab.id === active}
                     className={cn(
-                        "flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition-colors",
+                        "min-w-0 flex-1 whitespace-nowrap rounded-xl px-2 py-2 text-[13px] font-semibold transition-colors",
                         tab.id === active
                             ? "bg-indigo-500/15 text-ink ring-1 ring-indigo-400/40"
                             : "text-zinc-400 hover:bg-zinc-800 hover:text-ink",

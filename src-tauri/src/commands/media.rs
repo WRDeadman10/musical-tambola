@@ -252,6 +252,74 @@ pub async fn pick_media_file(
     }))
 }
 
+/// Largest file the app will write for the user through the save dialog.
+const MAX_SAVED_FILE_BYTES: usize = 25 * 1024 * 1024;
+const SAVED_FILE_EXTENSIONS: [&str; 4] = ["png", "jpg", "pdf", "csv"];
+
+/// Keeps only a plain file name: no folders, no characters Windows rejects.
+pub fn sanitize_file_name(name: &str) -> String {
+    let cleaned: String = name
+        .chars()
+        .filter(|c: &char| {
+            !matches!(c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|') && !c.is_control()
+        })
+        .collect();
+    cleaned.trim().trim_matches('.').to_string()
+}
+
+/// Asks the user where to save a file and writes it there. A browser download does not work inside
+/// the app window, so every export goes through this command. Returns the path, or None when the
+/// user cancels.
+#[tauri::command]
+pub async fn save_binary_file(
+    default_name: String,
+    bytes: Vec<u8>,
+    app_handle: AppHandle,
+    window: Window,
+) -> Result<Option<String>, AppError> {
+    crate::errors::require_main_window(&window)?;
+    let name: String = sanitize_file_name(&default_name);
+    let extension: String = std::path::Path::new(&name)
+        .extension()
+        .and_then(|e: &std::ffi::OsStr| e.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    if name.is_empty() || !SAVED_FILE_EXTENSIONS.contains(&extension.as_str()) {
+        return Err(AppError::new(
+            "SAVE_FILE_TYPE_NOT_ALLOWED",
+            "Only png, jpg, pdf and csv files can be saved",
+        ));
+    }
+    if bytes.is_empty() || bytes.len() > MAX_SAVED_FILE_BYTES {
+        return Err(AppError::new(
+            "SAVE_FILE_SIZE_INVALID",
+            "The file is empty or larger than 25 MB",
+        ));
+    }
+    let chosen: Option<tauri_plugin_dialog::FilePath> = app_handle
+        .dialog()
+        .file()
+        .set_file_name(&name)
+        .add_filter("File", &[extension.as_str()])
+        .blocking_save_file();
+    let Some(target) = chosen else {
+        return Ok(None);
+    };
+    let path: std::path::PathBuf = match target {
+        tauri_plugin_dialog::FilePath::Path(path_buf) => path_buf,
+        tauri_plugin_dialog::FilePath::Url(_) => {
+            return Err(AppError::new(
+                "SAVE_FILE_TARGET_INVALID",
+                "The chosen location is not a local file",
+            ))
+        }
+    };
+    std::fs::write(&path, &bytes).map_err(|e: std::io::Error| {
+        AppError::internal_error(format!("Could not write the file: {}", e))
+    })?;
+    Ok(Some(path.to_string_lossy().to_string()))
+}
+
 #[tauri::command]
 pub async fn pick_media_folder(
     app_handle: AppHandle,
@@ -489,4 +557,20 @@ pub async fn generate_media_posters(
     }
 
     crate::services::ffmpeg::generate_media_posters_impl(&state, &app_handle, input)
+}
+
+#[cfg(test)]
+mod save_file_tests {
+    use super::sanitize_file_name;
+
+    #[test]
+    fn file_names_lose_folders_and_forbidden_characters() {
+        assert_eq!(sanitize_file_name("..\\..\\evil.png"), "evil.png");
+        assert_eq!(sanitize_file_name("a/b:c*d?.pdf"), "abcd.pdf");
+        assert_eq!(
+            sanitize_file_name("  ticket guide.png "),
+            "ticket guide.png"
+        );
+        assert_eq!(sanitize_file_name("..."), "");
+    }
 }

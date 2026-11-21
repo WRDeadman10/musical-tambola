@@ -19,8 +19,8 @@ use commands::lucky_draw::{create_lucky_draw, draw_lucky_winner, list_lucky_draw
 use commands::media::{
     apply_media_assignments, clear_media, clear_media_poster, download_ffmpeg,
     generate_media_posters, get_ffmpeg_status, get_media, list_media, pick_media_file,
-    pick_media_folder, save_media, save_media_poster, scan_media_folder, validate_all_media,
-    validate_media,
+    pick_media_folder, save_binary_file, save_media, save_media_poster, scan_media_folder,
+    validate_all_media, validate_media,
 };
 use commands::presentation::{
     close_presentation, get_next_item, get_presentation_state, list_displays, open_presentation,
@@ -139,6 +139,7 @@ pub fn run() {
             create_backup,
             restore_backup,
             reset_all_data,
+            save_binary_file,
             reset_app_settings,
             set_admin_pin,
             verify_admin_pin,

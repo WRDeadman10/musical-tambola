@@ -75,22 +75,6 @@ pub fn validate_template_image_header(bytes: &[u8]) -> Result<(&'static str, u32
         ));
     }
 
-    let aspect: f64 = width as f64 / height as f64;
-    let diff: f64 = (aspect - 2.0).abs() / 2.0;
-
-    if diff > 0.01 {
-        return Err(AppError::new(
-            "TEMPLATE_INVALID_ASPECT_RATIO",
-            format!(
-                "Template aspect ratio must be 2:1 within 1%, got {:.3}:1 ({}x{})",
-                aspect, width, height
-            ),
-        )
-        .with_param("width", width.to_string())
-        .with_param("height", height.to_string())
-        .with_param("aspect", format!("{:.3}", aspect)));
-    }
-
     Ok((ext, width, height))
 }
 
@@ -212,23 +196,14 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_template_aspect_ratio_2_to_1_allowed() {
-        // Exact 1800x900 (2:1)
-        let exact_bytes = create_test_png(1800, 900);
-        let res = validate_template_image_header(&exact_bytes).unwrap();
-        assert_eq!(res.0, "png");
-        assert_eq!(res.1, 1800);
-        assert_eq!(res.2, 900);
-
-        // Within 1% tolerance: 2000 x 1010 => 1.980 (1.0% diff)
-        let tol_bytes = create_test_png(2000, 1010);
-        let tol_res = validate_template_image_header(&tol_bytes).unwrap();
-        assert_eq!(tol_res.0, "png");
-
-        // Out of tolerance: 1600 x 900 => 1.777 (~11.1% diff)
-        let bad_bytes = create_test_png(1600, 900);
-        let bad_err = validate_template_image_header(&bad_bytes).unwrap_err();
-        assert_eq!(bad_err.code, "TEMPLATE_INVALID_ASPECT_RATIO");
+    fn test_validate_template_accepts_any_aspect_ratio() {
+        // Banner pieces, backgrounds and logos come in every shape.
+        for (width, height) in [(1800, 900), (1600, 900), (600, 600), (300, 1200)] {
+            let bytes = create_test_png(width, height);
+            let res = validate_template_image_header(&bytes).unwrap();
+            assert_eq!(res.0, "png");
+            assert_eq!((res.1, res.2), (width, height));
+        }
     }
 
     #[test]

@@ -34,8 +34,9 @@ export function TicketGrid({
     return (
         <button
             type="button"
-            className={`flex w-full flex-col gap-1 rounded-lg border p-2 text-left ${printable ? "h-full border-black bg-transparent" : "border-zinc-700 bg-zinc-950"}`}
+            className={`flex w-full flex-col gap-1 rounded-lg border p-2 text-left ${printable ? "h-full bg-transparent" : "border-zinc-700 bg-zinc-950"}`}
             onClick={onClick}
+            style={printable ? { padding: 0, border: 0, gap: 0, borderRadius: 0 } : undefined}
         >
             {showCode && (
                 <span
@@ -46,7 +47,7 @@ export function TicketGrid({
                 </span>
             )}
             <span
-                className={`grid w-full grid-rows-3 gap-1 ${songGrid ? "grid-cols-5" : "grid-cols-9"} ${printable ? "h-full min-h-0 flex-1" : songGrid ? "aspect-[5/3]" : "aspect-[9/3]"}`}
+                className={`grid w-full grid-rows-3 ${printable ? "gap-0" : "gap-1"} ${songGrid ? "grid-cols-5" : "grid-cols-9"} ${printable ? "h-full min-h-0 flex-1" : songGrid ? "aspect-[5/3]" : "aspect-[9/3]"}`}
             >
                 {Array.from({ length: 3 * columns }, (_value: undefined, index: number) => {
                     const row: number = Math.floor(index / columns);
@@ -59,7 +60,7 @@ export function TicketGrid({
                     const marked: boolean = number !== undefined && markedNumbers.has(number);
                     return (
                         <span
-                            className={`relative flex min-w-0 items-center justify-center overflow-hidden rounded border ${printable ? (number === undefined ? "border-black/30 bg-black/10" : "border-black bg-white") : number === undefined ? "border-zinc-900 bg-zinc-900/60" : marked ? "border-emerald-400 bg-emerald-950/60" : "border-zinc-700 bg-zinc-800"}`}
+                            className={`relative flex min-w-0 items-center justify-center overflow-hidden ${printable ? "" : "rounded border"} ${printable ? (number === undefined ? "rounded-none border border-[color:var(--grid-border,#000)] opacity-50" : "rounded-none border border-[color:var(--grid-border,#000)] bg-[color:var(--cell-bg,#fff)]") : number === undefined ? "border-zinc-900 bg-zinc-900/60" : marked ? "border-emerald-400 bg-emerald-950/60" : "border-zinc-700 bg-zinc-800"}`}
                             key={`${row}-${col}`}
                             data-testid="ticket-cell"
                         >
@@ -75,7 +76,12 @@ export function TicketGrid({
                             )}
                             {number !== undefined && (
                                 <span
-                                    className={`z-10 line-clamp-2 break-words px-0.5 text-center text-xs font-medium leading-tight ${printable ? "text-black" : "text-ink"}`}
+                                    className={`z-10 break-words px-0.5 text-center font-semibold leading-tight ${printable ? "line-clamp-3 text-[color:var(--grid-text,#000)]" : "line-clamp-2 text-xs font-medium text-ink"}`}
+                                    style={
+                                        printable
+                                            ? { fontSize: "var(--grid-font, 12px)" }
+                                            : undefined
+                                    }
                                     title={media?.title ?? undefined}
                                 >
                                     {showNumbers || (fallbackToNumber && !media?.title)

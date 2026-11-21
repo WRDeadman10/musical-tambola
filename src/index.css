@@ -378,6 +378,12 @@ html[data-motion="off"] *::after {
     }
 }
 
+/* Scrollbars follow the theme instead of the system default (white bars on the dark screens). */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-zinc-600) transparent;
+}
+
 /* Scrolling ticker on the projector: text enters from the right and leaves on the left. */
 @keyframes marquee {
     from {

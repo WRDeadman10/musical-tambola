@@ -27,6 +27,7 @@ pub enum AppSettingKey {
     PresentationShowNumber,
     AutoOpenPresentation,
     AnimationsEnabled,
+    TicketLayout,
 }
 
 impl FromStr for AppSettingKey {
@@ -52,6 +53,7 @@ impl FromStr for AppSettingKey {
             "presentation_show_number" => Ok(Self::PresentationShowNumber),
             "auto_open_presentation" => Ok(Self::AutoOpenPresentation),
             "animations_enabled" => Ok(Self::AnimationsEnabled),
+            "ticket_layout" => Ok(Self::TicketLayout),
             _ => {
                 log::warn!("Rejected invalid app setting key: '{}'", s);
                 Err(AppError::new(
@@ -164,6 +166,21 @@ pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey,
                 )
                 .with_param("key", key_str)
                 .with_param("value", value));
+            }
+        }
+        AppSettingKey::TicketLayout => {
+            // A small JSON object describing the printed ticket; empty means "use the defaults".
+            let valid: bool = value.is_empty()
+                || (value.len() <= 4000
+                    && serde_json::from_str::<serde_json::Value>(value)
+                        .map(|v: serde_json::Value| v.is_object())
+                        .unwrap_or(false));
+            if !valid {
+                return Err(AppError::new(
+                    "SETTING_INVALID_VALUE",
+                    "Ticket layout must be a JSON object of at most 4000 characters",
+                )
+                .with_param("key", key_str));
             }
         }
         AppSettingKey::AnimationsEnabled => {
@@ -406,6 +423,7 @@ pub struct AppInfo {
     pub sound_volume: String,
     pub sound_projector: String,
     pub animations_enabled: String,
+    pub ticket_layout: String,
 }
 
 #[tauri::command]
@@ -531,6 +549,14 @@ pub fn get_app_info(state: State<'_, DbState>) -> Result<AppInfo, AppError> {
         )
         .unwrap_or_else(|_| "true".to_string());
 
+    let ticket_layout: String = conn
+        .query_row(
+            "SELECT value FROM app_settings WHERE key = 'ticket_layout';",
+            [],
+            |r: &rusqlite::Row<'_>| r.get(0),
+        )
+        .unwrap_or_default();
+
     let info: AppInfo = AppInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
         data_dir: state
@@ -554,6 +580,7 @@ pub fn get_app_info(state: State<'_, DbState>) -> Result<AppInfo, AppError> {
         sound_volume,
         sound_projector,
         animations_enabled,
+        ticket_layout,
     };
 
     Ok(info)
@@ -750,6 +777,10 @@ mod tests {
         assert!(validate_app_setting("animations_enabled", "true").is_ok());
         assert!(validate_app_setting("animations_enabled", "false").is_ok());
         assert!(validate_app_setting("animations_enabled", "off").is_err());
+        assert!(validate_app_setting("ticket_layout", "").is_ok());
+        assert!(validate_app_setting("ticket_layout", "{\"paper\":\"A4\"}").is_ok());
+        assert!(validate_app_setting("ticket_layout", "[1,2]").is_err());
+        assert!(validate_app_setting("ticket_layout", "not json").is_err());
 
         // Removed / forbidden settings
         assert!(validate_app_setting("sound_pitch", "50").is_err());

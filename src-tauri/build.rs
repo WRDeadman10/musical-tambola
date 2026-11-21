@@ -72,6 +72,7 @@ const ALL_COMMANDS: &[&str] = &[
     "get_game_win_forecast",
     "reset_all_data",
     "reset_app_settings",
+    "save_binary_file",
 ];
 
 fn main() {

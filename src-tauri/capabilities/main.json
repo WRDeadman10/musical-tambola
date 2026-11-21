@@ -79,6 +79,8 @@
     "allow-generate-media-posters",
     "allow-get-game-win-forecast",
     "allow-reset-all-data",
-    "allow-reset-app-settings"
+    "allow-save-binary-file",
+    "allow-reset-app-settings",
+    "allow-save-binary-file"
   ]
 }
