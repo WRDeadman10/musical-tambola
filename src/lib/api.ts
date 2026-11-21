@@ -17,6 +17,8 @@ export interface AppInfo {
     eventName?: string;
     /** Turn all motion off for slow computers (Settings > Animations). */
     animationsEnabled?: boolean;
+    /** JSON of the printed ticket design (empty until the owner changes something). */
+    ticketLayout?: string;
     tickerText?: string;
     idlePoster?: string;
     accentColor?: string;

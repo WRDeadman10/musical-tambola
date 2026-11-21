@@ -38,6 +38,20 @@ function usedKeys(): Map<string, string> {
     return keys;
 }
 
+function flatten(obj: unknown, prefix: string = ""): Record<string, string> {
+    const res: Record<string, string> = {};
+    if (typeof obj !== "object" || obj === null) return res;
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+        const full: string = prefix ? `${prefix}.${k}` : k;
+        if (typeof v === "object" && v !== null && !Array.isArray(v)) {
+            Object.assign(res, flatten(v, full));
+        } else if (typeof v === "string") {
+            res[full] = v;
+        }
+    }
+    return res;
+}
+
 describe("translation keys used in the UI exist in both languages", () => {
     const keys: Map<string, string> = usedKeys();
 
@@ -57,5 +71,31 @@ describe("translation keys used in the UI exist in both languages", () => {
             .filter(([key]) => typeof lookup(gu, key) !== "string")
             .map(([key, file]) => `${key} (${file})`);
         expect(missing).toEqual([]);
+    });
+
+    it("Gujarati has no untranslated English text for long strings", () => {
+        const enFlat: Record<string, string> = flatten(en);
+        const guFlat: Record<string, string> = flatten(gu);
+
+        // Exclusions for font test strings that are intentionally Gujarati glyph samples in both files
+        const allowedIdentical: Set<string> = new Set<string>([
+            "settings.gujaratiVowels",
+            "settings.gujaratiMatras",
+            "settings.gujaratiConjuncts",
+            "settings.gujaratiNumerals",
+            "settings.gujaratiMixed",
+        ]);
+
+        const untranslated: string[] = [];
+        for (const [k, vEn] of Object.entries(enFlat)) {
+            const vGu: string | undefined = guFlat[k];
+            if (vGu !== undefined && vGu === vEn && vEn.length > 12) {
+                if (!allowedIdentical.has(k)) {
+                    untranslated.push(`${k}: "${vEn}"`);
+                }
+            }
+        }
+
+        expect(untranslated).toEqual([]);
     });
 });

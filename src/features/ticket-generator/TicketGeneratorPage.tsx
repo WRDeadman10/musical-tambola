@@ -28,7 +28,11 @@ const RECENT_BATCH_LIMIT: number = 8;
 const fieldClass: string =
     "mt-1 h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 text-zinc-100 focus:border-indigo-500 focus:outline-none disabled:opacity-50";
 
-export function TicketGeneratorPage(): React.JSX.Element {
+export function TicketGeneratorPage({
+    embedded = false,
+}: {
+    embedded?: boolean;
+}): React.JSX.Element {
     const t = useAppStore((state) => state.t);
     const [progress, setProgress] = useState<TicketGenerationProgress>({ done: 0, total: 0 });
     const [error, setError] = useState<string | null>(null);
@@ -102,11 +106,13 @@ export function TicketGeneratorPage(): React.JSX.Element {
         progress.total > 0 ? Math.min(100, (progress.done / progress.total) * 100) : 0;
 
     return (
-        <div className="space-y-6 p-6 xl:p-8">
-            <header>
-                <h2 className="text-3xl font-bold text-ink">{t("tickets.generatorTitle")}</h2>
-                <p className="text-sm text-zinc-400">{t("tickets.generatorSubtitle")}</p>
-            </header>
+        <div className={embedded ? "space-y-6" : "space-y-6 p-6 xl:p-8"}>
+            {!embedded && (
+                <header>
+                    <h2 className="text-3xl font-bold text-ink">{t("tickets.generatorTitle")}</h2>
+                    <p className="text-sm text-zinc-400">{t("tickets.generatorSubtitle")}</p>
+                </header>
+            )}
             <div className="grid gap-6 xl:grid-cols-[minmax(0,26rem)_1fr]">
                 <Card>
                     <CardContent className="p-6">

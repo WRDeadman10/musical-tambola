@@ -18,7 +18,7 @@ import { GameFormat } from "../../types/game";
 
 const PAGE_SIZE: number = 24;
 
-export function TicketBatchesPage(): React.JSX.Element {
+export function TicketBatchesPage({ embedded = false }: { embedded?: boolean }): React.JSX.Element {
     const t = useAppStore((state) => state.t);
     const showNumbers: boolean = useAppStore(
         (state) => state.appInfo?.settings?.show_internal_numbers === true,
@@ -107,10 +107,12 @@ export function TicketBatchesPage(): React.JSX.Element {
     );
 
     return (
-        <div className="space-y-6 p-6 xl:p-8">
-            <header>
-                <h2 className="text-3xl font-bold text-ink">{t("tickets.batchesTitle")}</h2>
-            </header>
+        <div className={embedded ? "space-y-6" : "space-y-6 p-6 xl:p-8"}>
+            {!embedded && (
+                <header>
+                    <h2 className="text-3xl font-bold text-ink">{t("tickets.batchesTitle")}</h2>
+                </header>
+            )}
             {error !== null && <p className="text-sm text-red-400">{error}</p>}
             <div className="grid gap-4 lg:grid-cols-3">
                 {batches.map((batch) => (

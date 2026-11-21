@@ -57,17 +57,7 @@ export const Sidebar: React.FC = () => {
         { labelKey: "nav.claimDesk", path: "/claims", icon: <ShieldCheck className="h-5 w-5" /> },
         { labelKey: "nav.winnerHistory", path: "/history", icon: <History className="h-5 w-5" /> },
         { labelKey: "nav.mediaLibrary", path: "/media", icon: <Images className="h-5 w-5" /> },
-        {
-            labelKey: "nav.ticketGenerator",
-            path: "/tickets/generate",
-            icon: <Ticket className="h-5 w-5" />,
-        },
-        { labelKey: "nav.ticketBatches", path: "/tickets", icon: <Ticket className="h-5 w-5" /> },
-        {
-            labelKey: "nav.ticketPrinting",
-            path: "/tickets/print",
-            icon: <Ticket className="h-5 w-5" />,
-        },
+        { labelKey: "nav.tickets", path: "/tickets", icon: <Ticket className="h-5 w-5" /> },
         { labelKey: "nav.schemes", path: "/schemes", icon: <Trophy className="h-5 w-5" /> },
         { labelKey: "nav.settings", path: "/settings", icon: <Settings className="h-5 w-5" /> },
     ];

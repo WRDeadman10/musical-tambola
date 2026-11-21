@@ -1,20 +1,18 @@
 import React, { useEffect } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route, useLocation } from "react-router-dom";
 import { AppInfo, getAppInfo } from "./lib/api";
 import { useAppStore } from "./stores/appStore";
 import { Sidebar } from "./components/layout/Sidebar";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { SettingsPage } from "./features/settings/SettingsPage";
 import { MediaLibraryPage } from "./features/media-library/MediaLibraryPage";
-import { TicketGeneratorPage } from "./features/ticket-generator/TicketGeneratorPage";
-import { TicketBatchesPage } from "./features/ticket-batches/TicketBatchesPage";
 import { SchemesPage } from "./features/schemes/SchemesPage";
 import { GameControllerPage } from "./features/game-controller/GameControllerPage";
 import { ClaimDeskPage } from "./features/claim-desk/ClaimDeskPage";
 import { HistoryPage } from "./features/history/HistoryPage";
 import { PresentationPage } from "./features/presentation/PresentationPage";
-import { PrintTicketsPage } from "./features/ticket-printing/PrintTicketsPage";
 import { SetupGuard } from "./components/layout/SetupGuard";
+import { TicketsHubPage } from "./features/tickets/TicketsHubPage";
 import { useMotionAttribute, useThemeClass } from "./lib/useThemeClass";
 
 function AppRoutes(): React.JSX.Element {
@@ -70,28 +68,20 @@ function AppRoutes(): React.JSX.Element {
                             }
                         />
                         <Route
-                            path="/tickets/generate"
-                            element={
-                                <SetupGuard>
-                                    <TicketGeneratorPage />
-                                </SetupGuard>
-                            }
-                        />
-                        <Route
                             path="/tickets"
                             element={
                                 <SetupGuard>
-                                    <TicketBatchesPage />
+                                    <TicketsHubPage />
                                 </SetupGuard>
                             }
                         />
                         <Route
+                            path="/tickets/generate"
+                            element={<Navigate replace to="/tickets?tab=generate" />}
+                        />
+                        <Route
                             path="/tickets/print"
-                            element={
-                                <SetupGuard>
-                                    <PrintTicketsPage />
-                                </SetupGuard>
-                            }
+                            element={<Navigate replace to="/tickets?tab=print" />}
                         />
                         <Route
                             path="/schemes"

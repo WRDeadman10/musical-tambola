@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TicketGrid } from "../components/ticket/TicketGrid";
 import { PrintableTicket } from "../features/ticket-printing/PrintableTicket";
 import { PrintTicketsPage } from "../features/ticket-printing/PrintTicketsPage";
-import { TICKET_TEMPLATE_REGIONS } from "../features/ticket-printing/templateRegions";
+import {
+    DEFAULT_TICKET_LAYOUT,
+    TicketLayout,
+    ticketRegions,
+} from "../features/ticket-printing/ticketLayout";
 import * as mediaApi from "../lib/api/media";
 import * as templateApi from "../lib/api/templates";
 import * as ticketApi from "../lib/api/tickets";
@@ -73,48 +77,76 @@ describe("ticket code and print template", () => {
         expect(screen.queryByTestId("ticket-code")).toBeNull();
     });
 
-    it("printable tickets place event, code, grid and footer in the template regions", () => {
+    const images = { background: "/bg.png", topLeft: "/left.png", topRight: "/right.png" };
+
+    it("a printed ticket has a two-part header, one song section and the number in its place", () => {
+        const layout: TicketLayout = { ...DEFAULT_TICKET_LAYOUT, idLabel: "Ticket No :" };
+        render(
+            <PrintableTicket
+                ticket={{ ...ticket, code: "1001" }}
+                mediaByNumber={new Map([[7, slot]])}
+                eventName="Navratri Night"
+                images={images}
+                layout={layout}
+            />,
+        );
+        const regions = ticketRegions(layout);
+        expect(screen.getByTestId("region-top-left").style.width).toBe(`${regions.topLeft.width}%`);
+        expect(screen.getByTestId("region-top-right").style.left).toBe(`${regions.topRight.x}%`);
+        expect(screen.getByTestId("region-grid").style.top).toBe(`${regions.grid.y}%`);
+        const id: HTMLElement = screen.getByTestId("region-ticket-id");
+        expect(id.textContent).toBe("Ticket No : 1001");
+        expect(id.style.writingMode).toBe("vertical-rl");
+        expect(screen.getByTestId("printable-ticket").style.backgroundImage).toContain("/bg.png");
+        expect(screen.getByText("Tum Hi Ho")).toBeTruthy();
+    });
+
+    it("the ticket number can move to a corner and then reads horizontally", () => {
+        const layout: TicketLayout = { ...DEFAULT_TICKET_LAYOUT, idPosition: "BOTTOM_RIGHT" };
         render(
             <PrintableTicket
                 ticket={ticket}
-                mediaByNumber={new Map([[7, slot]])}
-                eventName="Navratri Night"
-                footerText="Play fair"
-                backgroundUrl="/brand.png"
+                mediaByNumber={new Map()}
+                eventName=""
+                images={{ background: null, topLeft: null, topRight: null }}
+                layout={layout}
             />,
         );
-        const region = TICKET_TEMPLATE_REGIONS.ticketCode;
-        const code: HTMLElement = screen.getByTestId("region-ticket-code");
-        expect(code.textContent).toBe("T-000042");
-        expect(code.style.left).toBe(`${region.x}%`);
-        expect(code.style.width).toBe(`${region.width}%`);
-        expect(screen.getByTestId("region-event-name").textContent).toBe("Navratri Night");
-        expect(screen.getByTestId("region-footer").textContent).toBe("Play fair");
-        expect(screen.getByTestId("region-grid").style.top).toBe(
-            `${TICKET_TEMPLATE_REGIONS.grid.y}%`,
+        const id: HTMLElement = screen.getByTestId("region-ticket-id");
+        expect(id.style.writingMode).toBe("horizontal-tb");
+        expect(id.style.left).toBe(`${ticketRegions(layout).id.x}%`);
+    });
+
+    it("without a left image the header shows the event name", () => {
+        render(
+            <PrintableTicket
+                ticket={ticket}
+                mediaByNumber={new Map()}
+                eventName="Navratri Night"
+                images={{ background: null, topLeft: null, topRight: null }}
+                layout={DEFAULT_TICKET_LAYOUT}
+            />,
         );
-        expect(screen.getByTestId("printable-ticket").style.backgroundImage).toContain(
-            "/brand.png",
-        );
-        expect(screen.getByText("Tum Hi Ho")).toBeTruthy();
+        expect(screen.getByTestId("region-top-left").textContent).toBe("Navratri Night");
     });
 
     it("the print page prints real media titles, not blank cells", async () => {
         vi.mocked(ticketApi.listTicketBatches).mockResolvedValue([
             { id: 1, name: "Evening", requestedCount: 1, generatedCount: 1, createdAt: "now" },
         ]);
-        vi.mocked(ticketApi.listBatchTickets).mockResolvedValue({ total: 1, items: [ticket] });
+        vi.mocked(ticketApi.listBatchTickets).mockResolvedValue({
+            total: 1,
+            items: [{ ...ticket, code: "42" }],
+        });
         vi.mocked(mediaApi.listMedia).mockResolvedValue([slot]);
         vi.mocked(templateApi.listTemplates).mockResolvedValue([]);
-        vi.mocked(templateApi.getActiveTemplate).mockResolvedValue(null);
         render(<PrintTicketsPage />);
         const select = await screen.findByLabelText("Batch");
         await waitFor(() => expect(select.querySelectorAll("option").length).toBe(2));
 
         fireEvent.change(select, { target: { value: "1" } });
         expect(await screen.findByText("Tum Hi Ho")).toBeTruthy();
-        expect(screen.getByText("Navratri Night")).toBeTruthy();
-        expect(screen.getByTestId("region-ticket-code").textContent).toBe("T-000042");
+        expect(screen.getByTestId("region-ticket-id").textContent).toContain("42");
     });
 
     it("printed tickets never draw the media thumbnail behind the text", () => {

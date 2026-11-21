@@ -182,6 +182,11 @@
         "unknownError": "Unknown error"
     },
     "tickets": {
+        "hubTitle": "Tickets",
+        "hubSubtitle": "Generate ticket batches, look through them and print them.",
+        "tabGenerate": "Generate",
+        "tabBatches": "Batches",
+        "tabPrint": "Print",
         "generatorTitle": "Ticket Generator",
         "generatorSubtitle": "Create randomized Tambola ticket batches.",
         "generatorReady": "Generate a new batch of tickets.",
@@ -210,6 +215,40 @@
         "batchEmpty": "No tickets match."
     },
     "printing": {
+        "designer": {
+            "title": "Ticket design",
+            "paper": "Paper",
+            "perPage": "Tickets per page",
+            "headerHeight": "Header height",
+            "split": "Left / right split",
+            "images": "Images",
+            "imageBackground": "Background (whole ticket)",
+            "imageTopLeft": "Header: left section",
+            "imageTopRight": "Header: right section",
+            "upload": "Upload image",
+            "none": "None",
+            "remove": "Remove",
+            "idPosition": "Ticket number position",
+            "idLabel": "Ticket number text",
+            "idColor": "Number colour",
+            "gridBorder": "Grid line colour",
+            "gridText": "Song text colour",
+            "cellOpacity": "Cell background",
+            "fontScale": "Song text size",
+            "reset": "Reset design",
+            "imageTooBig": "Use a PNG or JPEG image of 5 MB or less.",
+            "guideSaved": "Guide saved to",
+            "guideFailed": "Could not create the guide image.",
+            "guideGrid": "Songs (3 x 5)",
+            "positions": {
+                "RIGHT_VERTICAL": "Right edge (vertical)",
+                "LEFT_VERTICAL": "Left edge (vertical)",
+                "TOP_LEFT": "Top left",
+                "TOP_RIGHT": "Top right",
+                "BOTTOM_LEFT": "Bottom left",
+                "BOTTOM_RIGHT": "Bottom right"
+            }
+        },
         "title": "Print tickets",
         "batch": "Batch",
         "chooseBatch": "Choose a batch",

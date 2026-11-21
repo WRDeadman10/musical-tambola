@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import { getActiveTemplate, deleteTemplate } from "../lib/api/templates";
 import {
     filterTicketRange,
-    TICKET_TEMPLATE_REGIONS,
     validateTemplateImage,
 } from "../features/ticket-printing/templateRegions";
 
@@ -17,12 +16,11 @@ describe("ticket printing", () => {
             pages.push(values.slice(index, index + 3));
         expect(pages.map((page) => page.length)).toEqual([3, 3, 1]);
     });
-    it("song grid and classic tickets render in grid region", () => {
-        expect(TICKET_TEMPLATE_REGIONS.grid).toEqual({ x: 4, y: 20, width: 92, height: 68 });
-    });
-    it("template upload rejects wrong aspect ratio", () => {
-        expect(validateTemplateImage(1000, 1000, 100)).toContain("2:1");
+    it("any image shape is accepted, only the size and an empty image are refused", () => {
+        expect(validateTemplateImage(1000, 1000, 100)).toBeNull();
+        expect(validateTemplateImage(300, 1200, 100)).toBeNull();
         expect(validateTemplateImage(1800, 900, 6 * 1024 * 1024)).toContain("5 MB");
+        expect(validateTemplateImage(0, 900, 100)).not.toBeNull();
     });
     it("active template background is used in preview", async () => {
         api.invoke.mockResolvedValue({
@@ -32,10 +30,6 @@ describe("ticket printing", () => {
             backgroundUrl: "/brand.png",
         });
         expect((await getActiveTemplate())?.backgroundUrl).toBe("/brand.png");
-    });
-    it("template guide download renders labelled regions", () => {
-        expect(TICKET_TEMPLATE_REGIONS.canvas).toEqual({ width: 1800, height: 900 });
-        expect(Object.keys(TICKET_TEMPLATE_REGIONS)).toContain("footer");
     });
     it("default template cannot be deleted", async () => {
         const template = { id: 1, name: "Default", isDefault: true, backgroundUrl: null };

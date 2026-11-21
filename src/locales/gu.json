@@ -182,6 +182,11 @@
         "unknownError": "અજ્ઞાત ભૂલ"
     },
     "tickets": {
+        "hubTitle": "ટિકિટ",
+        "hubSubtitle": "ટિકિટ બેચ બનાવો, જુઓ અને છાપો.",
+        "tabGenerate": "બનાવો",
+        "tabBatches": "બેચ",
+        "tabPrint": "છાપો",
         "generatorTitle": "ટિકિટ જનરેટર",
         "generatorSubtitle": "રેન્ડમાઇઝ્ડ તંબોલા ટિકિટ બેચ બનાવો.",
         "generatorReady": "ટિકિટનો નવો બેચ બનાવો.",
@@ -210,6 +215,40 @@
         "batchEmpty": "કોઈ ટિકિટ મળી નથી."
     },
     "printing": {
+        "designer": {
+            "title": "ટિકિટ ડિઝાઇન",
+            "paper": "કાગળ",
+            "perPage": "એક પાના પર ટિકિટ",
+            "headerHeight": "હેડરની ઊંચાઈ",
+            "split": "ડાબું / જમણું વિભાજન",
+            "images": "છબીઓ",
+            "imageBackground": "બેકગ્રાઉન્ડ (આખી ટિકિટ)",
+            "imageTopLeft": "હેડર: ડાબો ભાગ",
+            "imageTopRight": "હેડર: જમણો ભાગ",
+            "upload": "છબી અપલોડ કરો",
+            "none": "કોઈ નહીં",
+            "remove": "કાઢી નાખો",
+            "idPosition": "ટિકિટ નંબરની જગ્યા",
+            "idLabel": "ટિકિટ નંબરનું લખાણ",
+            "idColor": "નંબરનો રંગ",
+            "gridBorder": "ગ્રિડ લીટીનો રંગ",
+            "gridText": "ગીતના લખાણનો રંગ",
+            "cellOpacity": "ખાનાનું બેકગ્રાઉન્ડ",
+            "fontScale": "ગીતના લખાણનું કદ",
+            "reset": "ડિઝાઇન રીસેટ કરો",
+            "imageTooBig": "5 MB સુધીની PNG અથવા JPEG છબી વાપરો.",
+            "guideSaved": "માર્ગદર્શિકા સચવાઈ:",
+            "guideFailed": "માર્ગદર્શિકા છબી બની શકી નહીં.",
+            "guideGrid": "ગીતો (3 x 5)",
+            "positions": {
+                "RIGHT_VERTICAL": "જમણી કિનારી (ઊભું)",
+                "LEFT_VERTICAL": "ડાબી કિનારી (ઊભું)",
+                "TOP_LEFT": "ઉપર ડાબે",
+                "TOP_RIGHT": "ઉપર જમણે",
+                "BOTTOM_LEFT": "નીચે ડાબે",
+                "BOTTOM_RIGHT": "નીચે જમણે"
+            }
+        },
         "title": "ટિકિટ છાપો",
         "batch": "બેચ",
         "chooseBatch": "બેચ પસંદ કરો",
