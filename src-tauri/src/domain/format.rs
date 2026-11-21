@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum GameFormat {
     #[default]
+    #[serde(rename = "CLASSIC_90")]
     Classic90,
     SongGrid,
 }
@@ -107,4 +108,33 @@ pub struct GameFormatConfig {
 pub struct SetGameFormatInput {
     pub format: GameFormat,
     pub song_count: Option<u32>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wire_names_match_the_frontend_and_the_database() {
+        assert_eq!(
+            serde_json::to_string(&GameFormat::Classic90).unwrap(),
+            "\"CLASSIC_90\""
+        );
+        assert_eq!(
+            serde_json::to_string(&GameFormat::SongGrid).unwrap(),
+            "\"SONG_GRID\""
+        );
+        assert_eq!(
+            serde_json::from_str::<GameFormat>("\"CLASSIC_90\"").unwrap(),
+            GameFormat::Classic90
+        );
+        assert_eq!(GameFormat::Classic90.as_str(), "CLASSIC_90");
+    }
+
+    #[test]
+    fn set_format_input_accepts_the_payload_the_ui_sends() {
+        let input: SetGameFormatInput =
+            serde_json::from_str("{\"format\":\"CLASSIC_90\",\"songCount\":90}").unwrap();
+        assert_eq!(input.format, GameFormat::Classic90);
+    }
 }

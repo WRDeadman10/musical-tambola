@@ -112,4 +112,15 @@ describe("SettingsPage", () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
         expect(mockedFormats.setGameFormat).toHaveBeenCalledTimes(1);
     });
+
+    it("changing the song count sends the NEW count, not the previous one", async () => {
+        mockedFormats.getGameFormat.mockResolvedValue({ format: "SONG_GRID", songCount: 45 });
+        mockedFormats.setGameFormat.mockResolvedValue({ format: "SONG_GRID", songCount: 67 });
+        render(<SettingsPage />);
+        const input: HTMLElement = await screen.findByLabelText("Song count");
+        fireEvent.change(input, { target: { value: "67" } });
+        await waitFor(() =>
+            expect(mockedFormats.setGameFormat).toHaveBeenCalledWith("SONG_GRID", 67),
+        );
+    });
 });

@@ -252,6 +252,14 @@ pub fn get_video_duration_seconds(
     ))
 }
 
+/// ffmpeg picks the output format from the file extension, so the temp file must end in .jpg.
+pub fn new_poster_temp_file() -> std::io::Result<tempfile::NamedTempFile> {
+    tempfile::Builder::new()
+        .prefix("poster_")
+        .suffix(".jpg")
+        .tempfile()
+}
+
 pub fn extract_video_frame(
     video_path: &Path,
     timestamp_secs: f64,
@@ -573,7 +581,7 @@ pub fn generate_media_posters_impl(
             };
 
             let midpoint = duration / 2.0;
-            let temp_jpeg: tempfile::NamedTempFile = match tempfile::NamedTempFile::new() {
+            let temp_jpeg: tempfile::NamedTempFile = match new_poster_temp_file() {
                 Ok(t) => t,
                 Err(e) => {
                     chunk_results.push((slot.number, Err(format!("Tempfile error: {}", e))));
@@ -666,6 +674,13 @@ pub fn generate_media_posters_impl(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_poster_temp_file_has_jpg_extension_so_ffmpeg_can_pick_the_muxer() {
+        let temp = new_poster_temp_file().unwrap();
+        let extension = temp.path().extension().and_then(|e| e.to_str());
+        assert_eq!(extension, Some("jpg"));
+    }
 
     #[test]
     fn test_parse_duration_from_ffprobe_output() {

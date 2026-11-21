@@ -105,10 +105,16 @@ export const SettingsPage: React.FC = () => {
         }
         await persist(key, String(next));
     };
-    const changeFormat = async (format: GameFormat): Promise<void> => {
+    const changeFormat = async (
+        format: GameFormat,
+        requestedSongCount: number = songCount,
+    ): Promise<void> => {
         formatRequestSequence.current += 1;
         try {
-            const info = await setGameFormat(format, format === "SONG_GRID" ? songCount : 90);
+            const info = await setGameFormat(
+                format,
+                format === "SONG_GRID" ? requestedSongCount : 90,
+            );
             setGameFormatState(info.format);
             setSongCount(info.songCount);
             await presentationCommand("SETTINGS_CHANGED");
@@ -120,7 +126,7 @@ export const SettingsPage: React.FC = () => {
     const changeSongCount = async (value: number): Promise<void> => {
         const next: number = Math.max(15, Math.min(90, Math.round(value)));
         setSongCount(next);
-        if (gameFormat === "SONG_GRID") await changeFormat("SONG_GRID");
+        if (gameFormat === "SONG_GRID") await changeFormat("SONG_GRID", next);
     };
 
     return (
