@@ -14,8 +14,8 @@ The following six bugs were detected during real-application end-to-end executio
 | **BUG-02** | `src/features/settings/SettingsPage.tsx` | Changing song count sent previous count due to React state closure stale binding. | **RESOLVED**: Fixed input change handler state capture. |
 | **BUG-03** | `src-tauri/src/services/ffmpeg.rs:652` | Temp file lacked `.jpg` extension, causing FFmpeg to fail format deduction, plus audio longer than video failed seek. | **RESOLVED**: Added `.jpg` suffix to temp file and earlier frame fallback. |
 | **BUG-04** | `src-tauri/src/commands/presentation.rs:17` | `open_presentation` ran synchronously on the main thread, deadlocking all IPC while window initialized. | **RESOLVED**: Converted to async command and spawned auto-open on background worker thread. |
-| **BUG-05** | `src/features/layout/Sidebar.tsx` | Language change event failed to trigger sidebar re-render. | **RESOLVED**: Subscribed sidebar and translated views to i18n instance identity change. |
-| **BUG-06** | `src/features/layout/Sidebar.tsx:112` | Sidebar footer displayed hardcoded string `v0.1.0`. | **RESOLVED**: Replaced with dynamic application version string. |
+| **BUG-05** | `src/components/layout/Sidebar.tsx` | Language change event failed to trigger sidebar re-render. | **RESOLVED**: Subscribed sidebar and translated views to i18n instance identity change. |
+| **BUG-06** | `src/components/layout/Sidebar.tsx:112` | Sidebar footer displayed hardcoded string `v0.1.0`. | **RESOLVED**: Replaced with dynamic application version string. |
 
 ---
 

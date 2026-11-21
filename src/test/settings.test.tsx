@@ -123,4 +123,14 @@ describe("SettingsPage", () => {
             expect(mockedFormats.setGameFormat).toHaveBeenCalledWith("SONG_GRID", 67),
         );
     });
+
+    it("switching from Classic to Song Grid starts at 45 songs, not the Classic 90", async () => {
+        mockedFormats.getGameFormat.mockResolvedValue({ format: "CLASSIC_90", songCount: 90 });
+        render(<SettingsPage />);
+        await waitFor(() => expect(mockedFormats.getGameFormat).toHaveBeenCalled());
+        fireEvent.click(await screen.findByRole("button", { name: /Song Grid/ }));
+        await waitFor(() =>
+            expect(mockedFormats.setGameFormat).toHaveBeenCalledWith("SONG_GRID", 45),
+        );
+    });
 });

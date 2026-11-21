@@ -13,6 +13,9 @@ import { presentationCommand } from "../../lib/api/presentation";
 
 type Theme = "dark" | "light" | "system";
 
+/** Classic always reports 90 songs, so a switch to Song Grid starts from the Song Grid default. */
+const DEFAULT_SONG_GRID_COUNT: number = 45;
+
 export const SettingsPage: React.FC = () => {
     const { language, setLanguage, appInfo, setAppInfo, t } = useAppStore();
     const [theme, setTheme] = useState<Theme>("dark");
@@ -176,7 +179,14 @@ export const SettingsPage: React.FC = () => {
                         <Button
                             type="button"
                             variant={gameFormat === "SONG_GRID" ? "default" : "outline"}
-                            onClick={() => void changeFormat("SONG_GRID")}
+                            onClick={() =>
+                                void changeFormat(
+                                    "SONG_GRID",
+                                    gameFormat === "SONG_GRID"
+                                        ? songCount
+                                        : DEFAULT_SONG_GRID_COUNT,
+                                )
+                            }
                         >
                             {t("settings.songGrid")}
                         </Button>
