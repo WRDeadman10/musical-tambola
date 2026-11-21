@@ -116,4 +116,16 @@ describe("ticket code and print template", () => {
         expect(screen.getByText("Navratri Night")).toBeTruthy();
         expect(screen.getByTestId("region-ticket-code").textContent).toBe("T-000042");
     });
+
+    it("printed tickets never draw the media thumbnail behind the text", () => {
+        const withThumb: MediaSlot = { ...slot, thumbnailSource: "/poster.jpg" };
+        const { container, rerender } = render(
+            <TicketGrid ticket={ticket} mediaByNumber={new Map([[7, withThumb]])} />,
+        );
+        expect(container.querySelectorAll("img").length).toBe(1);
+        rerender(
+            <TicketGrid ticket={ticket} mediaByNumber={new Map([[7, withThumb]])} printable />,
+        );
+        expect(container.querySelectorAll("img").length).toBe(0);
+    });
 });

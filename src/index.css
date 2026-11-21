@@ -176,6 +176,8 @@
         background: white !important;
     }
     .ticket-print-page {
+        max-width: none !important;
+        border-radius: 0 !important;
         break-after: page;
         padding: 0 !important;
     }

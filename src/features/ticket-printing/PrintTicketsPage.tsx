@@ -144,7 +144,7 @@ export function PrintTicketsPage(): React.JSX.Element {
             <section className="space-y-4">
                 {pages.map((page, pageIndex) => (
                     <div
-                        className="ticket-print-page space-y-3 bg-white p-4 text-black"
+                        className="ticket-print-page mx-auto max-w-3xl space-y-3 rounded-xl bg-white p-4 text-black"
                         data-testid="print-page"
                         key={pageIndex}
                     >

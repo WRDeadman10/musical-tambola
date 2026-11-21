@@ -46,7 +46,7 @@ export function TicketGrid({
                 </span>
             )}
             <span
-                className={`grid w-full gap-1 ${songGrid ? "aspect-[5/3] grid-cols-5" : "aspect-[9/3] grid-cols-9"}`}
+                className={`grid w-full grid-rows-3 gap-1 ${songGrid ? "grid-cols-5" : "grid-cols-9"} ${printable ? "h-full min-h-0 flex-1" : songGrid ? "aspect-[5/3]" : "aspect-[9/3]"}`}
             >
                 {Array.from({ length: 3 * columns }, (_value: undefined, index: number) => {
                     const row: number = Math.floor(index / columns);
@@ -63,7 +63,7 @@ export function TicketGrid({
                             key={`${row}-${col}`}
                             data-testid="ticket-cell"
                         >
-                            {thumb !== null && (
+                            {!printable && thumb !== null && (
                                 <img
                                     className="absolute inset-0 h-full w-full object-cover opacity-40"
                                     src={thumb}

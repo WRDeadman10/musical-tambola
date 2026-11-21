@@ -121,7 +121,9 @@ export function TicketBatchesPage(): React.JSX.Element {
                                 {batch.generatedCount}/{batch.requestedCount}
                             </p>
                             <p className="text-xs text-indigo-300">
-                                {batch.format ?? activeFormat}
+                                {(batch.format ?? activeFormat) === "SONG_GRID"
+                                    ? t("tickets.formatSongGrid")
+                                    : t("tickets.formatClassic")}
                                 {batch.songCount ? ` · ${batch.songCount}` : ""}
                             </p>
                             <div className="flex gap-2">
