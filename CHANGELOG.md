@@ -5,6 +5,25 @@ All notable changes to the Media Tambola project will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-11-21
+
+### Added
+- **FFmpeg Preview Engine & Download Manager (BT-35)**:
+  - Local and PATH FFmpeg detection.
+  - Pinned Gyan Essentials download streaming with SHA-256 validation, 150MB zip cap, and zip slip protection.
+  - Video preview poster generation (2 workers, midpoint frame, DB mutex non-blocking, poster progress events).
+- **Ticket Codes & Template Printing (BT-38)**:
+  - 8-char nanoid code per ticket with prominent display.
+  - PrintableTicket 2:1 template layout with dynamic media title loading and `@media print` A4 pagination.
+- **Presentation System Hardening (BT-36)**:
+  - Default hidden song titles on game start and draw transitions.
+  - Presentation splash mode support.
+  - Event-driven presentation lifecycle notifications (`presentation-status-changed`).
+  - Auto-open presentation window on multi-monitor setups.
+- **Game Screen Viewport Fit & Form Polish (BT-39)**:
+  - 3-column scrollable host layout with live status and compact song strip.
+  - Media Library slot count synchronized with active game format.
+
 ## [1.0.1] - 2026-11-21
 
 ### Added
