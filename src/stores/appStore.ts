@@ -41,6 +41,13 @@ function getNestedTranslation(obj: Record<string, unknown>, path: string): strin
     return path;
 }
 
+function createTranslator(readLanguage: () => Language): (path: string) => string {
+    return (path: string): string => {
+        const localeData: Record<string, unknown> = translations[readLanguage()] || translations.en;
+        return getNestedTranslation(localeData, path);
+    };
+}
+
 export const useAppStore = create<AppState>((set, get) => ({
     language: "gu",
     theme: "dark",
@@ -72,9 +79,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     setIsLoadingInfo: (isLoadingInfo: boolean): void => {
         set({ isLoadingInfo });
     },
-    t: (path: string): string => {
-        const lang: Language = get().language;
-        const localeData: Record<string, unknown> = translations[lang] || translations.en;
-        return getNestedTranslation(localeData, path);
-    },
+    t: createTranslator((): Language => get().language),
 }));
+
+// Components select `t` from the store, so it must change identity whenever the language
+// changes; otherwise they keep showing the previous language until something else re-renders them.
+useAppStore.subscribe((state, previous) => {
+    if (state.language !== previous.language) {
+        useAppStore.setState({
+            t: createTranslator((): Language => useAppStore.getState().language),
+        });
+    }
+});
