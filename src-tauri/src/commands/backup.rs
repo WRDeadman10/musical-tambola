@@ -96,33 +96,7 @@ pub fn reset_all_data(
     let backup_dto: BackupResultDto = create_backup_archive_in_dir(None, &app_data_dir, &conn)?;
 
     // 2. Wipe all tables safely in a single transaction with foreign keys off
-    conn.execute_batch("PRAGMA foreign_keys = OFF;")
-        .map_err(AppError::database_error)?;
-    conn.execute_batch(
-        "BEGIN IMMEDIATE;
-         DELETE FROM claims;
-         DELETE FROM lucky_draw_winners;
-         DELETE FROM lucky_draws;
-         DELETE FROM game_media_snapshots;
-         DELETE FROM game_schemes;
-         DELETE FROM games;
-         DELETE FROM ticket_cells;
-         DELETE FROM tickets;
-         DELETE FROM ticket_batches;
-         DELETE FROM ticket_templates;
-         DELETE FROM media_assets;
-         DELETE FROM schemes;
-         DELETE FROM app_settings;
-         DELETE FROM schema_migrations;
-         COMMIT;",
-    )
-    .map_err(|e| {
-        let _ = conn.execute_batch("ROLLBACK;");
-        let _ = conn.execute_batch("PRAGMA foreign_keys = ON;");
-        AppError::database_error(e)
-    })?;
-    conn.execute_batch("PRAGMA foreign_keys = ON;")
-        .map_err(AppError::database_error)?;
+    wipe_all_tables(&conn).map_err(AppError::database_error)?;
 
     // 3. Delete poster files on disk (data/posters)
     let posters_dir: std::path::PathBuf = app_data_dir.join("data").join("posters");
@@ -151,6 +125,40 @@ pub const PRESERVED_SETTING_KEYS: [&str; 5] = [
     "admin_pin_hash",
     "__smoke_sentinel__",
 ];
+
+/// Wipes all application tables transactionally with foreign keys disabled.
+pub fn wipe_all_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
+    conn.execute_batch("PRAGMA foreign_keys = OFF;")?;
+    conn.execute_batch("BEGIN IMMEDIATE;")?;
+    let res = conn.execute_batch(
+        "DELETE FROM claims;
+         DELETE FROM lucky_draw_winners;
+         DELETE FROM lucky_draws;
+         DELETE FROM game_media_snapshots;
+         DELETE FROM game_schemes;
+         DELETE FROM games;
+         DELETE FROM ticket_cells;
+         DELETE FROM tickets;
+         DELETE FROM ticket_batches;
+         DELETE FROM ticket_templates;
+         DELETE FROM media_assets;
+         DELETE FROM prize_schemes;
+         DELETE FROM app_settings;
+         DELETE FROM schema_migrations;",
+    );
+    match res {
+        Ok(_) => {
+            conn.execute_batch("COMMIT;")?;
+            conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+            Ok(())
+        }
+        Err(err) => {
+            let _ = conn.execute_batch("ROLLBACK;");
+            let _ = conn.execute_batch("PRAGMA foreign_keys = ON;");
+            Err(err)
+        }
+    }
+}
 
 /// Puts every preference back to its default by deleting it; the rest of `app_settings` stays.
 pub fn reset_preference_rows(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
