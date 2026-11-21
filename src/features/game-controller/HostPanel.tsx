@@ -20,6 +20,7 @@ import { LuckyDrawCard } from "./LuckyDrawCard";
 import { Tabs } from "../../components/ui/tabs";
 import { ForecastCard } from "./ForecastCard";
 import { ChestsCard } from "../chests/ChestsCard";
+import { PrizesOverlay } from "../prizes/PrizesOverlay";
 import { useSoundEffects } from "../presentation/useSoundEffects";
 
 type HostTab = "claim" | "forecast" | "projector" | "lucky" | "chests";
@@ -42,6 +43,7 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
     const projectorConnected: boolean = useProjectorStatus();
     const [presentMode, setPresentMode] = useState<boolean>(false);
     const [tab, setTab] = useState<HostTab>("claim");
+    const [prizesOpen, setPrizesOpen] = useState<boolean>(false);
     const [acceptedClaim, setAcceptedClaim] = useState<{
         schemeId: number;
         schemeName: string;
@@ -149,6 +151,13 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                 translate={translate}
             >
                 <button
+                    className="rounded-md border border-zinc-600 px-3 py-1.5 text-sm font-medium text-zinc-100 hover:bg-zinc-800"
+                    onClick={() => setPrizesOpen(true)}
+                    type="button"
+                >
+                    {translate("hostPanel.howToWin")}
+                </button>
+                <button
                     aria-pressed={presentMode}
                     className="rounded-md border border-indigo-500 px-3 py-1.5 text-sm font-medium text-indigo-300 hover:bg-indigo-500/10"
                     onClick={() => setPresentMode((value) => !value)}
@@ -159,6 +168,9 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                         : translate("hostPanel.present")}
                 </button>
             </StatusBar>
+            {prizesOpen && (
+                <PrizesOverlay onClose={() => setPrizesOpen(false)} schemes={model.state.schemes} />
+            )}
             {model.state.game.status === "COMPLETED" && (
                 <section
                     className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-700 bg-emerald-950/40 px-4 py-3"

@@ -75,6 +75,22 @@
         "errorCount": "Use 2 to 12 chests.",
         "errorWinners": "Winning chests must be at least 1 and fewer than the number of chests."
     },
+    "prizes": {
+        "title": "How to win",
+        "subtitle": "The prizes of this game. The audience sees the same screen on the projector.",
+        "close": "Close",
+        "winner": "1 winner",
+        "winners": "{{count}} winners",
+        "rules": {
+            "EARLY_FIVE": "The first player to mark any {{n}} songs wins.",
+            "FOUR_CORNERS": "Mark the four corner songs of the ticket.",
+            "TOP_LINE": "Mark every song in the top row.",
+            "MIDDLE_LINE": "Mark every song in the middle row.",
+            "BOTTOM_LINE": "Mark every song in the bottom row.",
+            "FULL_HOUSE": "Mark every song on the ticket.",
+            "PATTERN": "Mark the highlighted songs."
+        }
+    },
     "settings": {
         "animations": "Animations",
         "animationsHint": "Turn off if the game feels slow on this computer.",
@@ -321,6 +337,8 @@
             "thumbnailPlaceholder": "Optional poster or thumbnail path / URL"
         },
         "actions": {
+            "moveUp": "Move up",
+            "moveDown": "Move down",
             "add": "Add media",
             "edit": "Edit media",
             "preview": "Preview media",
@@ -559,6 +577,7 @@
         "openClaimDesk": "Open detailed Claim Desk"
     },
     "hostPanel": {
+        "howToWin": "How to win",
         "hideNumber": "Hide number",
         "showNumber": "Show number",
         "tabChests": "Chests",

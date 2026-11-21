@@ -1,7 +1,7 @@
 import { CalledItem, GameState } from "./game";
 
 export type PresentationScene =
-    "IDLE" | "MEDIA" | "SPLASH" | "COUNTDOWN" | "ANNOUNCE" | "LUCKY_DRAW" | "CHESTS";
+    "IDLE" | "MEDIA" | "SPLASH" | "COUNTDOWN" | "ANNOUNCE" | "LUCKY_DRAW" | "CHESTS" | "PRIZES";
 
 export interface PresentationCountdown {
     seconds: number;
@@ -39,6 +39,19 @@ export interface PresentationState {
     /** Latest transport action from the host's audience preview; the projector follows it. */
     videoControl?: VideoControl;
     chests?: PresentationChests | null;
+    prizes?: PresentationPrize[] | null;
+}
+
+/** One prize as told to the audience ("how to win"). */
+export interface PresentationPrize {
+    name: string;
+    rule: string;
+    /** The pattern to match, 3 rows of up to 5 cells; null for prizes without a pattern. */
+    mask: boolean[][] | null;
+    /** For "first N numbers" prizes. */
+    earlyN: number | null;
+    maxWinners: number;
+    isFullHouse: boolean;
 }
 
 /** What the audience sees of the chest game. The winning chests are only revealed one by one. */
@@ -76,6 +89,8 @@ export type PresentationCommandName =
     | "CHEST_PICK"
     | "CHEST_REVEAL"
     | "CHESTS_HIDE"
+    | "PRIZES_SHOW"
+    | "PRIZES_HIDE"
     | "LUCKY_DRAW"
     | "SETTINGS_CHANGED"
     | "CLAIM_RESULT"

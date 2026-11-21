@@ -5,6 +5,7 @@ import { PresentationLuckyDraw, PresentationState, VideoControl } from "../../ty
 import { CalledItem } from "../../types/game";
 import { MiniPatternGrid } from "../../components/scheme/MiniPatternGrid";
 import { ChestBoard } from "../chests/ChestBoard";
+import { PrizeBoard } from "../prizes/PrizeBoard";
 
 const LUCKY_SPIN_MS: number = 3500;
 const LUCKY_TICK_MS: number = 90;
@@ -57,6 +58,20 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
                 <div className="rounded-full border border-gold/50 bg-gold/10 px-10 py-3 text-[min(7vw,5rem)] font-black text-gold">
                     {state.announcement.ticketCode}
                 </div>
+            </div>
+        );
+    }
+    if (state.scene === "PRIZES" && state.prizes !== null && state.prizes !== undefined) {
+        return (
+            <div className="anim-fade flex h-full flex-col items-center justify-center gap-10 p-12">
+                <div className="text-[min(6vw,4.5rem)] font-black tracking-tight">
+                    {t("prizes.title")}
+                </div>
+                <PrizeBoard
+                    labels={{ winner: t("prizes.winner"), winners: t("prizes.winners") }}
+                    large
+                    prizes={state.prizes}
+                />
             </div>
         );
     }

@@ -1,6 +1,7 @@
 import { GameState } from "../../types/game";
 import {
     PresentationAnnouncement,
+    PresentationPrize,
     PresentationCommand,
     PresentationLuckyDraw,
     PresentationState,
@@ -40,6 +41,39 @@ function readLuckyDraw(payload: Record<string, unknown>): PresentationLuckyDraw 
             ? rawCandidates.filter((item: unknown): item is string => typeof item === "string")
             : [],
     };
+}
+
+function readPrizes(value: unknown): PresentationPrize[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+    return value
+        .filter(
+            (item: unknown): item is Record<string, unknown> =>
+                item !== null && typeof item === "object",
+        )
+        .slice(0, 12)
+        .map((item: Record<string, unknown>): PresentationPrize => {
+            const rawMask: unknown = item.mask;
+            const mask: boolean[][] | null = Array.isArray(rawMask)
+                ? rawMask
+                      .slice(0, 3)
+                      .map((row: unknown) =>
+                          Array.isArray(row)
+                              ? row.slice(0, 5).map((cell: unknown) => cell === true)
+                              : [],
+                      )
+                : null;
+            const earlyN: number = Math.floor(asNumber(item.earlyN, 0));
+            return {
+                name: asString(item.name, ""),
+                rule: asString(item.rule, ""),
+                mask,
+                earlyN: earlyN > 0 ? earlyN : null,
+                maxWinners: Math.max(1, Math.floor(asNumber(item.maxWinners, 1))),
+                isFullHouse: item.isFullHouse === true,
+            };
+        });
 }
 
 /** Applies one host command to what the audience sees. */
@@ -95,6 +129,14 @@ export function applyPresentationCommand(
             };
         case "LUCKY_DRAW":
             return { ...state, scene: "LUCKY_DRAW", luckyDraw: readLuckyDraw(event.payload) };
+        case "PRIZES_SHOW":
+            return { ...state, scene: "PRIZES", prizes: readPrizes(event.payload.prizes) };
+        case "PRIZES_HIDE":
+            return {
+                ...state,
+                scene: state.current === null ? "IDLE" : "MEDIA",
+                prizes: null,
+            };
         case "CHESTS_SHOW": {
             const count: number = Math.max(
                 2,
