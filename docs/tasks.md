@@ -217,6 +217,7 @@
 | **BT-39** | Game Screen Live Status & Media Library Slots | DONE | AG (A) | Wave 5 | Active game screen live status, song list filter, media library slot count reflecting active game format (committed `b84fa03`) |
 | **BT-35** | FFmpeg Status, Download & Preview Engine | DONE | Claude (C) / AG (A) | Wave 5 | UI (committed `e44ad84`), Backend downloader with SHA-256 validation, zip slip safety, DB mutex lock dropping, 2-worker preview generator (committed `75699cf`) |
 | **BT-36** | Presentation Window Hardening | DONE | AG (A) | Wave 5 | Default hidden song title, splash_enabled flag, presentation-status-changed events, auto-open multi-monitor on game create (committed `75699cf`) |
+| **Q50** | 50-Task Quality & Verification Queue (`QUEUE_AG_50.md`) | DONE | AG (A) | Wave 5 | 10 Batches completed: Batches 1-5 (Wiring/Docs & Audits), Batches 6-7 (Pure Rules & Tests), Batch 8 (Offline Tools/Scripts), Batch 9 (Documentation Guides), Batch 10 (Wiring & Final Consistency Pass). 148 Rust tests / 200 Vitest tests passing. |
 
 
 

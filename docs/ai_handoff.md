@@ -164,3 +164,21 @@
   - Cargo clippy & fmt: Clean.
   - Frontend lint & tsc: Clean.
 
+
+## v1.0.2 real-app test with 67 videos (Claude, run against the built exe via WebView2 CDP)
+Data: F:\Videos (67 files, 5.8 GB), Song Grid, 67 songs, 100 tickets, full game. Owner data was set aside and restored; the test data is kept in `%APPDATA%\com.mediatambola.app.test-run-67-videos`.
+Bugs found only by the real app (all fixed, each with a test): (1) `GameFormat::Classic90` serialized as `CLASSIC90`, so switching back to Classic failed with "unknown variant CLASSIC_90" (`domain/format.rs`); (2) changing the song count sent the previous count (closure bug in `SettingsPage`); (3) every ffmpeg preview failed: temp file had no `.jpg` extension (`services/ffmpeg.rs`), plus videos whose audio is longer than the video need an earlier frame fallback; (4) opening the projector froze all IPC because `open_presentation` was a synchronous command creating a window on the main thread (now async; auto-open runs on a spawned thread); (5) sidebar kept the old language; (6) sidebar footer showed v0.1.0.
+Verified PASS in the real app: language persists; Song Grid select; 67 videos imported; 67/67 previews; 100 tickets all valid 3x5 with unique codes; full 67-draw game; claims (exact accepted, late rejected, duplicate rejected, early rejected); projector window follows Next, hides the answer until reveal, resets per call, shows the countdown.
+Open items: finished game screen has no "start new game" or winners summary; switching Classic to Song Grid reuses 90 as the song count; print layout and dual-monitor not run.
+
+## 50-Task Quality & Verification Queue Completion (Batches 1..10)
+- **Completed**: All 50 bounded tasks across `docs/QUEUE_AG_50.md` executed and verified by Antigravity (A) with Claude (Lead, C).
+  - Batches 1..5: Task status, decisions, changelog, 70-command IPC inventory, run docs, and audits across Backend, Data, Frontend glue, and UI/Tests (`docs/AUDIT_BATCH_2.md` through `5.md`).
+  - Batches 6..7: Pure rule hardening and un-wired pure helper modules (`classic_ticket_properties.rs`, `song_grid_properties.rs`, `scheme_mask_rules.rs`, `late_claim_rule.rs`, `numberFormatting.test.ts`, `draw_order_helper.rs`, `ticket_range_parser.rs`, `poster_path_helper.rs`, `ffmpeg_version_parser.rs`, `download_size_formatter.rs`).
+  - Batch 8: Offline operational and verification scripts (`scripts/check-locale-parity.js`, `generate-ipc-inventory.js`, `audit-mailbox-ids.js`, `check-doc-links.js`, `check-release-config.js`).
+  - Batch 9: Comprehensive documentation guides (`docs/HOST_GUIDE_EN.md`, `docs/HOST_GUIDE_GU.md`, `docs/PRINT_TEMPLATE_GUIDE.md`, `docs/TROUBLESHOOTING.md`, `docs/OPEN_ISSUES_DIGEST.md`).
+  - Batch 10: QuickClaim accessibility & i18n key parity fix, final release consistency pass across tasks and changelog.
+- **Current Test Metrics**:
+  - Cargo Tests: **148 passed** (142 unit + 2 acceptance + 4 integration binaries), 0 failed.
+  - Vitest Frontend: **34 test files / 200 passed**, 0 failed.
+  - Release Installer: `src-tauri/target/release/bundle/nsis/Media Tambola_1.0.2_x64-setup.exe` verified present and consistent across configs.
