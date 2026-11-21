@@ -267,7 +267,7 @@ pub async fn pick_media_folder(
 }
 
 #[tauri::command]
-pub fn scan_media_folder(
+pub async fn scan_media_folder(
     root_path: String,
     order: MediaFolderOrder,
     recursive: bool,
@@ -474,7 +474,7 @@ pub async fn download_ffmpeg(
 }
 
 #[tauri::command]
-pub fn generate_media_posters(
+pub async fn generate_media_posters(
     input: crate::services::ffmpeg::GeneratePostersInput,
     window: Window,
     app_handle: AppHandle,

@@ -62,4 +62,30 @@ describe("every backend command is allowed for the main window", () => {
             );
         expect(missing).toEqual([]);
     });
+
+    // Synchronous commands run on the main thread: a slow one freezes the whole window, and one
+    // that creates a window deadlocks it. These do slow work or open windows and dialogs.
+    const MUST_BE_ASYNC: string[] = [
+        "open_presentation",
+        "scan_media_folder",
+        "generate_media_posters",
+        "generate_ticket_batch",
+        "pick_media_file",
+        "pick_media_folder",
+        "download_ffmpeg",
+        "preflight_media",
+        "validate_all_media",
+    ];
+
+    it("declares every slow or window-creating command as async", () => {
+        const sources: string = Object.values(rustSources).join(String.fromCharCode(10));
+        const sync: string[] = MUST_BE_ASYNC.filter((name: string) =>
+            new RegExp(`pub[ ]+fn[ ]+${name}[^a-z_]`).test(sources),
+        );
+        expect(sync).toEqual([]);
+        const missing: string[] = MUST_BE_ASYNC.filter(
+            (name: string) => !new RegExp(`pub[ ]+async[ ]+fn[ ]+${name}[^a-z_]`).test(sources),
+        );
+        expect(missing).toEqual([]);
+    });
 });

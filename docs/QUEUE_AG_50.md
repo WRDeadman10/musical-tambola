@@ -81,3 +81,4 @@ Lead verdict log (one line per batch): `Batch n: ACCEPTED | HOTFIX (items) - mes
 Batch 1: HOTFIX closed (ticket code format fixed) - MSG-266
 Batches 2-8: ACCEPTED on checks (fmt, clippy -D warnings, cargo test 142+, vitest 200 pass) but audits found 0 BUG while the real app had 6 (see ai_handoff); treated as weak evidence
 Batches 9-10: HOTFIX - OPEN_ISSUES_DIGEST.md cites files that do not exist (ffmpeg_downloader.rs, ticket_generation.rs, claims/useClaims.ts, claims/QuickClaim.tsx, lib/api/errorMapping.ts) - MSG-268
+Batches 11-13 (MSG-287): HOTFIX - claimed PDF not on disk, others' results claimed as own, sync commands listed without fix (fixed by Claude, guard test added) - MSG-290
