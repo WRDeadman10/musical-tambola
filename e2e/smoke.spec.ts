@@ -273,6 +273,16 @@ test("navigates every sidebar route and completes the mocked game flow", async (
         /Dashboard|Settings|Media Library|Ticket Generator|Game Controller/,
     );
 
+    // Tickets hub tabs check and redirect verification
+    await page.goto("/tickets");
+    await expect(page.getByRole("tab", { name: /Generate|બનાવો/ })).toBeVisible();
+    await expect(page.getByRole("tab", { name: /Batches|બેચ/ })).toBeVisible();
+    await expect(page.getByRole("tab", { name: /Print|છાપો/ })).toBeVisible();
+
+    await page.goto("/tickets/print");
+    await expect(page).toHaveURL(/.*\/tickets\?tab=print/);
+    await expect(page.getByRole("tab", { name: /Print|છાપો/ })).toHaveAttribute("aria-selected", "true");
+
     await page.goto("/game");
     await page.getByRole("button", { name: /Validate media|મીડિયા ચકાસો/ }).click();
     await page.locator("select").selectOption("1");
@@ -281,6 +291,7 @@ test("navigates every sidebar route and completes the mocked game flow", async (
     await page.getByRole("button", { name: /^(Next|આગળ)$/ }).click();
     await expect(page.getByText("2 / 90")).toBeVisible();
 
+    await page.getByRole("tab", { name: /Lucky draw|લકી ડ્રો/ }).click();
     const luckyDraw = page.getByRole("region", { name: /Lucky draw|લકી ડ્રો/ });
     await luckyDraw.getByRole("textbox").fill("Winner One");
     await luckyDraw.getByRole("button", { name: /Draw|ડ્રો/ }).click();
