@@ -466,6 +466,10 @@
         "openClaimDesk": "Open detailed Claim Desk"
     },
     "hostPanel": {
+        "gameFinished": "Game finished",
+        "gameFinishedHint": "Every number has been drawn. Winners are saved in Winner History.",
+        "viewWinners": "View winners",
+        "startNewGame": "Start a new game",
         "gameCode": "Game code",
         "status": {
             "ACTIVE": "ACTIVE",

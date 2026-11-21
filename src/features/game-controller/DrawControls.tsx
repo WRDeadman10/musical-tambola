@@ -34,10 +34,18 @@ export function DrawControls({
             </Button>
             <p className="text-sm text-zinc-400">{translate("game.nextHint")}</p>
             <div className="flex justify-center gap-2">
-                <Button variant="outline" onClick={onPause} disabled={busy}>
+                <Button
+                    variant="outline"
+                    onClick={onPause}
+                    disabled={busy || status === "COMPLETED"}
+                >
                     {status === "PAUSED" ? translate("game.resume") : translate("game.pause")}
                 </Button>
-                <Button variant="destructive" onClick={onEnd} disabled={busy}>
+                <Button
+                    variant="destructive"
+                    onClick={onEnd}
+                    disabled={busy || status === "COMPLETED"}
+                >
                     {translate("game.end")}
                 </Button>
             </div>

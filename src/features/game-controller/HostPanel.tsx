@@ -154,6 +154,38 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                         : translate("hostPanel.present")}
                 </button>
             </StatusBar>
+            {model.state.game.status === "COMPLETED" && (
+                <section
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-700 bg-emerald-950/40 px-4 py-3"
+                    data-testid="game-finished"
+                    role="status"
+                >
+                    <div>
+                        <h2 className="font-semibold text-emerald-200">
+                            {translate("hostPanel.gameFinished")}
+                        </h2>
+                        <p className="text-sm text-emerald-100/80">
+                            {translate("hostPanel.gameFinishedHint")}
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            className="rounded-md border border-zinc-600 px-3 py-1.5 text-sm text-zinc-100 hover:bg-zinc-800"
+                            onClick={() => navigate("/history")}
+                            type="button"
+                        >
+                            {translate("hostPanel.viewWinners")}
+                        </button>
+                        <button
+                            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
+                            onClick={model.startOver}
+                            type="button"
+                        >
+                            {translate("hostPanel.startNewGame")}
+                        </button>
+                    </div>
+                </section>
+            )}
             <div className="grid flex-1 gap-4 xl:min-h-0 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
                 <div className="xl:min-h-0 xl:overflow-y-auto">
                     <AudiencePreview state={model.state} translate={translate} />

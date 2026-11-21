@@ -210,6 +210,24 @@ describe("game controller", () => {
         expect(screen.getByTestId("present-overlay")).toBeTruthy();
     });
 
+    it("a finished game shows a summary and starts a new game from the wizard", async () => {
+        vi.mocked(gameApi.getActiveGame).mockResolvedValue({
+            ...game,
+            game: { ...game.game, status: "COMPLETED" },
+        });
+        renderPage();
+        expect(await screen.findByTestId("game-finished")).toBeTruthy();
+        expect((screen.getByRole("button", { name: "Next" }) as HTMLButtonElement).disabled).toBe(
+            true,
+        );
+        expect(
+            (screen.getByRole("button", { name: "End game" }) as HTMLButtonElement).disabled,
+        ).toBe(true);
+        fireEvent.click(screen.getByRole("button", { name: "Start a new game" }));
+        expect(await screen.findByRole("button", { name: /Start game/ })).toBeTruthy();
+        expect(screen.queryByTestId("game-finished")).toBeNull();
+    });
+
     it("host panel shows the song list empty state", async () => {
         vi.mocked(gameApi.getActiveGame).mockResolvedValue(game);
         renderPage();

@@ -466,6 +466,10 @@
         "openClaimDesk": "વિગતવાર ક્લેમ ડેસ્ક ખોલો"
     },
     "hostPanel": {
+        "gameFinished": "ગેમ પૂરી થઈ",
+        "gameFinishedHint": "બધા નંબર કાઢી લેવાયા છે. વિજેતાઓ વિજેતા ઇતિહાસમાં સચવાયા છે.",
+        "viewWinners": "વિજેતા જુઓ",
+        "startNewGame": "નવી ગેમ શરૂ કરો",
         "gameCode": "ગેમ કોડ",
         "status": {
             "ACTIVE": "ચાલુ",

@@ -64,6 +64,7 @@ describe("game formats", () => {
             next: vi.fn(),
             changeStatus: vi.fn(),
             end: vi.fn(),
+            startOver: vi.fn(),
         };
         render(
             <MemoryRouter>

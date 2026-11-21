@@ -22,6 +22,7 @@ export interface GameControllerModel {
     next: () => Promise<void>;
     changeStatus: (action: (id: number) => Promise<GameState>) => Promise<void>;
     end: () => Promise<void>;
+    startOver: () => void;
 }
 export function useGameController(): GameControllerModel {
     const translate = useAppStore((state) => state.t);
@@ -103,6 +104,15 @@ export function useGameController(): GameControllerModel {
         setEndRequested(false);
         await changeStatus(endGame);
     };
+    const startOver = (): void => {
+        setState(null);
+        setReport(null);
+        setError("");
+        setEndRequested(false);
+        void listTicketBatches()
+            .then((items) => setBatches(items))
+            .catch(() => undefined);
+    };
     return {
         state,
         format,
@@ -117,5 +127,6 @@ export function useGameController(): GameControllerModel {
         next,
         changeStatus,
         end,
+        startOver,
     };
 }

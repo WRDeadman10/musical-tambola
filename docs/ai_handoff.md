@@ -182,3 +182,6 @@ Open items: finished game screen has no "start new game" or winners summary; swi
   - Cargo Tests: **148 passed** (142 unit + 2 acceptance + 4 integration binaries), 0 failed.
   - Vitest Frontend: **34 test files / 200 passed**, 0 failed.
   - Release Installer: `src-tauri/target/release/bundle/nsis/Media Tambola_1.0.2_x64-setup.exe` verified present and consistent across configs.
+
+## Finished-game screen (Claude)
+When the game status is COMPLETED the host panel shows a "Game finished" banner with "View winners" and "Start a new game" (new `startOver` in `useGameController` resets state and reloads batches); Pause and End are disabled. Test `a finished game shows a summary...` in `gameController.test.tsx`, mutation-checked. Files: HostPanel.tsx, DrawControls.tsx, useGameController.ts, en.json, gu.json, formats.test.tsx, gameController.test.tsx. Not run in the built exe yet (installer 17:15 predates this).
