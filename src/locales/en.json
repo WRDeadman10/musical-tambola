@@ -55,6 +55,11 @@
     },
     "settings": {
         "danger": {
+            "resetSettings": "Reset settings",
+            "settingsTitle": "Reset all settings?",
+            "settingsBody": "Language, theme, sounds, event name and other preferences go back to their defaults. Games, tickets and media stay. A backup is saved first.",
+            "resetButton": "Reset settings",
+            "settingsDone": "Settings reset. Backup saved at",
             "title": "Danger zone",
             "body": "Delete every game, ticket, media entry and setting. A backup is saved automatically first.",
             "deleteAll": "Delete all data",

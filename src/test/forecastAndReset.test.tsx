@@ -5,7 +5,7 @@ import { DangerZoneCard } from "../features/settings/DangerZoneCard";
 import { useAppStore } from "../stores/appStore";
 
 const forecastApi = vi.hoisted(() => ({ getGameWinForecast: vi.fn() }));
-const backupApi = vi.hoisted(() => ({ resetAllData: vi.fn() }));
+const backupApi = vi.hoisted(() => ({ resetAllData: vi.fn(), resetAppSettings: vi.fn() }));
 const pinApi = vi.hoisted(() => ({ getAdminPinStatus: vi.fn() }));
 
 vi.mock("../lib/api/forecast", () => forecastApi);
@@ -112,6 +112,7 @@ describe("delete all data", () => {
         useAppStore.setState({ language: "en" });
         pinApi.getAdminPinStatus.mockResolvedValue({ pinSet: false, isUnlocked: false });
         backupApi.resetAllData.mockResolvedValue({ path: "C:\\backups\\b.zip" });
+        backupApi.resetAppSettings.mockResolvedValue({ path: "C:\\backups\\s.zip" });
     });
 
     it("does nothing until the word DELETE is typed", async () => {
@@ -171,5 +172,34 @@ describe("delete all data", () => {
         fireEvent.click(screen.getByRole("button", { name: "Delete everything" }));
         expect(await screen.findByText("Admin PIN is incorrect")).toBeTruthy();
         expect(screen.getByRole("alertdialog")).toBeTruthy();
+    });
+
+    it("resets only settings after typing RESET and never touches the data command", async () => {
+        const assign = vi.fn();
+        vi.stubGlobal("location", { ...window.location, assign });
+        render(<DangerZoneCard />);
+        fireEvent.click(screen.getByRole("button", { name: "Reset settings" }));
+        const confirm = screen.getAllByRole("button", { name: "Reset settings" }).pop();
+        expect((confirm as HTMLButtonElement).disabled).toBe(true);
+        fireEvent.change(screen.getByLabelText("Type RESET to confirm"), {
+            target: { value: "RESET" },
+        });
+        fireEvent.click(confirm as HTMLElement);
+        await waitFor(() => expect(backupApi.resetAppSettings).toHaveBeenCalledWith(undefined));
+        expect(backupApi.resetAllData).not.toHaveBeenCalled();
+        expect(
+            await screen.findByText(/Settings reset. Backup saved at C:\\backups\\s.zip/),
+        ).toBeTruthy();
+        vi.unstubAllGlobals();
+    });
+
+    it("the delete confirmation word does not unlock the settings reset", () => {
+        render(<DangerZoneCard />);
+        fireEvent.click(screen.getByRole("button", { name: "Reset settings" }));
+        fireEvent.change(screen.getByLabelText("Type RESET to confirm"), {
+            target: { value: "DELETE" },
+        });
+        const confirm = screen.getAllByRole("button", { name: "Reset settings" }).pop();
+        expect((confirm as HTMLButtonElement).disabled).toBe(true);
     });
 });

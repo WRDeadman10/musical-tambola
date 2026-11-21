@@ -2,16 +2,18 @@ import React, { useEffect, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { getAdminPinStatus } from "../../lib/api/adminPin";
-import { BackupResult, resetAllData } from "../../lib/api/backup";
+import { BackupResult, resetAllData, resetAppSettings } from "../../lib/api/backup";
 import { toErrorMessage } from "../../lib/api/errors";
 import { useAppStore } from "../../stores/appStore";
 
-const CONFIRM_WORD: string = "DELETE";
+type DangerMode = "SETTINGS" | "ALL";
 
-/** Deletes every game, ticket, media entry and setting. Always backed up first by the backend. */
+const CONFIRM_WORDS: Record<DangerMode, string> = { SETTINGS: "RESET", ALL: "DELETE" };
+
+/** Resets preferences, or deletes every game, ticket and media entry. Backed up first. */
 export function DangerZoneCard(): React.JSX.Element {
     const t = useAppStore((state) => state.t);
-    const [open, setOpen] = useState<boolean>(false);
+    const [mode, setMode] = useState<DangerMode | null>(null);
     const [typed, setTyped] = useState<string>("");
     const [pin, setPin] = useState<string>("");
     const [pinRequired, setPinRequired] = useState<boolean>(false);
@@ -20,26 +22,33 @@ export function DangerZoneCard(): React.JSX.Element {
     const [done, setDone] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!open) return;
+        if (mode === null) return;
         void getAdminPinStatus()
             .then((status) => setPinRequired(status.pinSet === true))
             .catch((): void => undefined);
-    }, [open]);
+    }, [mode]);
 
     const close = (): void => {
-        setOpen(false);
+        setMode(null);
         setTyped("");
         setPin("");
         setError(null);
     };
 
+    const word: string = mode === null ? "" : CONFIRM_WORDS[mode];
+    const prompt: string = t("settings.danger.typeToConfirm").replace("{{word}}", word);
+
     const confirm = async (): Promise<void> => {
-        if (typed !== CONFIRM_WORD) return;
+        if (mode === null || typed !== word) return;
         setBusy(true);
         setError(null);
         try {
-            const result: BackupResult = await resetAllData(pinRequired ? pin : undefined);
-            setDone(`${t("settings.danger.done")} ${result.path}`);
+            const secret: string | undefined = pinRequired ? pin : undefined;
+            const result: BackupResult =
+                mode === "ALL" ? await resetAllData(secret) : await resetAppSettings(secret);
+            setDone(
+                `${t(mode === "ALL" ? "settings.danger.done" : "settings.danger.settingsDone")} ${result.path}`,
+            );
             close();
             window.setTimeout(() => window.location.assign("/"), 2500);
         } catch (caught: unknown) {
@@ -56,33 +65,49 @@ export function DangerZoneCard(): React.JSX.Element {
             </CardHeader>
             <CardContent className="space-y-3">
                 <p className="text-sm text-zinc-400">{t("settings.danger.body")}</p>
-                <Button variant="destructive" onClick={() => setOpen(true)}>
-                    {t("settings.danger.deleteAll")}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={() => setMode("SETTINGS")}>
+                        {t("settings.danger.resetSettings")}
+                    </Button>
+                    <Button variant="destructive" onClick={() => setMode("ALL")}>
+                        {t("settings.danger.deleteAll")}
+                    </Button>
+                </div>
                 {done !== null && (
                     <p className="text-sm text-emerald-300" role="status">
                         {done}
                     </p>
                 )}
             </CardContent>
-            {open && (
+            {mode !== null && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
                     <div
-                        aria-label={t("settings.danger.deleteAll")}
+                        aria-label={t(
+                            mode === "ALL"
+                                ? "settings.danger.deleteAll"
+                                : "settings.danger.resetSettings",
+                        )}
                         className="w-full max-w-md space-y-4 rounded-xl border border-red-800 bg-zinc-900 p-6"
                         role="alertdialog"
                     >
                         <h3 className="text-lg font-semibold text-red-300">
-                            {t("settings.danger.confirmTitle")}
+                            {t(
+                                mode === "ALL"
+                                    ? "settings.danger.confirmTitle"
+                                    : "settings.danger.settingsTitle",
+                            )}
                         </h3>
-                        <p className="text-sm text-zinc-300">{t("settings.danger.confirmBody")}</p>
+                        <p className="text-sm text-zinc-300">
+                            {t(
+                                mode === "ALL"
+                                    ? "settings.danger.confirmBody"
+                                    : "settings.danger.settingsBody",
+                            )}
+                        </p>
                         <label className="block text-sm">
-                            {t("settings.danger.typeToConfirm").replace("{{word}}", CONFIRM_WORD)}
+                            {prompt}
                             <input
-                                aria-label={t("settings.danger.typeToConfirm").replace(
-                                    "{{word}}",
-                                    CONFIRM_WORD,
-                                )}
+                                aria-label={prompt}
                                 className="mt-1 w-full"
                                 value={typed}
                                 onChange={(event) => setTyped(event.target.value)}
@@ -111,11 +136,15 @@ export function DangerZoneCard(): React.JSX.Element {
                                 {t("common.cancel")}
                             </Button>
                             <Button
-                                disabled={busy || typed !== CONFIRM_WORD}
+                                disabled={busy || typed !== word}
                                 variant="destructive"
                                 onClick={() => void confirm()}
                             >
-                                {t("settings.danger.confirmButton")}
+                                {t(
+                                    mode === "ALL"
+                                        ? "settings.danger.confirmButton"
+                                        : "settings.danger.resetButton",
+                                )}
                             </Button>
                         </div>
                     </div>

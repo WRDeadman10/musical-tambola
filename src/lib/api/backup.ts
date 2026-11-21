@@ -39,3 +39,13 @@ export async function resetAllData(pin?: string): Promise<BackupResult> {
         pin: pin ?? null,
     });
 }
+
+export const RESET_APP_SETTINGS_CONFIRMATION: string = "RESET_APP_SETTINGS";
+
+/** Puts preferences back to defaults; games, tickets and media stay. Backed up first. */
+export async function resetAppSettings(pin?: string): Promise<BackupResult> {
+    return await invoke<BackupResult>("reset_app_settings", {
+        confirm: RESET_APP_SETTINGS_CONFIRMATION,
+        pin: pin ?? null,
+    });
+}
