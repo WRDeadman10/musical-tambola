@@ -115,7 +115,10 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
     });
     if (model.state === null) return <div className="p-8">{translate("claims.noActiveGame")}</div>;
     return (
-        <div className="space-y-4 p-6" data-show-answer={showAnswer}>
+        <div
+            className="flex min-h-screen flex-col gap-3 p-4 xl:h-screen xl:overflow-hidden"
+            data-show-answer={showAnswer}
+        >
             {presentMode && (
                 <div
                     className="fixed inset-0 z-50 bg-black"
@@ -139,11 +142,10 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                 useGujaratiNumerals={useGujaratiNumerals}
                 projectorConnected={projectorConnected}
                 translate={translate}
-            />
-            <div className="flex justify-end">
+            >
                 <button
                     aria-pressed={presentMode}
-                    className="text-sm text-indigo-300 underline"
+                    className="rounded-md border border-indigo-500 px-3 py-1.5 text-sm font-medium text-indigo-200 hover:bg-indigo-500/10"
                     onClick={() => setPresentMode((value) => !value)}
                     type="button"
                 >
@@ -151,10 +153,12 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                         ? translate("hostPanel.exitPresent")
                         : translate("hostPanel.present")}
                 </button>
-            </div>
-            <div className="grid gap-4 xl:grid-cols-[35%_35%_30%]">
-                <AudiencePreview state={model.state} translate={translate} />
-                <div className="space-y-4">
+            </StatusBar>
+            <div className="grid flex-1 gap-4 xl:min-h-0 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
+                <div className="xl:min-h-0 xl:overflow-y-auto">
+                    <AudiencePreview state={model.state} translate={translate} />
+                </div>
+                <div className="space-y-4 xl:min-h-0 xl:overflow-y-auto">
                     <DrawControls
                         status={model.state.game.status}
                         busy={model.busy}
@@ -178,7 +182,7 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                         }}
                     />
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-4 xl:min-h-0 xl:overflow-y-auto">
                     <QuickClaim
                         onFocusRef={claimInput}
                         onAccepted={(result) =>

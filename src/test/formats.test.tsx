@@ -36,9 +36,6 @@ describe("game formats", () => {
         api.invoke.mockRejectedValueOnce("FORMAT_LOCKED_GAME_ACTIVE");
         await expect(setGameFormat("SONG_GRID", 45)).rejects.toBe("FORMAT_LOCKED_GAME_ACTIVE");
     });
-    // Placeholder removed: the previous version only measured a list it built itself.
-    // Needs a real render of MediaLibraryPage with get_game_format mocked to 45.
-    it.todo("media library shows only song count slots");
     it("ticket grid renders 3x5 song grid without blanks", () => {
         render(<TicketGrid ticket={ticket} mediaByNumber={new Map()} />);
         expect(screen.getAllByTestId("ticket-cell")).toHaveLength(15);

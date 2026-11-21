@@ -126,3 +126,11 @@
 - Modified: TicketGrid.tsx, TicketGeneratorPage.tsx, TicketBatchesPage.tsx, PrintTicketsPage.tsx, PrintableTicket.tsx (new), index.css, en.json, gu.json, ticketPages/printLayout tests.
 - Not done: no real print/PDF check of the A4 output in the built app; no ticket-ID search by number range UI beyond the existing search box.
 - Next recommended task: BT-39 (game screen fit-to-viewport, app-wide input/select styling, Settings cards).
+
+## v1.0.2 BT-39 - Game screen and forms (Claude, frontend)
+- Host panel is now a viewport-fit layout on wide screens (`xl:h-screen`): status bar with the Present button inside it, three columns (media + answer, Next/Pause/End + countdown, Quick Claim + projector + winners + lucky draw) that scroll on their own, compact song strip below. Below `xl` it stacks and the page scrolls.
+- `StatusBar` accepts `children` (used for the Present button). `MediaStage` is shorter (46vh max). `SongList` is compact.
+- `src/index.css` base layer styles every input/select/textarea/file/range/checkbox (classes on a control still win). Settings: aligned checkboxes, wrapping system-info paths.
+- Replaced the `it.todo` with two real MediaLibraryPage tests (Song Grid 45 rows, Classic 90 rows); mutation-checked.
+- Not verified: the layout in the real window or at 1366x768 (no visual run yet). Media Library ffmpeg UI (status, download prompt, generate previews) is NOT done: waiting for AG's BT-35 commands (`get_ffmpeg_status`, `download_ffmpeg`, `generate_media_posters`) to be committed with their DTOs.
+- Modified: HostPanel.tsx, StatusBar.tsx, SongList.tsx, MediaStage.tsx, SettingsPage.tsx, index.css, formats.test.tsx, mediaLibrary.test.tsx.

@@ -21,17 +21,17 @@ export function MediaStage({
     }, [autoplay, item]);
     if (!item) {
         return (
-            <div className="flex h-full min-h-80 items-center justify-center rounded-xl bg-zinc-900 text-zinc-500">
+            <div className="flex h-full min-h-64 items-center justify-center rounded-xl bg-zinc-900 text-zinc-500">
                 {translate("game.noCurrent")}
             </div>
         );
     }
     return (
-        <div className="relative flex min-h-80 items-center justify-center overflow-hidden rounded-xl bg-black">
+        <div className="relative flex min-h-64 items-center justify-center overflow-hidden rounded-xl bg-black">
             {item.mediaType === "VIDEO" ? (
                 <video
                     ref={videoRef}
-                    className="max-h-[58vh] w-full object-contain"
+                    className="max-h-[46vh] w-full object-contain"
                     src={item.displayUrl}
                     poster={item.thumbnailUrl ?? undefined}
                     autoPlay={autoplay}
@@ -44,7 +44,7 @@ export function MediaStage({
                 />
             ) : (
                 <img
-                    className="max-h-[58vh] w-full object-contain"
+                    className="max-h-[46vh] w-full object-contain"
                     src={item.displayUrl}
                     alt={item.title}
                 />

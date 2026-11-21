@@ -176,11 +176,11 @@ export const SettingsPage: React.FC = () => {
                         </Button>
                     </div>
                     {gameFormat === "SONG_GRID" && (
-                        <label className="block">
+                        <label className="flex items-center gap-3">
                             {t("settings.songCount")}
                             <input
                                 aria-label={t("settings.songCount")}
-                                className="ml-3 w-24"
+                                className="w-24"
                                 type="number"
                                 min={15}
                                 max={90}
@@ -248,7 +248,7 @@ export const SettingsPage: React.FC = () => {
                             className="w-full"
                         />
                     </label>
-                    <label className="flex gap-3">
+                    <label className="flex items-center gap-3">
                         <input
                             type="checkbox"
                             checked={autoplay}
@@ -262,7 +262,7 @@ export const SettingsPage: React.FC = () => {
                         />
                         {t("settings.autoplay")}
                     </label>
-                    <label className="flex gap-3">
+                    <label className="flex items-center gap-3">
                         <input
                             type="checkbox"
                             checked={showNumbers}
@@ -276,7 +276,7 @@ export const SettingsPage: React.FC = () => {
                         />
                         {t("settings.showNumbersAdmin")}
                     </label>
-                    <label className="flex gap-3">
+                    <label className="flex items-center gap-3">
                         <input
                             type="checkbox"
                             checked={useGujaratiNumerals}
@@ -307,9 +307,9 @@ export const SettingsPage: React.FC = () => {
                         [t("settings.dataDir"), appInfo?.dataDir ?? "—"],
                         [t("settings.dbPath"), appInfo?.dbPath ?? "—"],
                     ].map(([label, value]) => (
-                        <div key={String(label)} className="flex justify-between">
-                            <span>{label}</span>
-                            <span>{String(value)}</span>
+                        <div key={String(label)} className="flex justify-between gap-6">
+                            <span className="shrink-0 text-zinc-400">{label}</span>
+                            <span className="break-all text-right">{String(value)}</span>
                         </div>
                     ))}
                 </CardContent>

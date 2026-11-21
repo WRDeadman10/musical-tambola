@@ -42,6 +42,24 @@ describe("MediaLibraryPage", () => {
         mockedFormats.getGameFormat.mockResolvedValue({ format: "CLASSIC_90", songCount: 90 });
         mockedPresentation.listenToPresentationCommand.mockResolvedValue(() => undefined);
     });
+    it("media library shows only song count slots in Song Grid format", async () => {
+        const slots: MediaSlot[] = Array.from({ length: 90 }, (_value, index) =>
+            createSlot(index + 1),
+        );
+        mockedMediaApi.listMedia.mockResolvedValue(slots);
+        mockedMediaApi.listenToMediaValidationProgress.mockResolvedValue(() => undefined);
+        mockedFormats.getGameFormat.mockResolvedValue({ format: "SONG_GRID", songCount: 45 });
+        const { container } = render(<MediaLibraryPage />);
+        await waitFor(() => expect(container.querySelectorAll("tbody tr")).toHaveLength(45));
+    });
+    it("media library shows all 90 slots in Classic format", async () => {
+        mockedMediaApi.listMedia.mockResolvedValue(
+            Array.from({ length: 90 }, (_value, index) => createSlot(index + 1)),
+        );
+        mockedMediaApi.listenToMediaValidationProgress.mockResolvedValue(() => undefined);
+        const { container } = render(<MediaLibraryPage />);
+        await waitFor(() => expect(container.querySelectorAll("tbody tr")).toHaveLength(90));
+    });
     it("renders localized validation codes and falls back to legacy messages", () => {
         const translate = (key: string): string => {
             if (key === "errors.MEDIA_REMOTE_HTTP_STATUS") {

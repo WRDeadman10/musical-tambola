@@ -10,15 +10,17 @@ export function StatusBar({
     useGujaratiNumerals,
     projectorConnected = false,
     translate,
+    children,
 }: {
     state: GameState;
     language: Language;
     useGujaratiNumerals: boolean;
     projectorConnected?: boolean;
     translate: (key: string) => string;
+    children?: React.ReactNode;
 }): React.JSX.Element {
     return (
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-2">
             <div>
                 <p className="text-sm text-zinc-400">{state.game.code}</p>
                 <h1 className="text-2xl font-semibold">{state.game.batchName}</h1>
@@ -42,6 +44,7 @@ export function StatusBar({
                         ? translate("presentation.connected")
                         : translate("hostPanel.projectorDisconnected")}
                 </Badge>
+                {children}
             </div>
         </header>
     );
