@@ -139,3 +139,28 @@
 - New `src/lib/api/ffmpeg.ts` (get_ffmpeg_status, download_ffmpeg, generate_media_posters with `{ input }`, events `ffmpeg-download-progress` and `poster-progress`) and `PosterToolsCard` in the Media Library: shows ffmpeg status, "Generate previews" (only missing), "Regenerate all previews", download only after an in-app confirmation dialog, progress, failed list.
 - Tests: `src/test/posterTools.test.tsx` (6); mutation-checked the confirm gate. IPC contract test passes with the new commands.
 - Not done: the old canvas-based poster generation after folder import is still in `MediaLibraryPage` (posterGeneration.ts); switch it to the backend once ffmpeg is confirmed working in the real app. Real download/generation untested in the built app.
+
+## v1.0.2 BT-35 & BT-36 Backend Implementation & Verification (AG)
+- **Commit**: `75699cf` (`feat(backend): ffmpeg video preview engine and presentation hardening (BT-35, BT-36)`)
+- **Implemented BT-35 Engine**:
+  - `src-tauri/src/services/ffmpeg.rs`:
+    - `get_ffmpeg_status_impl`: checks `<appdata>/tools/ffmpeg/ffmpeg.exe` and system PATH.
+    - `download_ffmpeg_impl`: streams pinned Gyan essentials build, verifies pinned SHA-256 (`F77BAED58CDFF46F4FDDC02720B5FD5E9F9F4228BCDB3E944747B090FF971BA9`), enforces 150MB zip cap and 400MB uncompressed cap, guards against zip-slip directory traversal, extracts `ffmpeg.exe` & `ffprobe.exe` atomically to `<appdata>/tools/ffmpeg/`, emits `ffmpeg-download-progress`.
+    - `generate_media_posters_impl`: unblocks DB lock during FFmpeg extraction (queries rows under lock, drops lock to run FFmpeg, re-locks briefly to persist path), handles missing posters folder creation, skips remote videos (`REMOTE_SKIPPED`), runs 2 concurrent jobs with 30s timeout and `CREATE_NO_WINDOW`, scales midpoint frame to `640:-2` JPEG, emits `poster-progress` per slot.
+- **Implemented BT-36 Presentation Hardening**:
+  - `PresentationInnerState` default `show_answer = false` (song title starts hidden per Owner requirement).
+  - Added `splash_enabled` flag, handles `{ enabled: bool }` on `SPLASH` command.
+  - Emits `presentation-status-changed { open: bool, displayIndex: Option<usize> }` on open, close, and window destruction.
+  - Per-draw reset of revealed state on `draw_next` and game initialization.
+  - Auto-open presentation window on `create_game` when 2+ displays detected and `auto_open_presentation` is enabled.
+- **Packaging & Artifacts (Wave 5)**:
+  - NSIS Installer: `src-tauri/target/release/bundle/nsis/Media Tambola_1.0.1_x64-setup.exe` (4,313,944 bytes / 4.11 MiB, SHA-256: `978DDDC415B71BE84CFBC9C87989A8115E491E87274767EA9D03271A500195AA`).
+  - Standalone Binary: `src-tauri/target/release/media-tambola.exe` (10,809,344 bytes / 10.30 MiB, SHA-256: `24B36EB0629555304812E6014334EA761B87F1B88D3719EF71C37BA7B8002D72`).
+  - Headless Smoke Test: PASS (`[SMOKE-TEST] SUCCESS: Database operational and sentinel verified.`).
+- **Test Metrics**:
+  - Cargo Tests: **129 passed** (127 unit + 2 acceptance), 0 failed.
+  - Vitest: **32 test files / 192 passed**.
+  - Playwright E2E: **1 passed**.
+  - Cargo clippy & fmt: Clean.
+  - Frontend lint & tsc: Clean.
+
