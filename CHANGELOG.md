@@ -5,6 +5,25 @@ All notable changes to the Media Tambola project will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-11-21
+
+### Added
+- **UI redesign**: new design tokens (surfaces, accent, gold), restyled buttons/cards/badges/tabs, collapsible icon sidebar, host cockpit (stage, tabs for Claim / Forecast / Projector / Lucky draw, always-visible action bar), redesigned projector scenes, light theme (applied at startup; the projector stays dark).
+- **Simple ticket numbers**: tickets are numbered 1, 2, 3 per game; claims accept the number (old `T-000001` codes still work).
+- **Win forecast** (admin only): which ticket wins which prize at which draw, with a per-ticket check.
+- **Projector video follows the host**: the Audience Preview is the only video control; pause, play and seek are mirrored.
+- **Settings**: "Reset settings" and "Delete all data" (typed confirmation, admin PIN, automatic backup).
+- **Finished-game screen** with "Start a new game" and a winners link.
+
+### Fixed
+- Switching back to Classic from Song Grid failed; the Song Grid song count could not be changed.
+- Every video preview failed (temp file extension) and videos with longer audio than video.
+- Opening the projector froze the app (window created on the main thread).
+- Event branding settings (accent colour, sounds) were saved under names the backend rejects and started blank.
+- Sidebar kept the old language; the saved theme was not applied at startup.
+- `get_game_win_forecast` and `reset_all_data` were missing from the permission lists.
+- Printed ticket grid overflowed its template region and printed thumbnails behind the text.
+
 ## [1.0.2] - 2026-11-21
 
 ### Fixed

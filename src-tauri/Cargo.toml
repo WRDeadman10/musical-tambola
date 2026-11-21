@@ -1,6 +1,6 @@
 [package]
 name = "media-tambola"
-version = "1.0.2"
+version = "1.0.3"
 description = "Media Tambola Desktop App"
 authors = ["Media Tambola Team"]
 edition = "2021"

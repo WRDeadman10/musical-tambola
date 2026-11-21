@@ -1,4 +1,4 @@
-# Media Tambola (મ્યુઝિકલ તંબોલા) — v1.0.2
+# Media Tambola (મ્યુઝિકલ તંબોલા) — v1.0.3
 
 Production-grade, offline-first desktop application for running multimedia Tambola (Housie / Bingo) games with songs, video clips, and audio tracks. Built with **Tauri 2.x (Rust)** and **React + TypeScript + Tailwind CSS**.
 
@@ -15,7 +15,7 @@ Production-grade, offline-first desktop application for running multimedia Tambo
 
 ---
 
-## 2. Key Architecture & Features (v1.0.2)
+## 2. Key Architecture & Features (v1.0.3)
 
 ### Dual Game Formats: Classic 90 & Song Grid
 - **Classic 90 (`CLASSIC_90`)**: Traditional 90-number Tambola on 3×9 ticket grids (5 numbers per row, 15 numbers total).
