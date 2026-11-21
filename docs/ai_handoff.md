@@ -218,3 +218,9 @@ Forecast for the new game: Early Five 26@8, Four Corners 4@23, Top Line 18@29, M
 - The saved theme was never applied at startup (only when visiting Settings). `useThemeClass` (App) now sets `html.light`/`html.dark` from the saved theme (system follows the OS) and keeps `/present` dark. Tests in `src/test/theme.test.tsx`.
 - Colour roles: `text-ink` replaces `text-white` (white in dark, near-black in light), `text-on-accent` stays white on gradient buttons, `text-on-gold` stays dark on gold balls. `html.light` in `src/index.css` turns the zinc scale over and darkens red/amber/emerald/sky text steps. Checked in stub screenshots of the host cockpit and media library; not yet checked in the built exe or on every screen.
 - Gujarati check at 1366x768 (game, settings, generator): nothing clipped.
+
+## Wave 3 (Claude): animations, chests, tickets hub, print designer, prizes, media reorder
+Verified in the built exe on a scratch copy (real data parked and restored): ball hides with Hide number; Next reveal animation; Space no longer draws; animations switch (data-motion off removes all animation); chests on host and projector with drumroll; delete-all twice; tickets hub tabs and old routes redirect; print designer saves `ticket_layout`, non-2:1 images upload, ticket number prints vertically on the right; save_binary_file refuses bad types; How-to-win overlay shows 6 prizes with animated patterns; media move up/down swaps and swaps back; scrollbars use the theme.
+Bugs found by the real run and fixed: reset_all_data failed from the second run on (migrations re-run on a half-wiped DB); two missing translation keys (hostPanel.hideNumber/showNumber) and errors.unknown; tab strip overflow.
+New guards: src/test/localeKeys.test.ts (every key used exists in en and gu), commandPermissions MUST_BE_ASYNC list, reset_roundtrip.rs.
+Not verified: the native save dialog (needs a person to click it), real printing on paper, two monitors.
