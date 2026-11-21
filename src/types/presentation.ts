@@ -5,6 +5,7 @@ export type PresentationScene =
 
 export interface PresentationCountdown {
     seconds: number;
+    /** RUNNING, PAUSED or FINISHED. A STOPPED countdown is removed from the projector. */
     state: string;
 }
 
@@ -16,9 +17,9 @@ export interface PresentationAnnouncement {
 }
 
 export interface PresentationLuckyDraw {
-    ticketCode: string;
     name: string;
-    winner: boolean;
+    winner: string;
+    candidates: string[];
 }
 
 export interface PresentationState {
@@ -31,6 +32,10 @@ export interface PresentationState {
     current: CalledItem | null;
     game: GameState | null;
     volume?: number;
+    /** Show a big number card before each new call. */
+    splashEnabled?: boolean;
+    /** Increases each time the host asks the projector to (re)start playback. */
+    playNonce?: number;
 }
 
 export type PresentationCommandName =

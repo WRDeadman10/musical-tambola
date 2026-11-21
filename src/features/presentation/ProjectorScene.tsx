@@ -1,8 +1,12 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { emitPresentationAutoplayBlocked } from "../../lib/api/presentation";
 import { useAppStore } from "../../stores/appStore";
-import { PresentationState } from "../../types/presentation";
+import { PresentationLuckyDraw, PresentationState } from "../../types/presentation";
+import { CalledItem } from "../../types/game";
 import { MiniPatternGrid } from "../../components/scheme/MiniPatternGrid";
+
+const LUCKY_SPIN_MS: number = 3500;
+const LUCKY_TICK_MS: number = 90;
 
 export function ProjectorScene({ state }: { state: PresentationState }): React.JSX.Element {
     const t = useAppStore((value) => value.t);
@@ -52,12 +56,7 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
         );
     }
     if (state.scene === "LUCKY_DRAW" && state.luckyDraw !== null) {
-        return (
-            <div className="flex h-full flex-col items-center justify-center gap-8 text-center">
-                <div className="text-[min(8vw,6rem)] font-black">{state.luckyDraw.name}</div>
-                <div className="text-[min(6vw,4rem)]">{state.luckyDraw.ticketCode}</div>
-            </div>
-        );
+        return <LuckyDrawReel draw={state.luckyDraw} />;
     }
     if (state.current === null) {
         return (
@@ -69,14 +68,10 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
     return (
         <div className="relative flex h-full items-center justify-center" style={frameStyle}>
             {state.current.mediaType === "VIDEO" ? (
-                <video
-                    className="max-h-[90vh] w-full object-contain"
-                    autoPlay
-                    controls={false}
-                    muted={(state.volume ?? 1) === 0}
-                    poster={state.current.thumbnailUrl ?? undefined}
-                    src={state.current.displayUrl}
-                    onError={() => void emitPresentationAutoplayBlocked(state.current?.number ?? 0)}
+                <ProjectorVideo
+                    item={state.current}
+                    volume={state.volume ?? 1}
+                    playNonce={state.playNonce ?? 0}
                 />
             ) : (
                 <img
@@ -96,11 +91,102 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
                 </div>
             )}
             {ticker && <Ticker text={ticker} />}
-            {state.scene === "COUNTDOWN" && state.countdown !== null && (
+            {state.countdown !== null && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-[min(24vw,16rem)] font-black">
                     {state.countdown.seconds}
                 </div>
             )}
+        </div>
+    );
+}
+
+/**
+ * Plays the call's video with the host's volume. If the browser refuses to start playback the
+ * audience sees nothing wrong; the host is told so they can retry.
+ */
+function ProjectorVideo({
+    item,
+    volume,
+    playNonce,
+}: {
+    item: CalledItem;
+    volume: number;
+    playNonce: number;
+}): React.JSX.Element {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const clamped: number = Math.max(0, Math.min(1, volume));
+
+    useEffect(() => {
+        const video: HTMLVideoElement | null = videoRef.current;
+        if (video !== null) {
+            video.volume = clamped;
+        }
+    }, [clamped, item.position]);
+
+    useEffect(() => {
+        const video: HTMLVideoElement | null = videoRef.current;
+        if (video === null || typeof video.play !== "function") {
+            return;
+        }
+        const attempt: Promise<void> | undefined = video.play();
+        if (attempt !== undefined && typeof attempt.catch === "function") {
+            attempt.catch(() => {
+                void emitPresentationAutoplayBlocked(item.number);
+            });
+        }
+    }, [item.position, item.number, playNonce]);
+
+    return (
+        <video
+            ref={videoRef}
+            className="max-h-[90vh] w-full object-contain"
+            autoPlay
+            controls={false}
+            muted={clamped === 0}
+            poster={item.thumbnailUrl ?? undefined}
+            src={item.displayUrl}
+            onError={() => void emitPresentationAutoplayBlocked(item.number)}
+        />
+    );
+}
+
+/** Cycles through candidate names, then settles on the winner. */
+function LuckyDrawReel({ draw }: { draw: PresentationLuckyDraw }): React.JSX.Element {
+    const [index, setIndex] = useState<number>(0);
+    const [revealed, setRevealed] = useState<boolean>(false);
+    const names: string[] = draw.candidates.length > 0 ? draw.candidates : [draw.winner];
+
+    useEffect(() => {
+        setRevealed(false);
+        setIndex(0);
+        const spin: number = window.setInterval(
+            () => setIndex((value: number) => value + 1),
+            LUCKY_TICK_MS,
+        );
+        const stop: number = window.setTimeout(() => {
+            window.clearInterval(spin);
+            setRevealed(true);
+        }, LUCKY_SPIN_MS);
+        return () => {
+            window.clearInterval(spin);
+            window.clearTimeout(stop);
+        };
+    }, [draw.name, draw.winner]);
+
+    const shown: string = revealed ? draw.winner : names[index % names.length];
+    return (
+        <div className="flex h-full flex-col items-center justify-center gap-10 text-center">
+            <div className="text-[min(6vw,4rem)] font-semibold text-zinc-300">{draw.name}</div>
+            <div
+                data-testid="lucky-draw-name"
+                className={
+                    revealed
+                        ? "text-[min(12vw,9rem)] font-black text-yellow-300"
+                        : "text-[min(10vw,7rem)] font-bold text-zinc-100"
+                }
+            >
+                {shown}
+            </div>
         </div>
     );
 }

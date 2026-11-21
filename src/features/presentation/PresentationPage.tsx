@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { getActiveGame } from "../../lib/api/game";
 import {
     getPresentationState,
@@ -6,15 +6,26 @@ import {
     listenToPresentationCommand,
 } from "../../lib/api/presentation";
 import { GameState } from "../../types/game";
-import { PresentationCommand, PresentationState } from "../../types/presentation";
+import {
+    PresentationCommand,
+    PresentationScene,
+    PresentationState,
+} from "../../types/presentation";
 import { ProjectorScene } from "./ProjectorScene";
 import { useAppStore } from "../../stores/appStore";
 import { getAppInfo } from "../../lib/api";
 import { useSoundEffects } from "./useSoundEffects";
+import {
+    COUNTDOWN_FINISHED_VISIBLE_MS,
+    DEFAULT_SHOW_ANSWER,
+    SPLASH_DURATION_MS,
+    applyGameState,
+    applyPresentationCommand,
+} from "./presentationReducer";
 
 const initialState: PresentationState = {
     scene: "IDLE",
-    showAnswer: true,
+    showAnswer: DEFAULT_SHOW_ANSWER,
     showNumber: true,
     countdown: null,
     announcement: null,
@@ -22,26 +33,22 @@ const initialState: PresentationState = {
     current: null,
     game: null,
     volume: 1,
+    splashEnabled: false,
+    playNonce: 0,
 };
 
-function applyCommand(state: PresentationState, event: PresentationCommand): PresentationState {
-    if (event.command === "SHOW_ANSWER") return { ...state, showAnswer: true };
-    if (event.command === "HIDE_ANSWER") return { ...state, showAnswer: false };
-    if (event.command === "SHOW_NUMBER") return { ...state, showNumber: true };
-    if (event.command === "HIDE_NUMBER") return { ...state, showNumber: false };
-    if (event.command === "SPLASH") return { ...state, scene: "SPLASH" };
-    if (event.command === "COUNTDOWN") {
-        return {
-            ...state,
-            scene: "COUNTDOWN",
-            countdown: event.payload as unknown as PresentationState["countdown"],
-        };
+/** A saved SPLASH or COUNTDOWN scene is momentary; on (re)opening show the media instead. */
+function settledScene(scene: PresentationScene, hasCurrent: boolean): PresentationScene {
+    if (scene === "SPLASH" || scene === "COUNTDOWN") {
+        return hasCurrent ? "MEDIA" : "IDLE";
     }
-    return state;
+    return scene;
 }
 
 export function PresentationPage(): React.JSX.Element {
     const [state, setState] = useState<PresentationState>(initialState);
+    const stateRef = useRef<PresentationState>(state);
+    stateRef.current = state;
     const appInfo = useAppStore((value) => value.appInfo);
     const setAppInfo = useAppStore((value) => value.setAppInfo);
     const playSound = useSoundEffects();
@@ -49,31 +56,48 @@ export function PresentationPage(): React.JSX.Element {
         (appInfo?.defaultVideoVolume ?? Number(appInfo?.settings?.default_video_volume ?? 100)) /
             100,
     );
+
     useEffect(() => {
         let mounted: boolean = true;
         let stopGame: (() => void) | null = null;
         let stopCommand: (() => void) | null = null;
-        void Promise.all([getPresentationState(), getActiveGame()]).then(
-            ([presentation, game]: [PresentationState, GameState | null]) => {
-                if (mounted)
-                    setState({
-                        ...presentation,
-                        game,
-                        current: presentation.current ?? game?.current ?? null,
-                    });
-            },
-        );
+        void Promise.all([getPresentationState(), getActiveGame()])
+            .then(([presentation, game]: [PresentationState, GameState | null]) => {
+                if (!mounted) {
+                    return;
+                }
+                const current = presentation.current ?? game?.current ?? null;
+                setState({
+                    ...initialState,
+                    ...presentation,
+                    scene: settledScene(presentation.scene, current !== null),
+                    luckyDraw: null,
+                    game,
+                    current,
+                });
+            })
+            .catch((error: unknown): void => {
+                console.warn("Could not load the projector state:", error);
+            });
         void listenToGameStateChanged((game: GameState) => {
-            if (mounted) {
-                setState((current) => ({ ...current, game, current: game.current }));
+            if (!mounted) {
+                return;
+            }
+            const next: PresentationState = applyGameState(stateRef.current, game);
+            if (next.current?.position !== stateRef.current.current?.position) {
                 playSound("draw");
             }
-        }).then((cleanup) => {
-            if (mounted) stopGame = cleanup;
-            else cleanup();
-        });
-        void listenToPresentationCommand((command) => {
-            if (mounted) setState((current) => applyCommand(current, command));
+            setState(next);
+        })
+            .then((cleanup) => {
+                if (mounted) stopGame = cleanup;
+                else cleanup();
+            })
+            .catch((): void => undefined);
+        void listenToPresentationCommand((command: PresentationCommand) => {
+            if (mounted) {
+                setState((current) => applyPresentationCommand(current, command));
+            }
             if (command.command === "SHOW_ANSWER") playSound("reveal");
             if (command.command === "CLAIM_RESULT")
                 playSound(command.payload.status === "ACCEPTED" ? "accepted" : "rejected");
@@ -84,16 +108,43 @@ export function PresentationPage(): React.JSX.Element {
                 if (Number.isFinite(nextVolume))
                     setVolume(Math.max(0, Math.min(100, nextVolume)) / 100);
             }
-        }).then((cleanup) => {
-            if (mounted) stopCommand = cleanup;
-            else cleanup();
-        });
+        })
+            .then((cleanup) => {
+                if (mounted) stopCommand = cleanup;
+                else cleanup();
+            })
+            .catch((): void => undefined);
         return () => {
             mounted = false;
             stopGame?.();
             stopCommand?.();
         };
     }, [playSound, setAppInfo]);
+
+    // The number card is shown briefly, then the media takes over.
+    useEffect(() => {
+        if (state.scene !== "SPLASH") {
+            return undefined;
+        }
+        const timer: number = window.setTimeout(() => {
+            setState((current) =>
+                current.scene === "SPLASH" ? { ...current, scene: "MEDIA" } : current,
+            );
+        }, SPLASH_DURATION_MS);
+        return () => window.clearTimeout(timer);
+    }, [state.scene, state.current?.position]);
+
+    // A finished countdown shows 0 for a moment and then disappears.
+    useEffect(() => {
+        if (state.countdown?.state !== "FINISHED") {
+            return undefined;
+        }
+        const timer: number = window.setTimeout(() => {
+            setState((current) => ({ ...current, countdown: null }));
+        }, COUNTDOWN_FINISHED_VISIBLE_MS);
+        return () => window.clearTimeout(timer);
+    }, [state.countdown?.state]);
+
     useEffect(() => {
         let timeoutId: number | null = null;
         const resetCursor = (): void => {
@@ -111,6 +162,7 @@ export function PresentationPage(): React.JSX.Element {
             if (timeoutId !== null) window.clearTimeout(timeoutId);
         };
     }, []);
+
     return (
         <main
             className="h-screen w-screen overflow-hidden bg-black text-white"
