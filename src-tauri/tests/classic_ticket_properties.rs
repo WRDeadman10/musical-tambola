@@ -40,10 +40,10 @@ fn test_classic_ticket_properties_over_1000_seeds() {
         let mut total_numbers: usize = 0;
         let mut numbers_seen: Vec<u8> = Vec::with_capacity(15);
 
-        for row in 0..3 {
+        for (row, row_cells) in ticket.cells.iter().enumerate() {
             let mut row_count: usize = 0;
-            for col in 0..9 {
-                if let Some(num) = ticket.cells[row][col] {
+            for (col, maybe_num) in row_cells.iter().enumerate() {
+                if let Some(num) = *maybe_num {
                     total_numbers += 1;
                     row_count += 1;
                     numbers_seen.push(num);
@@ -77,8 +77,8 @@ fn test_classic_ticket_properties_over_1000_seeds() {
         // 5. Each column has between 1 and 3 numbers and must be sorted strictly ascending
         for col in 0..9 {
             let mut col_nums: Vec<u8> = Vec::new();
-            for row in 0..3 {
-                if let Some(num) = ticket.cells[row][col] {
+            for row_cells in &ticket.cells {
+                if let Some(num) = row_cells[col] {
                     col_nums.push(num);
                 }
             }

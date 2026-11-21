@@ -37,9 +37,8 @@ fn test_song_grid_properties_across_all_counts_15_to_90() {
 
             // 2. Exactly 15 cells (3x5), all > 0 and <= song_count
             let mut seen_numbers: Vec<u8> = Vec::with_capacity(15);
-            for row in 0..3 {
-                for col in 0..5 {
-                    let num: u8 = ticket.cells[row][col];
+            for (row, row_cells) in ticket.cells.iter().enumerate() {
+                for (col, &num) in row_cells.iter().enumerate() {
                     assert!(
                         num >= 1 && (num as u32) <= song_count,
                         "Number {} out of range [1, {}] in row {}, col {}",
