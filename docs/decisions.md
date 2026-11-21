@@ -394,3 +394,30 @@ Live Tambola events require disaster recovery (backing up game state, assets, an
   - High host security against accidental destructive edits during live shows.
 - **Cons**:
   - Restoring a backup requires restarting the application to swap SQLite databases.
+
+---
+
+## ADR-014: FFmpeg Video Preview Generation & Secondary Display Hardening (Wave 5 / BT-35 & BT-36)
+
+### Context
+1. In-browser canvas poster generation during large video folder scans failed or froze on Windows Webview2 due to codec decoder limitations and memory limits. Video posters are essential for visual song selection and host confidence.
+2. Long-running FFmpeg processes executing under a global database mutex lock cause UI freezes across the entire application and starve presentation polling/IPC events.
+3. Secondary presentation display windows must provide an event-driven lifecycle (`presentation-status-changed`), keep answers hidden on initial draw transitions by default, and support multi-monitor auto-launch without race conditions.
+
+### Decision
+1. **Pinned FFmpeg Engine (`services/ffmpeg.rs`)**:
+   - Check local `<appdata>/tools/ffmpeg/ffmpeg.exe` and fallback to system PATH.
+   - Provide atomic streaming downloader for pinned official Gyan Essentials build with SHA-256 validation (`F77BAED58CDFF46F4FDDC02720B5FD5E9F9F4228BCDB3E944747B090FF971BA9`), 150MB archive cap, and strict zip-slip traversal protection.
+   - Non-blocking frame extraction: `generate_media_posters` reads candidates under mutex, drops lock to spawn midpoint frame extraction (`640:-2` JPEG) across 2 concurrent workers with 30s timeout and `CREATE_NO_WINDOW`, then briefly re-acquires lock to persist poster paths.
+2. **Presentation Hardening (`commands/presentation.rs` & `commands/game.rs`)**:
+   - Default hidden song titles (`show_answer = false`) upon draw transitions and game creation.
+   - Presentation status events (`presentation-status-changed`) broadcasted on window open, close, and destruction.
+   - Automatic presentation opening on `create_game` when 2+ displays detected and `auto_open_presentation` is active.
+
+### Consequences
+- **Pros**:
+  - Deterministic and robust video preview generation without UI freezing or DB starvation.
+  - Smooth host-projector workflows adhering to multi-monitor presentation standards.
+- **Cons**:
+  - Initial FFmpeg download requires ~35MB download if local FFmpeg is absent.
+

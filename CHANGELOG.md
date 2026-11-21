@@ -7,22 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.2] - 2026-11-21
 
+### Fixed
+- **Language Switch Reactivity**:
+  - Ensured translator function re-evaluates identity on language change so sidebar, settings, and host controls instantly update (`090c1a6`).
+- **Owner Testing IPC Contracts**:
+  - Repaired Song Grid row loading, history parameter serialization, and startup-settings retrieval contracts (`a85afd5`).
+
 ### Added
+- **Host Control Panel Live Controls & Projector Scenes (Wave 5)**:
+  - Real-time presentation reducer, countdown ticker, and reactive projector scenes (`d782f00`, `9000507`, `bf51666`).
 - **FFmpeg Preview Engine & Download Manager (BT-35)**:
   - Local and PATH FFmpeg detection.
   - Pinned Gyan Essentials download streaming with SHA-256 validation, 150MB zip cap, and zip slip protection.
-  - Video preview poster generation (2 workers, midpoint frame, DB mutex non-blocking, poster progress events).
+  - Video preview poster generation (2 workers, midpoint frame, DB mutex non-blocking, poster progress events) (`e44ad84`, `75699cf`).
 - **Ticket Codes & Template Printing (BT-38)**:
   - 8-char nanoid code per ticket with prominent display.
-  - PrintableTicket 2:1 template layout with dynamic media title loading and `@media print` A4 pagination.
+  - PrintableTicket 2:1 template layout with dynamic media title loading and `@media print` A4 pagination (`5d70211`).
 - **Presentation System Hardening (BT-36)**:
   - Default hidden song titles on game start and draw transitions.
   - Presentation splash mode support.
   - Event-driven presentation lifecycle notifications (`presentation-status-changed`).
-  - Auto-open presentation window on multi-monitor setups.
+  - Auto-open presentation window on multi-monitor setups (`75699cf`).
 - **Game Screen Viewport Fit & Form Polish (BT-39)**:
   - 3-column scrollable host layout with live status and compact song strip.
-  - Media Library slot count synchronized with active game format.
+  - Media Library slot count synchronized with active game format (`b84fa03`).
 
 ## [1.0.1] - 2026-11-21
 

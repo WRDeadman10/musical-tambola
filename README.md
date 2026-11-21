@@ -1,4 +1,4 @@
-# Media Tambola (મ્યુઝિકલ તંબોલા) — v1.0.1
+# Media Tambola (મ્યુઝિકલ તંબોલા) — v1.0.2
 
 Production-grade, offline-first desktop application for running multimedia Tambola (Housie / Bingo) games with songs, video clips, and audio tracks. Built with **Tauri 2.x (Rust)** and **React + TypeScript + Tailwind CSS**.
 
@@ -15,7 +15,7 @@ Production-grade, offline-first desktop application for running multimedia Tambo
 
 ---
 
-## 2. Key Architecture & Features (v1.0.1)
+## 2. Key Architecture & Features (v1.0.2)
 
 ### Dual Game Formats: Classic 90 & Song Grid
 - **Classic 90 (`CLASSIC_90`)**: Traditional 90-number Tambola on 3×9 ticket grids (5 numbers per row, 15 numbers total).
@@ -29,6 +29,12 @@ Production-grade, offline-first desktop application for running multimedia Tambo
   - Multi-monitor detection prompts the operator with a one-click display launcher and persists display preferences.
   - Read-only ACL capability security (`capabilities/presentation.json`): zero mutating commands available to the presentation window.
   - Live scenes: idle event poster, media playback, answer banner, number badge, scrolling ticker strip, countdown overlay, and winner announcements.
+  - Hardened lifecycle: default hidden song titles on draw, splash screen support, and reactive event streaming (`presentation-status-changed`).
+
+### FFmpeg Video Preview Engine & Download Manager
+- Automatic status detection for system and local FFmpeg.
+- Pinned Gyan Essentials download streaming with SHA-256 validation, 150MB archive cap, and zip slip protection.
+- Non-blocking 2-worker poster extraction without UI or presentation state freezes.
 
 ### Pattern Engine & Preset Gallery
 - Custom 3×5 pattern masks supporting custom combinations:
@@ -46,8 +52,10 @@ Production-grade, offline-first desktop application for running multimedia Tambo
 - Supports **CSV, XLSX, XLS, and ODS** formats.
 - Two-stage import pipeline: non-mutating preview with slot range (1–90), duplicate detection, length validation, and `outOfFormatRange` warnings, followed by transactional database commit.
 
-### Ticket Printing & Custom Visual Templates
+### Ticket Printing, Codes & Custom Visual Templates
+- 8-character unique ticket code per ticket for fast identification during claims.
 - Fixed 1800×900 printable template canvas supporting custom background images.
+- Dynamic media song title resolution on print cards with `@media print` A4 pagination.
 - Strict 2:1 aspect ratio, image format, and ≤5 MB size checks with SHA-256 deduplicated storage under `%APPDATA%/templates/`.
 - Range filtering and pagination for printing tickets on thermal, inkjet, or laser printers.
 
