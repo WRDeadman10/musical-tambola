@@ -36,7 +36,7 @@ export function useHostShortcuts({
             if (event.key === "Escape") {
                 const activeElement: Element | null = document.activeElement;
                 if (activeElement instanceof HTMLElement) activeElement.blur();
-            } else if (event.code === "Space" || event.key === "ArrowRight") {
+            } else if (event.key === "ArrowRight") {
                 event.preventDefault();
                 onNext();
             } else if (event.key.toLowerCase() === "p") onPause();

@@ -27,3 +27,14 @@ export function useThemeClass(theme: string, enabled: boolean): void {
         return () => query?.removeEventListener?.("change", apply);
     }, [theme, enabled]);
 }
+
+/** `off` removes every animation (see the html[data-motion="off"] rule); `on` keeps them. */
+export function applyMotionAttribute(enabled: boolean): void {
+    document.documentElement.dataset.motion = enabled ? "on" : "off";
+}
+
+export function useMotionAttribute(enabled: boolean): void {
+    useEffect(() => {
+        applyMotionAttribute(enabled);
+    }, [enabled]);
+}

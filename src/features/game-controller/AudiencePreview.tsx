@@ -31,13 +31,16 @@ export function AudiencePreview({
     };
     return (
         <section className="flex h-full min-h-96 flex-col gap-3">
-            <div className="relative flex min-h-0 flex-1 flex-col">
+            <div
+                className="anim-reveal relative flex min-h-0 flex-1 flex-col"
+                key={state.current?.position ?? 0}
+            >
                 <span className="absolute left-3 top-3 z-10 rounded-full border border-zinc-700 bg-zinc-950/80 px-3 py-1 text-xs font-medium text-zinc-300 backdrop-blur">
                     {translate("hostPanel.audiencePreview")}
                 </span>
-                {state.current !== null && (
+                {state.current !== null && showNumber && (
                     <span
-                        className="absolute right-3 top-3 z-10 grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-yellow-100 via-gold to-amber-600 text-3xl font-extrabold text-zinc-950 shadow-[0_8px_28px_rgb(255_200_87/0.45)]"
+                        className="anim-ball absolute right-3 top-3 z-10 grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-yellow-100 via-gold to-amber-600 text-3xl font-extrabold text-zinc-950 shadow-[0_8px_28px_rgb(255_200_87/0.45)]"
                         data-testid="stage-ball"
                     >
                         {state.current.number}
@@ -65,7 +68,9 @@ export function AudiencePreview({
                             : translate("hostPanel.showAnswer")}
                     </Button>
                     <Button variant="outline" onClick={toggleNumber}>
-                        {translate("hostPanel.number")}
+                        {showNumber
+                            ? translate("hostPanel.hideNumber")
+                            : translate("hostPanel.showNumber")}
                     </Button>
                 </div>
             </div>

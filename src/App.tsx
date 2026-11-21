@@ -15,13 +15,17 @@ import { HistoryPage } from "./features/history/HistoryPage";
 import { PresentationPage } from "./features/presentation/PresentationPage";
 import { PrintTicketsPage } from "./features/ticket-printing/PrintTicketsPage";
 import { SetupGuard } from "./components/layout/SetupGuard";
-import { useThemeClass } from "./lib/useThemeClass";
+import { useMotionAttribute, useThemeClass } from "./lib/useThemeClass";
 
 function AppRoutes(): React.JSX.Element {
     const location = useLocation();
     const setAppInfo = useAppStore((state) => state.setAppInfo);
     const theme: string = useAppStore((state) => state.theme);
     useThemeClass(theme, location.pathname !== "/present");
+    const animationsEnabled: boolean = useAppStore(
+        (state) => state.appInfo?.animationsEnabled !== false,
+    );
+    useMotionAttribute(animationsEnabled);
 
     // Load the saved settings (language, theme, flags) as soon as the app starts,
     // for the host window and the projector window alike.
@@ -46,60 +50,62 @@ function AppRoutes(): React.JSX.Element {
         <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
             <Sidebar />
             <main className="flex-1 overflow-y-auto">
-                <Routes>
-                    <Route path="/" element={<DashboardPage />} />
-                    <Route
-                        path="/settings"
-                        element={
-                            <SetupGuard>
-                                <SettingsPage />
-                            </SetupGuard>
-                        }
-                    />
-                    <Route
-                        path="/media"
-                        element={
-                            <SetupGuard>
-                                <MediaLibraryPage />
-                            </SetupGuard>
-                        }
-                    />
-                    <Route
-                        path="/tickets/generate"
-                        element={
-                            <SetupGuard>
-                                <TicketGeneratorPage />
-                            </SetupGuard>
-                        }
-                    />
-                    <Route
-                        path="/tickets"
-                        element={
-                            <SetupGuard>
-                                <TicketBatchesPage />
-                            </SetupGuard>
-                        }
-                    />
-                    <Route
-                        path="/tickets/print"
-                        element={
-                            <SetupGuard>
-                                <PrintTicketsPage />
-                            </SetupGuard>
-                        }
-                    />
-                    <Route
-                        path="/schemes"
-                        element={
-                            <SetupGuard>
-                                <SchemesPage />
-                            </SetupGuard>
-                        }
-                    />
-                    <Route path="/game" element={<GameControllerPage />} />
-                    <Route path="/claims" element={<ClaimDeskPage />} />
-                    <Route path="/history" element={<HistoryPage />} />
-                </Routes>
+                <div className="anim-fade-up" key={location.pathname}>
+                    <Routes>
+                        <Route path="/" element={<DashboardPage />} />
+                        <Route
+                            path="/settings"
+                            element={
+                                <SetupGuard>
+                                    <SettingsPage />
+                                </SetupGuard>
+                            }
+                        />
+                        <Route
+                            path="/media"
+                            element={
+                                <SetupGuard>
+                                    <MediaLibraryPage />
+                                </SetupGuard>
+                            }
+                        />
+                        <Route
+                            path="/tickets/generate"
+                            element={
+                                <SetupGuard>
+                                    <TicketGeneratorPage />
+                                </SetupGuard>
+                            }
+                        />
+                        <Route
+                            path="/tickets"
+                            element={
+                                <SetupGuard>
+                                    <TicketBatchesPage />
+                                </SetupGuard>
+                            }
+                        />
+                        <Route
+                            path="/tickets/print"
+                            element={
+                                <SetupGuard>
+                                    <PrintTicketsPage />
+                                </SetupGuard>
+                            }
+                        />
+                        <Route
+                            path="/schemes"
+                            element={
+                                <SetupGuard>
+                                    <SchemesPage />
+                                </SetupGuard>
+                            }
+                        />
+                        <Route path="/game" element={<GameControllerPage />} />
+                        <Route path="/claims" element={<ClaimDeskPage />} />
+                        <Route path="/history" element={<HistoryPage />} />
+                    </Routes>
+                </div>
             </main>
         </div>
     );

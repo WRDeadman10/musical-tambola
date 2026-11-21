@@ -33,9 +33,6 @@ export function DrawControls({
             >
                 {translate("game.next")}
             </Button>
-            <span className="hidden text-xs text-zinc-500 2xl:inline">
-                {translate("game.nextHint")}
-            </span>
             <Button
                 className="h-14 px-6"
                 variant="outline"

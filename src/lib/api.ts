@@ -15,6 +15,8 @@ export interface AppInfo {
     showInternalNumbers?: boolean;
     useGujaratiNumerals?: boolean;
     eventName?: string;
+    /** Turn all motion off for slow computers (Settings > Animations). */
+    animationsEnabled?: boolean;
     tickerText?: string;
     idlePoster?: string;
     accentColor?: string;
@@ -29,12 +31,17 @@ export interface AppInfo {
  */
 export type RawAppInfo = Omit<
     AppInfo,
-    "videoAutoplay" | "defaultVideoVolume" | "showInternalNumbers" | "useGujaratiNumerals"
+    | "videoAutoplay"
+    | "defaultVideoVolume"
+    | "showInternalNumbers"
+    | "useGujaratiNumerals"
+    | "animationsEnabled"
 > & {
     videoAutoplay?: string | boolean;
     defaultVideoVolume?: string | number;
     showInternalNumbers?: string | boolean;
     useGujaratiNumerals?: string | boolean;
+    animationsEnabled?: string | boolean;
 };
 
 function toBoolean(value: unknown, fallback: boolean): boolean {
@@ -62,6 +69,7 @@ export function normalizeAppInfo(raw: RawAppInfo): AppInfo {
         defaultVideoVolume: Math.max(0, Math.min(100, toNumber(raw.defaultVideoVolume, 80))),
         showInternalNumbers: toBoolean(raw.showInternalNumbers, false),
         useGujaratiNumerals: toBoolean(raw.useGujaratiNumerals, false),
+        animationsEnabled: toBoolean(raw.animationsEnabled, true),
     };
 }
 

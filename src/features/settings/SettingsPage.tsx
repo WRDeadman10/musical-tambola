@@ -24,6 +24,7 @@ export const SettingsPage: React.FC = () => {
     const [autoplay, setAutoplay] = useState<boolean>(true);
     const [showNumbers, setShowNumbers] = useState<boolean>(false);
     const [useGujaratiNumerals, setUseGujaratiNumerals] = useState<boolean>(false);
+    const [animations, setAnimations] = useState<boolean>(true);
     const [gameFormat, setGameFormatState] = useState<GameFormat>("CLASSIC_90");
     const [songCount, setSongCount] = useState<number>(45);
     const [message, setMessage] = useState<string | null>(null);
@@ -39,6 +40,7 @@ export const SettingsPage: React.FC = () => {
                 setTheme((info.theme as Theme) || "dark");
                 setVolume(info.defaultVideoVolume ?? 50);
                 setAutoplay(info.videoAutoplay !== false);
+                setAnimations(info.animationsEnabled !== false);
                 setShowNumbers(
                     Boolean(
                         info.settings?.show_internal_numbers ?? info.settings?.showInternalNumbers,
@@ -105,6 +107,7 @@ export const SettingsPage: React.FC = () => {
                 ...appInfo,
                 settings: { ...appInfo.settings, [key]: next },
                 ...(key === "use_gujarati_numerals" ? { useGujaratiNumerals: next } : {}),
+                ...(key === "animations_enabled" ? { animationsEnabled: next } : {}),
             });
         }
         await persist(key, String(next));
@@ -278,6 +281,25 @@ export const SettingsPage: React.FC = () => {
                             }
                         />
                         {t("settings.autoplay")}
+                    </label>
+                    <label className="flex items-center gap-3">
+                        <input
+                            type="checkbox"
+                            checked={animations}
+                            onChange={(event) =>
+                                void changeToggle(
+                                    "animations_enabled",
+                                    event.target.checked,
+                                    setAnimations,
+                                )
+                            }
+                        />
+                        <span>
+                            {t("settings.animations")}
+                            <span className="block text-xs text-zinc-400">
+                                {t("settings.animationsHint")}
+                            </span>
+                        </span>
                     </label>
                     <label className="flex items-center gap-3">
                         <input

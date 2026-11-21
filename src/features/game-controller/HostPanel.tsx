@@ -207,7 +207,7 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                         ]}
                     />
                     <div className="space-y-4 xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
-                        <div className={tab === "claim" ? "space-y-4" : "hidden"}>
+                        <div className={tab === "claim" ? "anim-fade space-y-4" : "hidden"}>
                             <QuickClaim
                                 onFocusRef={claimInput}
                                 onAccepted={(result) =>
@@ -227,16 +227,16 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                                 {translate("game.claimDesk")}
                             </button>
                         </div>
-                        <div className={tab === "forecast" ? "" : "hidden"}>
+                        <div className={tab === "forecast" ? "anim-fade" : "hidden"}>
                             <ForecastCard
                                 currentPosition={model.state.game.currentDrawPosition}
                                 gameId={model.state.game.id}
                             />
                         </div>
-                        <div className={tab === "projector" ? "" : "hidden"}>
+                        <div className={tab === "projector" ? "anim-fade" : "hidden"}>
                             <HostProjectorCard state={model.state} acceptedClaim={acceptedClaim} />
                         </div>
-                        <div className={tab === "lucky" ? "" : "hidden"} id="lucky-draw">
+                        <div className={tab === "lucky" ? "anim-fade" : "hidden"} id="lucky-draw">
                             <LuckyDrawCard />
                         </div>
                     </div>

@@ -170,7 +170,7 @@ export const HistoryPage: React.FC = () => {
                 </CardContent>
             </Card>
             {state.selectedTicket !== null && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+                <div className="anim-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
                     <Card className="max-h-[80vh] w-full max-w-3xl overflow-y-auto" role="dialog">
                         <CardHeader className="flex-row items-center justify-between">
                             <CardTitle>

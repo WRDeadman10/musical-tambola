@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AudiencePreview } from "../features/game-controller/AudiencePreview";
 import { ProjectorScene } from "../features/presentation/ProjectorScene";
@@ -7,6 +7,7 @@ import {
     applyPresentationCommand,
 } from "../features/presentation/presentationReducer";
 import { useAppStore } from "../stores/appStore";
+import { useHostPresentation } from "../features/presentation/hostPresentationStore";
 import { CalledItem, GameState } from "../types/game";
 import { PresentationState, VideoControl } from "../types/presentation";
 
@@ -191,5 +192,15 @@ describe("audience preview is the only video control", () => {
 
     it("stays silent so the sound only comes from the projector", () => {
         expect(renderPreview().muted).toBe(true);
+    });
+
+    it("the gold number ball hides and shows with the number button", () => {
+        useHostPresentation.setState({ showNumber: true });
+        render(<AudiencePreview state={makeGame(2)} translate={(key: string): string => key} />);
+        expect(screen.getByTestId("stage-ball").textContent).toBe("12");
+        fireEvent.click(screen.getByRole("button", { name: "hostPanel.hideNumber" }));
+        expect(screen.queryByTestId("stage-ball")).toBeNull();
+        fireEvent.click(screen.getByRole("button", { name: "hostPanel.showNumber" }));
+        expect(screen.getByTestId("stage-ball")).toBeTruthy();
     });
 });

@@ -128,34 +128,42 @@ pub const PRESERVED_SETTING_KEYS: [&str; 5] = [
 
 /// Wipes all application tables transactionally with foreign keys disabled.
 pub fn wipe_all_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
+    // Every table and view is dropped, schema_migrations included, so run_migrations can rebuild
+    // the schema and the seeded defaults from scratch. Deleting rows only would leave the schema
+    // behind and the migrations (for example ALTER TABLE ADD COLUMN) would fail on a second run.
+    let mut objects: Vec<(String, String)> = Vec::new();
+    {
+        let mut statement = conn.prepare(
+            "SELECT type, name FROM sqlite_master
+             WHERE type IN ('view', 'table') AND name NOT LIKE 'sqlite_%'
+             ORDER BY CASE type WHEN 'view' THEN 0 ELSE 1 END;",
+        )?;
+        let rows = statement.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+        for row in rows {
+            objects.push(row?);
+        }
+    }
     conn.execute_batch("PRAGMA foreign_keys = OFF;")?;
     conn.execute_batch("BEGIN IMMEDIATE;")?;
-    let res = conn.execute_batch(
-        "DELETE FROM claims;
-         DELETE FROM lucky_draw_winners;
-         DELETE FROM lucky_draws;
-         DELETE FROM game_media_snapshots;
-         DELETE FROM game_schemes;
-         DELETE FROM games;
-         DELETE FROM ticket_cells;
-         DELETE FROM tickets;
-         DELETE FROM ticket_batches;
-         DELETE FROM ticket_templates;
-         DELETE FROM media_assets;
-         DELETE FROM prize_schemes;
-         DELETE FROM app_settings;
-         DELETE FROM schema_migrations;",
-    );
-    match res {
-        Ok(_) => {
+    let mut result: rusqlite::Result<()> = Ok(());
+    for (kind, name) in &objects {
+        let quoted: String = name.replace('"', "\"\"");
+        let sql: String = format!("DROP {} IF EXISTS \"{}\";", kind.to_uppercase(), quoted);
+        if let Err(error) = conn.execute_batch(&sql) {
+            result = Err(error);
+            break;
+        }
+    }
+    match result {
+        Ok(()) => {
             conn.execute_batch("COMMIT;")?;
             conn.execute_batch("PRAGMA foreign_keys = ON;")?;
             Ok(())
         }
-        Err(err) => {
+        Err(error) => {
             let _ = conn.execute_batch("ROLLBACK;");
             let _ = conn.execute_batch("PRAGMA foreign_keys = ON;");
-            Err(err)
+            Err(error)
         }
     }
 }

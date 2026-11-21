@@ -80,7 +80,7 @@ export function DangerZoneCard(): React.JSX.Element {
                 )}
             </CardContent>
             {mode !== null && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+                <div className="anim-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
                     <div
                         aria-label={t(
                             mode === "ALL"

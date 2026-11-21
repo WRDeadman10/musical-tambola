@@ -26,6 +26,7 @@ pub enum AppSettingKey {
     PresentationShowAnswer,
     PresentationShowNumber,
     AutoOpenPresentation,
+    AnimationsEnabled,
 }
 
 impl FromStr for AppSettingKey {
@@ -50,6 +51,7 @@ impl FromStr for AppSettingKey {
             "presentation_show_answer" => Ok(Self::PresentationShowAnswer),
             "presentation_show_number" => Ok(Self::PresentationShowNumber),
             "auto_open_presentation" => Ok(Self::AutoOpenPresentation),
+            "animations_enabled" => Ok(Self::AnimationsEnabled),
             _ => {
                 log::warn!("Rejected invalid app setting key: '{}'", s);
                 Err(AppError::new(
@@ -159,6 +161,17 @@ pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey,
                 return Err(AppError::new(
                     "SETTING_INVALID_VALUE",
                     "Sound volume must not exceed 100",
+                )
+                .with_param("key", key_str)
+                .with_param("value", value));
+            }
+        }
+        AppSettingKey::AnimationsEnabled => {
+            if value != "true" && value != "false" {
+                log::warn!("Invalid animations enabled value: '{}'", value);
+                return Err(AppError::new(
+                    "SETTING_INVALID_VALUE",
+                    "Animations enabled must be 'true' or 'false'",
                 )
                 .with_param("key", key_str)
                 .with_param("value", value));
@@ -392,6 +405,7 @@ pub struct AppInfo {
     pub sound_enabled: String,
     pub sound_volume: String,
     pub sound_projector: String,
+    pub animations_enabled: String,
 }
 
 #[tauri::command]
@@ -509,6 +523,14 @@ pub fn get_app_info(state: State<'_, DbState>) -> Result<AppInfo, AppError> {
         )
         .unwrap_or_else(|_| "true".to_string());
 
+    let animations_enabled: String = conn
+        .query_row(
+            "SELECT value FROM app_settings WHERE key = 'animations_enabled';",
+            [],
+            |r: &rusqlite::Row<'_>| r.get(0),
+        )
+        .unwrap_or_else(|_| "true".to_string());
+
     let info: AppInfo = AppInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
         data_dir: state
@@ -531,6 +553,7 @@ pub fn get_app_info(state: State<'_, DbState>) -> Result<AppInfo, AppError> {
         sound_enabled,
         sound_volume,
         sound_projector,
+        animations_enabled,
     };
 
     Ok(info)
@@ -724,6 +747,9 @@ mod tests {
         assert!(validate_app_setting("sound_projector", "true").is_ok());
         assert!(validate_app_setting("sound_projector", "false").is_ok());
         assert!(validate_app_setting("sound_projector", "no").is_err());
+        assert!(validate_app_setting("animations_enabled", "true").is_ok());
+        assert!(validate_app_setting("animations_enabled", "false").is_ok());
+        assert!(validate_app_setting("animations_enabled", "off").is_err());
 
         // Removed / forbidden settings
         assert!(validate_app_setting("sound_pitch", "50").is_err());

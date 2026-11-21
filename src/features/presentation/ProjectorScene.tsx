@@ -70,7 +70,11 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
         );
     }
     return (
-        <div className="relative flex h-full items-center justify-center" style={frameStyle}>
+        <div
+            className="anim-reveal relative flex h-full items-center justify-center"
+            key={state.current.position}
+            style={frameStyle}
+        >
             {state.current.mediaType === "VIDEO" ? (
                 <ProjectorVideo
                     item={state.current}
@@ -86,12 +90,12 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
                 />
             )}
             {state.showAnswer && (
-                <div className="absolute bottom-10 left-10 right-10 rounded-3xl border border-white/10 bg-zinc-950/70 p-7 text-center text-5xl font-extrabold tracking-tight shadow-[0_20px_60px_rgb(0_0_0/0.5)] backdrop-blur-md">
+                <div className="anim-slide-up absolute bottom-10 left-10 right-10 rounded-3xl border border-white/10 bg-zinc-950/70 p-7 text-center text-5xl font-extrabold tracking-tight shadow-[0_20px_60px_rgb(0_0_0/0.5)] backdrop-blur-md">
                     {state.current.title}
                 </div>
             )}
             {state.showNumber && (
-                <div className="absolute right-10 top-10 grid h-44 w-44 place-items-center rounded-full bg-gradient-to-br from-yellow-100 via-gold to-amber-600 text-8xl font-black text-on-gold shadow-[0_16px_60px_rgb(255_200_87/0.5)]">
+                <div className="anim-ball absolute right-10 top-10 grid h-44 w-44 place-items-center rounded-full bg-gradient-to-br from-yellow-100 via-gold to-amber-600 text-8xl font-black text-on-gold shadow-[0_16px_60px_rgb(255_200_87/0.5)]">
                     {state.current.number}
                 </div>
             )}

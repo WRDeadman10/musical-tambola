@@ -56,6 +56,8 @@
         "noWins": "This ticket does not win any prize"
     },
     "settings": {
+        "animations": "Animations",
+        "animationsHint": "Turn off if the game feels slow on this computer.",
         "danger": {
             "resetSettings": "Reset settings",
             "settingsTitle": "Reset all settings?",
@@ -484,7 +486,7 @@
         "hideAnswer": "Hide answer",
         "hideNumber": "Hide number",
         "showNumber": "Show number",
-        "nextHint": "Space or →",
+        "nextHint": "→",
         "countdown": "Countdown",
         "startTimer": "Start",
         "stopTimer": "Stop",
@@ -492,11 +494,13 @@
         "winners": "Winners per prize",
         "recentDraws": "Recent draws",
         "shortcuts": "Keyboard shortcuts",
-        "shortcutList": "Space / →  Next\nP  Pause or resume\nA  Show or hide answer\nN  Show or hide number\nC  Focus claim box\n?  Open this help",
+        "shortcutList": "→  Next\nP  Pause or resume\nA  Show or hide answer\nN  Show or hide number\nC  Focus claim box\n?  Open this help",
         "quickClaim": "Quick claim",
         "openClaimDesk": "Open detailed Claim Desk"
     },
     "hostPanel": {
+        "claimTimer": "Claim timer",
+        "claimTimerHelp": "A countdown for players to call out a claim after a number is drawn. It also shows on the projector when you start it.",
         "tabs": "Host tools",
         "tabClaim": "Claim",
         "tabForecast": "Forecast",
@@ -527,8 +531,8 @@
         "claim": "Focus claim",
         "countdown": "Countdown",
         "seconds": "seconds",
-        "nextHint": "Space or →",
-        "shortcutList": "Space / →  Next\nP  Pause or resume\nA  Show or hide answer\nN  Show or hide number\nC  Focus claim box\n?  Open this help",
+        "nextHint": "→",
+        "shortcutList": "→  Next\nP  Pause or resume\nA  Show or hide answer\nN  Show or hide number\nC  Focus claim box\n?  Open this help",
         "start": "Start",
         "stop": "Stop",
         "reset": "Reset",

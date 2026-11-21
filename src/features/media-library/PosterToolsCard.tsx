@@ -223,7 +223,7 @@ export function PosterToolsCard({ onPostersChanged }: PosterToolsCardProps): Rea
                 )}
             </CardContent>
             {confirming !== null && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+                <div className="anim-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
                     <div
                         className="w-full max-w-md space-y-4 rounded-xl border border-zinc-700 bg-zinc-900 p-6"
                         role="alertdialog"

@@ -160,14 +160,16 @@ describe("game controller", () => {
         fireEvent.click(nextButton);
         await waitFor(() => expect(gameApi.drawNext).toHaveBeenCalledTimes(1));
     });
-    it("Space ignored inside input and advances on body", async () => {
+    it("Space never draws; the right arrow draws only outside inputs", async () => {
         vi.mocked(gameApi.getActiveGame).mockResolvedValue(game);
         renderPage();
         await screen.findByText("Evening");
         const input = document.createElement("input");
         document.body.appendChild(input);
-        fireEvent.keyDown(input, { code: "Space" });
-        fireEvent.keyDown(document.body, { code: "Space" });
+        fireEvent.keyDown(input, { key: "ArrowRight" });
+        fireEvent.keyDown(document.body, { code: "Space", key: " " });
+        expect(gameApi.drawNext).not.toHaveBeenCalled();
+        fireEvent.keyDown(document.body, { key: "ArrowRight" });
         expect(gameApi.drawNext).toHaveBeenCalledTimes(1);
         input.remove();
     });
@@ -235,12 +237,12 @@ describe("game controller", () => {
         expect(screen.getByText("No songs drawn yet.")).toBeTruthy();
     });
 
-    it("next button and Space draw once", async () => {
+    it("next button and the right arrow draw once", async () => {
         vi.mocked(gameApi.getActiveGame).mockResolvedValue(game);
         vi.mocked(gameApi.drawNext).mockResolvedValue({ ...game, history: [] });
         renderPage();
         await screen.findByText("Evening");
-        fireEvent.keyDown(document.body, { code: "Space" });
+        fireEvent.keyDown(document.body, { key: "ArrowRight" });
         expect(gameApi.drawNext).toHaveBeenCalledTimes(1);
     });
 

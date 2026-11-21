@@ -51,13 +51,18 @@ export function CountdownCard({
             aria-label={translate("game.countdown")}
             className="flex items-center gap-3 rounded-2xl border border-zinc-700/70 bg-zinc-900 px-4 py-2"
         >
-            <span
-                className={`min-w-[5.5rem] text-3xl font-extrabold tabular-nums ${
-                    remaining < 5 ? "text-red-400" : "text-ink"
-                }`}
-            >
-                {remaining} {translate("hostPanel.seconds")}
-            </span>
+            <div className="leading-tight" title={translate("hostPanel.claimTimerHelp")}>
+                <div className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+                    {translate("hostPanel.claimTimer")}
+                </div>
+                <span
+                    className={`min-w-[5.5rem] text-3xl font-extrabold tabular-nums ${
+                        remaining < 5 ? "text-red-400" : "text-ink"
+                    }`}
+                >
+                    {remaining} {translate("hostPanel.seconds")}
+                </span>
+            </div>
             <select
                 aria-label={`${translate("game.countdown")} ${translate("hostPanel.seconds")}`}
                 className="!min-h-9 w-24 !py-1 text-sm 2xl:hidden"
