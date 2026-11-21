@@ -11,7 +11,7 @@ export function SongList({
 }): React.JSX.Element {
     const songs: CalledItem[] = items.slice().reverse();
     return (
-        <section aria-label={translate("hostPanel.songList")} className="min-w-0 flex-1">
+        <section aria-label={translate("hostPanel.songList")} className="min-w-[10rem] flex-1">
             {songs.length > 0 ? (
                 <div className="flex items-center gap-2 overflow-x-auto py-1">
                     {songs.map((item, index) => (

@@ -58,7 +58,24 @@ export function CountdownCard({
             >
                 {remaining} {translate("hostPanel.seconds")}
             </span>
-            <div className="flex gap-1">
+            <select
+                aria-label={`${translate("game.countdown")} ${translate("hostPanel.seconds")}`}
+                className="!min-h-9 w-24 !py-1 text-sm 2xl:hidden"
+                value={duration}
+                onChange={(event) => {
+                    const value: number = Number(event.target.value);
+                    setDuration(value);
+                    setRemaining(value);
+                    setRunning(false);
+                }}
+            >
+                {[15, 30, 45, 60].map((value: number) => (
+                    <option key={value} value={value}>
+                        {value} {translate("hostPanel.seconds")}
+                    </option>
+                ))}
+            </select>
+            <div className="hidden gap-1 2xl:flex">
                 {[15, 30, 45, 60].map((value: number) => (
                     <Button
                         className="h-9 px-3 text-xs"

@@ -165,7 +165,7 @@ export function PresentationPage(): React.JSX.Element {
 
     return (
         <main
-            className="h-screen w-screen overflow-hidden bg-black text-white"
+            className="h-screen w-screen overflow-hidden bg-[radial-gradient(120%_120%_at_50%_0%,#2a2870_0%,#0d0d22_60%,#05050c_100%)] text-white"
             data-testid="presentation-window"
         >
             <ProjectorScene state={{ ...state, volume }} />
