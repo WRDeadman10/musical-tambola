@@ -51,9 +51,14 @@ const MIGRATIONS: &[(i32, &str, &str)] = &[
         "0010_event_branding_and_sounds",
         include_str!("../../migrations/0010_event_branding_and_sounds.sql"),
     ),
+    (
+        11,
+        "0011_simple_ticket_codes",
+        include_str!("../../migrations/0011_simple_ticket_codes.sql"),
+    ),
 ];
 
-pub const LATEST_SCHEMA_VERSION: i32 = 10;
+pub const LATEST_SCHEMA_VERSION: i32 = 11;
 
 pub fn run_migrations(conn: &Connection) -> Result<i32, String> {
     conn.execute_batch(
@@ -133,7 +138,7 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let applied_version: i32 = run_migrations(&conn).expect("Migrations failed");
-        assert_eq!(applied_version, 10);
+        assert_eq!(applied_version, LATEST_SCHEMA_VERSION);
 
         let tables = [
             "app_settings",
@@ -179,10 +184,10 @@ mod tests {
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
 
         let v1: i32 = run_migrations(&conn).expect("First migration run failed");
-        assert_eq!(v1, 10);
+        assert_eq!(v1, LATEST_SCHEMA_VERSION);
 
         let v2: i32 = run_migrations(&conn).expect("Second migration run failed");
-        assert_eq!(v2, 10);
+        assert_eq!(v2, LATEST_SCHEMA_VERSION);
     }
 
     #[test]
@@ -367,7 +372,7 @@ mod tests {
     fn test_migration_0006_game_formats_columns() {
         let conn: Connection = Connection::open_in_memory().unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 10);
+        assert_eq!(applied, LATEST_SCHEMA_VERSION);
 
         // Verify columns on ticket_batches
         conn.execute(
@@ -418,7 +423,7 @@ mod tests {
         let conn: Connection = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 10);
+        assert_eq!(applied, LATEST_SCHEMA_VERSION);
 
         // Verify prize_schemes backfilled and presets seeded
         let full_house_row: (String, String, bool) = conn
@@ -458,7 +463,7 @@ mod tests {
         let conn: Connection = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 10);
+        assert_eq!(applied, LATEST_SCHEMA_VERSION);
 
         let default_template: (i64, String, bool, bool, Option<String>) = conn
             .query_row(
@@ -480,7 +485,7 @@ mod tests {
         let conn: Connection = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 10);
+        assert_eq!(applied, LATEST_SCHEMA_VERSION);
 
         conn.execute(
             "INSERT INTO lucky_draws (id, name, source, exclude_previous_winners)
@@ -509,7 +514,7 @@ mod tests {
         let conn: Connection = Connection::open_in_memory().unwrap();
         conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
         let applied: i32 = run_migrations(&conn).unwrap();
-        assert_eq!(applied, 10);
+        assert_eq!(applied, LATEST_SCHEMA_VERSION);
 
         let event_name: String = conn
             .query_row(

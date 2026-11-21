@@ -45,6 +45,7 @@ impl ClaimRepository {
         scheme_id: i64,
         raw_ticket_code: &str,
     ) -> Result<ClaimResult, String> {
+        let trimmed_code: &str = raw_ticket_code.trim();
         let normalized_code: String = normalize_ticket_code(raw_ticket_code);
 
         // Run in an IMMEDIATE transaction so checks, claim insert, and winner allocation are atomic
@@ -82,11 +83,11 @@ impl ClaimRepository {
             None => (None, 0, None),
         };
 
-        // 2. Fetch ticket if exists by normalized ticket code
+        // 2. Fetch ticket if exists by normalized ticket code or raw ticket code
         let ticket_db_info: Option<(i64, String, String, String)> = tx
             .query_row(
-                "SELECT id, ticket_code, layout_hash, format FROM tickets WHERE ticket_code = ?1;",
-                params![normalized_code],
+                "SELECT id, ticket_code, layout_hash, format FROM tickets WHERE ticket_code = ?1 OR ticket_code = ?2 LIMIT 1;",
+                params![normalized_code, trimmed_code],
                 |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
             )
             .optional()

@@ -637,7 +637,7 @@ mod tests {
         .unwrap();
         assert_eq!(winners.total, 1);
         assert_eq!(winners.items.len(), 1);
-        assert_eq!(winners.items[0].ticket_code, "T-000001");
+        assert_eq!(winners.items[0].ticket_code, "1");
         assert_eq!(winners.items[0].winner_position, 1);
         assert_eq!(winners.items[0].scheme_name, "Early Five");
         assert_eq!(winners.items[0].scheme_type, SchemeType::EarlyFive);

@@ -109,8 +109,8 @@ pub struct GameSchemeSnapshot {
     pub max_winners: u32,
 }
 
-/// Normalizes user-submitted ticket code: trims, uppercases, and pads numeric shorthand
-/// ("1" -> "T-000001", "000001" -> "T-000001", "T-1" -> "T-000001").
+/// Normalizes user-submitted ticket code: trims, uppercases, and normalizes numeric shorthand
+/// ("1" -> "1", "000001" -> "1", "T-1" -> "1", "T-000042" -> "42").
 pub fn normalize_ticket_code(raw: &str) -> String {
     let trimmed: &str = raw.trim();
     if trimmed.is_empty() {
@@ -119,7 +119,7 @@ pub fn normalize_ticket_code(raw: &str) -> String {
     let upper: String = trimmed.to_uppercase();
     let num_str: &str = upper.strip_prefix("T-").unwrap_or(&upper);
     if let Ok(num) = num_str.parse::<u32>() {
-        format!("T-{:06}", num)
+        num.to_string()
     } else {
         upper
     }
@@ -334,13 +334,13 @@ mod tests {
 
     #[test]
     fn test_normalize_ticket_code() {
-        assert_eq!(normalize_ticket_code("1"), "T-000001");
-        assert_eq!(normalize_ticket_code("000001"), "T-000001");
-        assert_eq!(normalize_ticket_code("T-1"), "T-000001");
-        assert_eq!(normalize_ticket_code("t-000001"), "T-000001");
-        assert_eq!(normalize_ticket_code("  42  "), "T-000042");
-        assert_eq!(normalize_ticket_code("  t-42  "), "T-000042");
-        assert_eq!(normalize_ticket_code("T-000042"), "T-000042");
+        assert_eq!(normalize_ticket_code("1"), "1");
+        assert_eq!(normalize_ticket_code("000001"), "1");
+        assert_eq!(normalize_ticket_code("T-1"), "1");
+        assert_eq!(normalize_ticket_code("t-000001"), "1");
+        assert_eq!(normalize_ticket_code("  42  "), "42");
+        assert_eq!(normalize_ticket_code("  t-42  "), "42");
+        assert_eq!(normalize_ticket_code("T-000042"), "42");
         assert_eq!(normalize_ticket_code("INVALID_CODE"), "INVALID_CODE");
         assert_eq!(normalize_ticket_code(""), "");
     }

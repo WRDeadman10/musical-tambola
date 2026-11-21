@@ -451,7 +451,10 @@ mod tests {
         // 1. Create backup
         let backup_result: BackupResultDto =
             create_backup_archive_in_dir(None, &app_data_dir, &conn).unwrap();
-        assert_eq!(backup_result.schema_version, 10);
+        assert_eq!(
+            backup_result.schema_version,
+            crate::db::migrations::LATEST_SCHEMA_VERSION
+        );
         assert!(PathBuf::from(&backup_result.path).exists());
         assert!(backup_result.file_count >= 3); // sqlite, manifest, poster, template
 
@@ -472,7 +475,10 @@ mod tests {
                 .unwrap();
         assert!(restore_result.staged);
         assert!(restore_result.restart_required);
-        assert_eq!(restore_result.schema_version, 10);
+        assert_eq!(
+            restore_result.schema_version,
+            crate::db::migrations::LATEST_SCHEMA_VERSION
+        );
 
         // Verify staging directory and marker file
         assert!(restore_app_data_dir.join("restore_staged.json").exists());

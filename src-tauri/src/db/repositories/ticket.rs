@@ -185,7 +185,7 @@ impl TicketRepository {
             };
 
             seq += 1;
-            let ticket_code: String = format!("T-{:06}", seq);
+            let ticket_code: String = seq.to_string();
 
             tx.execute(
                 "INSERT INTO tickets (batch_id, ticket_code, layout_hash, format, rows, cols) VALUES (?1, ?2, ?3, ?4, ?5, ?6);",
@@ -337,19 +337,30 @@ impl TicketRepository {
 
     pub fn get_ticket(conn: &Connection, code: &str) -> Result<TicketDto, String> {
         let trimmed: &str = code.trim();
-        let (id, b_id, created_at, format_str, rows_val, cols_val): (
+        let normalized: String =
+            crate::domain::claims::claim_validation::normalize_ticket_code(trimmed);
+        let (id, b_id, created_at, format_str, rows_val, cols_val, actual_code): (
             i64,
             i64,
             String,
             String,
             u8,
             u8,
+            String,
         ) = conn
             .query_row(
-                "SELECT id, batch_id, created_at, format, rows, cols FROM tickets WHERE ticket_code = ?1;",
-                params![trimmed],
+                "SELECT id, batch_id, created_at, format, rows, cols, ticket_code FROM tickets WHERE ticket_code = ?1 OR ticket_code = ?2 LIMIT 1;",
+                params![trimmed, normalized],
                 |r: &rusqlite::Row<'_>| {
-                    Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?))
+                    Ok((
+                        r.get(0)?,
+                        r.get(1)?,
+                        r.get(2)?,
+                        r.get(3)?,
+                        r.get(4)?,
+                        r.get(5)?,
+                        r.get(6)?,
+                    ))
                 },
             )
             .optional()
@@ -362,7 +373,7 @@ impl TicketRepository {
 
         Ok(TicketDto {
             id,
-            code: trimmed.to_string(),
+            code: actual_code,
             batch_id: b_id,
             format,
             rows: rows_val,
@@ -534,11 +545,11 @@ mod tests {
         let page1: TicketPage =
             TicketRepository::list_batch_tickets(&conn, batch1.id, 0, 10).unwrap();
         assert_eq!(page1.total, 10);
-        assert_eq!(page1.items[0].code, "T-000001");
+        assert_eq!(page1.items[0].code, "1");
         assert_eq!(page1.items[0].format, GameFormat::Classic90);
         assert_eq!(page1.items[0].rows, 3);
         assert_eq!(page1.items[0].cols, 9);
-        assert_eq!(page1.items[9].code, "T-000010");
+        assert_eq!(page1.items[9].code, "10");
 
         // Next batch continues sequence
         let batch2: TicketBatch = TicketRepository::generate_batch(
@@ -553,8 +564,8 @@ mod tests {
         .unwrap();
         let page2: TicketPage =
             TicketRepository::list_batch_tickets(&conn, batch2.id, 0, 5).unwrap();
-        assert_eq!(page2.items[0].code, "T-000011");
-        assert_eq!(page2.items[4].code, "T-000015");
+        assert_eq!(page2.items[0].code, "11");
+        assert_eq!(page2.items[4].code, "15");
     }
 
     #[test]

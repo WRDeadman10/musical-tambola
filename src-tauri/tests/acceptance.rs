@@ -207,7 +207,8 @@ async fn test_end_to_end_acceptance_workflow() {
         .unwrap();
 
     // 5. Construct draw sequence for simultaneous qualification & winner limit assertion
-    let t1_dto = TicketRepository::get_ticket(&conn, "T-000001").unwrap();
+    let t1_code: String = tickets_page.items[0].code.clone();
+    let t1_dto = TicketRepository::get_ticket(&conn, &t1_code).unwrap();
     let t1: Ticket = dto_to_ticket(&t1_dto.cells);
     let mut t1_numbers: Vec<u8> = Vec::new();
     for row in &t1.cells {
@@ -224,7 +225,7 @@ async fn test_end_to_end_acceptance_workflow() {
     let mut shared_num = 0u8;
     let mut tk_numbers: Vec<u8> = Vec::new();
     for ticket in &tickets_page.items {
-        if ticket.code == "T-000001" {
+        if ticket.code == t1_code {
             continue;
         }
         let tk_ticket = dto_to_ticket(&ticket.cells);
