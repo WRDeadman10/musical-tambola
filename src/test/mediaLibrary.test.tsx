@@ -11,6 +11,7 @@ const mockedMediaApi = vi.hoisted(() => ({
     listenToMediaValidationProgress: vi.fn(),
     pickMediaFile: vi.fn(),
     saveMedia: vi.fn(),
+    swapMediaSlots: vi.fn(),
     validateAllMedia: vi.fn(),
     validateMedia: vi.fn(),
 }));
@@ -60,6 +61,59 @@ describe("MediaLibraryPage", () => {
         const { container } = render(<MediaLibraryPage />);
         await waitFor(() => expect(container.querySelectorAll("tbody tr")).toHaveLength(90));
     });
+    it("a song moves down one place and the two rows trade places", async () => {
+        useAppStore.setState({ language: "en" });
+        const slots: MediaSlot[] = [
+            createSlot(1, {
+                configured: true,
+                title: "First",
+                mediaType: "VIDEO",
+                source: "a.mp4",
+            }),
+            createSlot(2, {
+                configured: true,
+                title: "Second",
+                mediaType: "VIDEO",
+                source: "b.mp4",
+            }),
+            ...Array.from({ length: 88 }, (_value, index) => createSlot(index + 3)),
+        ];
+        mockedMediaApi.listMedia.mockResolvedValue(slots);
+        mockedMediaApi.listenToMediaValidationProgress.mockResolvedValue(() => undefined);
+        mockedMediaApi.swapMediaSlots.mockResolvedValue([
+            { ...slots[1], number: 1 },
+            { ...slots[0], number: 2 },
+        ]);
+        const { container } = render(<MediaLibraryPage />);
+        await waitFor(() => expect(container.querySelectorAll("tbody tr")).toHaveLength(90));
+        const down = screen.getAllByRole("button", { name: "Move down" })[0];
+        fireEvent.click(down);
+        await waitFor(() => expect(mockedMediaApi.swapMediaSlots).toHaveBeenCalledWith(1, 2));
+        await waitFor(() => {
+            const firstRow = container.querySelectorAll("tbody tr")[0].textContent ?? "";
+            expect(firstRow).toContain("Second");
+        });
+        expect(container.querySelectorAll("tbody tr")[1].textContent).toContain("First");
+    });
+
+    it("the first song cannot move up and the last one cannot move down", async () => {
+        useAppStore.setState({ language: "en" });
+        mockedMediaApi.listMedia.mockResolvedValue(
+            Array.from({ length: 90 }, (_value, index) => createSlot(index + 1)),
+        );
+        mockedMediaApi.listenToMediaValidationProgress.mockResolvedValue(() => undefined);
+        render(<MediaLibraryPage />);
+        await waitFor(() =>
+            expect(screen.getAllByRole("button", { name: "Move up" })).toHaveLength(90),
+        );
+        const ups = screen.getAllByRole("button", { name: "Move up" }) as HTMLButtonElement[];
+        const downs = screen.getAllByRole("button", { name: "Move down" }) as HTMLButtonElement[];
+        expect(ups[0].disabled).toBe(true);
+        expect(ups[1].disabled).toBe(false);
+        expect(downs[89].disabled).toBe(true);
+        expect(downs[88].disabled).toBe(false);
+    });
+
     it("renders localized validation codes and falls back to legacy messages", () => {
         const translate = (key: string): string => {
             if (key === "errors.MEDIA_REMOTE_HTTP_STATUS") {

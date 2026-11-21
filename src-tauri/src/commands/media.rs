@@ -110,6 +110,40 @@ pub fn clear_media(
     MediaRepository::clear(&conn, number).map_err(AppError::database_error)
 }
 
+/// Moves songs up and down in the order by swapping two slots.
+#[tauri::command]
+pub fn swap_media_slots(
+    first: u8,
+    second: u8,
+    window: Window,
+    state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
+) -> Result<Vec<MediaSlot>, AppError> {
+    crate::errors::require_main_window(&window)?;
+    for number in [first, second] {
+        if !(1..=90).contains(&number) {
+            return Err(AppError::new(
+                "MEDIA_SLOT_OUT_OF_RANGE",
+                format!("Media slot number must be between 1 and 90, got {}", number),
+            )
+            .with_param("number", number.to_string()));
+        }
+    }
+    if first == second {
+        return Err(AppError::new(
+            "MEDIA_SLOT_SWAP_SAME",
+            "Pick two different slots to swap",
+        ));
+    }
+    let conn: MutexGuard<'_, Connection> = state.conn.lock().map_err(|_| AppError::lock_error())?;
+    crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
+    MediaRepository::swap_slots(&conn, first, second).map_err(AppError::database_error)?;
+    Ok(vec![
+        MediaRepository::get_by_number(&conn, first).map_err(AppError::database_error)?,
+        MediaRepository::get_by_number(&conn, second).map_err(AppError::database_error)?,
+    ])
+}
+
 #[tauri::command]
 pub async fn validate_media(
     number: u8,

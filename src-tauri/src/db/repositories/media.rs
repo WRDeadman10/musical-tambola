@@ -235,6 +235,96 @@ impl MediaRepository {
         Self::get_by_number(conn, input.number)
     }
 
+    /// Swaps what two slots hold (file, title, poster, validation). A slot that is empty simply
+    /// receives the other slot's media. Used to move songs up and down in the order.
+    pub fn swap_slots(conn: &Connection, first: u8, second: u8) -> Result<(), String> {
+        if first == second || !(1..=90).contains(&first) || !(1..=90).contains(&second) {
+            return Err(format!(
+                "Two different slots between 1 and 90 are needed, got {} and {}",
+                first, second
+            ));
+        }
+        type Row = (
+            String,
+            String,
+            String,
+            Option<String>,
+            String,
+            bool,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+        );
+        let read = |tx: &Connection, number: u8| -> Result<Option<Row>, String> {
+            tx.query_row(
+                "SELECT media_type, source_type, path_or_url, poster_path, title_gujarati,
+                        is_valid, last_validated_at, validation_error, validation_code,
+                        validation_params_json
+                 FROM media_assets WHERE number = ?1;",
+                params![number],
+                |r| {
+                    Ok((
+                        r.get(0)?,
+                        r.get(1)?,
+                        r.get(2)?,
+                        r.get(3)?,
+                        r.get(4)?,
+                        r.get(5)?,
+                        r.get(6)?,
+                        r.get(7)?,
+                        r.get(8)?,
+                        r.get(9)?,
+                    ))
+                },
+            )
+            .optional()
+            .map_err(|e: rusqlite::Error| format!("Failed to read media slot {}: {}", number, e))
+        };
+        let write = |tx: &Connection, number: u8, row: &Row| -> Result<(), String> {
+            tx.execute(
+                "UPDATE media_assets SET media_type = ?2, source_type = ?3, path_or_url = ?4,
+                        poster_path = ?5, title_gujarati = ?6, is_valid = ?7,
+                        last_validated_at = ?8, validation_error = ?9, validation_code = ?10,
+                        validation_params_json = ?11, updated_at = CURRENT_TIMESTAMP
+                 WHERE number = ?1;",
+                params![
+                    number, row.0, row.1, row.2, row.3, row.4, row.5, row.6, row.7, row.8, row.9
+                ],
+            )
+            .map(|_| ())
+            .map_err(|e: rusqlite::Error| format!("Failed to write media slot {}: {}", number, e))
+        };
+        let tx = conn
+            .unchecked_transaction()
+            .map_err(|e: rusqlite::Error| format!("Failed to start the swap: {}", e))?;
+        let first_row: Option<Row> = read(&tx, first)?;
+        let second_row: Option<Row> = read(&tx, second)?;
+        match (&first_row, &second_row) {
+            (Some(a), Some(b)) => {
+                write(&tx, first, b)?;
+                write(&tx, second, a)?;
+            }
+            (Some(_), None) => {
+                tx.execute(
+                    "UPDATE media_assets SET number = ?2, updated_at = CURRENT_TIMESTAMP WHERE number = ?1;",
+                    params![first, second],
+                )
+                .map_err(|e: rusqlite::Error| format!("Failed to move media slot: {}", e))?;
+            }
+            (None, Some(_)) => {
+                tx.execute(
+                    "UPDATE media_assets SET number = ?2, updated_at = CURRENT_TIMESTAMP WHERE number = ?1;",
+                    params![second, first],
+                )
+                .map_err(|e: rusqlite::Error| format!("Failed to move media slot: {}", e))?;
+            }
+            (None, None) => {}
+        }
+        tx.commit()
+            .map_err(|e: rusqlite::Error| format!("Failed to finish the swap: {}", e))
+    }
+
     pub fn clear(conn: &Connection, number: u8) -> Result<MediaSlot, String> {
         if !(1..=90).contains(&number) {
             return Err(format!("Number must be between 1 and 90, got {}", number));
@@ -544,5 +634,86 @@ mod tests {
         // Clear poster
         let without_poster = MediaRepository::clear_poster(&conn, 1).unwrap();
         assert!(without_poster.thumbnail_source.is_none());
+    }
+}
+
+#[cfg(test)]
+mod swap_tests {
+    use super::*;
+    use crate::db::migrations::run_migrations;
+
+    fn database() -> Connection {
+        let conn: Connection = Connection::open_in_memory().unwrap();
+        run_migrations(&conn).unwrap();
+        conn
+    }
+
+    fn add(conn: &Connection, number: u8, title: &str, poster: Option<&str>) {
+        conn.execute(
+            "INSERT INTO media_assets (number, media_type, source_type, path_or_url, poster_path, title_gujarati)
+             VALUES (?1, 'VIDEO', 'LOCAL', ?2, ?3, ?4);",
+            params![number, format!("C:/v/{}.mp4", title), poster, title],
+        )
+        .unwrap();
+    }
+
+    fn title(conn: &Connection, number: u8) -> Option<String> {
+        conn.query_row(
+            "SELECT title_gujarati FROM media_assets WHERE number = ?1;",
+            params![number],
+            |r| r.get(0),
+        )
+        .optional()
+        .unwrap()
+    }
+
+    #[test]
+    fn two_filled_slots_trade_everything_including_the_poster() {
+        let conn = database();
+        add(&conn, 1, "First", Some("p1.jpg"));
+        add(&conn, 2, "Second", None);
+        MediaRepository::swap_slots(&conn, 1, 2).unwrap();
+        assert_eq!(title(&conn, 1).as_deref(), Some("Second"));
+        assert_eq!(title(&conn, 2).as_deref(), Some("First"));
+        let poster: Option<String> = conn
+            .query_row(
+                "SELECT poster_path FROM media_assets WHERE number = 2;",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(poster.as_deref(), Some("p1.jpg"));
+        let source: String = conn
+            .query_row(
+                "SELECT path_or_url FROM media_assets WHERE number = 1;",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(source, "C:/v/Second.mp4");
+    }
+
+    #[test]
+    fn a_song_moves_into_an_empty_slot_and_leaves_its_old_one_empty() {
+        let conn = database();
+        add(&conn, 3, "Only", None);
+        MediaRepository::swap_slots(&conn, 3, 4).unwrap();
+        assert_eq!(title(&conn, 3), None);
+        assert_eq!(title(&conn, 4).as_deref(), Some("Only"));
+        MediaRepository::swap_slots(&conn, 3, 4).unwrap();
+        assert_eq!(title(&conn, 3).as_deref(), Some("Only"));
+    }
+
+    #[test]
+    fn swapping_twice_restores_the_order_and_bad_numbers_are_refused() {
+        let conn = database();
+        add(&conn, 1, "A", None);
+        add(&conn, 2, "B", None);
+        MediaRepository::swap_slots(&conn, 1, 2).unwrap();
+        MediaRepository::swap_slots(&conn, 2, 1).unwrap();
+        assert_eq!(title(&conn, 1).as_deref(), Some("A"));
+        assert!(MediaRepository::swap_slots(&conn, 1, 1).is_err());
+        assert!(MediaRepository::swap_slots(&conn, 0, 2).is_err());
+        assert!(MediaRepository::swap_slots(&conn, 1, 91).is_err());
     }
 }

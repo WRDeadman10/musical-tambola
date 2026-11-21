@@ -20,7 +20,7 @@ use commands::media::{
     apply_media_assignments, clear_media, clear_media_poster, download_ffmpeg,
     generate_media_posters, get_ffmpeg_status, get_media, list_media, pick_media_file,
     pick_media_folder, save_binary_file, save_media, save_media_poster, scan_media_folder,
-    validate_all_media, validate_media,
+    swap_media_slots, validate_all_media, validate_media,
 };
 use commands::presentation::{
     close_presentation, get_next_item, get_presentation_state, list_displays, open_presentation,
@@ -90,6 +90,7 @@ pub fn run() {
             get_media,
             save_media,
             clear_media,
+            swap_media_slots,
             validate_media,
             validate_all_media,
             pick_media_file,

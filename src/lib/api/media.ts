@@ -23,6 +23,11 @@ export async function saveMedia(input: SaveMediaInput): Promise<MediaSlot> {
     return await invoke<MediaSlot>("save_media", { input });
 }
 
+/** Swaps two slots, which is how a song moves up or down in the order. */
+export async function swapMediaSlots(first: number, second: number): Promise<MediaSlot[]> {
+    return await invoke<MediaSlot[]>("swap_media_slots", { first, second });
+}
+
 export async function clearMedia(number: number): Promise<MediaSlot> {
     return await invoke<MediaSlot>("clear_media", { number });
 }

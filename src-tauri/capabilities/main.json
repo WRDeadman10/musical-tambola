@@ -80,6 +80,7 @@
     "allow-get-game-win-forecast",
     "allow-reset-all-data",
     "allow-save-binary-file",
+    "allow-swap-media-slots",
     "allow-reset-app-settings",
     "allow-save-binary-file"
   ]

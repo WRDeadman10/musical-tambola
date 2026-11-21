@@ -1,5 +1,7 @@
 import React from "react";
 import {
+    ArrowDown,
+    ArrowUp,
     CheckCircle2,
     FileImage,
     FileVideo,
@@ -28,6 +30,10 @@ interface MediaTableProps {
     onValidate: (slot: MediaSlot) => void;
     onRemove: (slot: MediaSlot) => void;
     onPoster?: (slot: MediaSlot) => void;
+    /** Moves a song one place up (-1) or down (+1) in the order. */
+    onMove?: (slot: MediaSlot, direction: -1 | 1) => void;
+    /** Highest slot number that can be a move target (the song count in Song Grid). */
+    maxNumber?: number;
     setRowRef: (number: number, row: HTMLTableRowElement | null) => void;
 }
 
@@ -76,6 +82,8 @@ export function MediaTable({
     onValidate,
     onRemove,
     onPoster,
+    onMove,
+    maxNumber = 90,
     setRowRef,
 }: MediaTableProps): React.JSX.Element {
     return (
@@ -176,6 +184,28 @@ export function MediaTable({
                             </td>
                             <td className="px-4 py-3">
                                 <div className="flex justify-end gap-1">
+                                    {onMove !== undefined && (
+                                        <>
+                                            <Button
+                                                aria-label={translate("media.actions.moveUp")}
+                                                disabled={slot.number <= 1}
+                                                size="icon"
+                                                variant="ghost"
+                                                onClick={() => onMove(slot, -1)}
+                                            >
+                                                <ArrowUp className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                aria-label={translate("media.actions.moveDown")}
+                                                disabled={slot.number >= maxNumber}
+                                                size="icon"
+                                                variant="ghost"
+                                                onClick={() => onMove(slot, 1)}
+                                            >
+                                                <ArrowDown className="h-4 w-4" />
+                                            </Button>
+                                        </>
+                                    )}
                                     <Button
                                         variant="ghost"
                                         size="icon"

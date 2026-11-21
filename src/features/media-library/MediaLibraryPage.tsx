@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
-import { clearMedia, validateAllMedia, validateMedia } from "../../lib/api/media";
+import { clearMedia, swapMediaSlots, validateAllMedia, validateMedia } from "../../lib/api/media";
 import { MediaSlot, MediaValidationReport } from "../../types/media";
 import { useAppStore } from "../../stores/appStore";
 import { filterMediaSlots, MediaFilter } from "./mediaFilters";
@@ -151,6 +151,24 @@ export const MediaLibraryPage: React.FC = () => {
             await updateSlot(await clearMedia(removingSlot.number));
             setReport(null);
             setRemovingSlot(null);
+        } catch (caught: unknown) {
+            setToast(toErrorMessage(caught, t));
+        }
+    };
+    const handleMove = async (slot: MediaSlot, direction: -1 | 1): Promise<void> => {
+        const target: number = slot.number + direction;
+        const limit: number = gameFormat === "SONG_GRID" ? songCount : 90;
+        if (target < 1 || target > limit) return;
+        try {
+            const swapped: MediaSlot[] = await swapMediaSlots(slot.number, target);
+            setSlots((current: MediaSlot[]) =>
+                current.map(
+                    (value: MediaSlot) =>
+                        swapped.find((item: MediaSlot) => item.number === value.number) ?? value,
+                ),
+            );
+            setHighlightedNumber(target);
+            window.setTimeout(() => setHighlightedNumber(null), 1500);
         } catch (caught: unknown) {
             setToast(toErrorMessage(caught, t));
         }
@@ -363,6 +381,10 @@ export const MediaLibraryPage: React.FC = () => {
                     onValidate={(slot: MediaSlot) => void handleValidate(slot)}
                     onRemove={setRemovingSlot}
                     onPoster={setPosterSlot}
+                    onMove={(slot: MediaSlot, direction: -1 | 1) =>
+                        void handleMove(slot, direction)
+                    }
+                    maxNumber={gameFormat === "SONG_GRID" ? songCount : 90}
                     setRowRef={(number: number, row: HTMLTableRowElement | null) => {
                         if (row !== null) rowRefs.current.set(number, row);
                     }}

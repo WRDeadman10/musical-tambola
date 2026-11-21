@@ -73,6 +73,7 @@ const ALL_COMMANDS: &[&str] = &[
     "reset_all_data",
     "reset_app_settings",
     "save_binary_file",
+    "swap_media_slots",
 ];
 
 fn main() {
