@@ -561,4 +561,80 @@ mod tests {
             .unwrap();
         assert_eq!(sound_projector, "true");
     }
+
+    #[test]
+    fn test_migration_0011_migrates_real_legacy_102_database() {
+        let conn: Connection = Connection::open_in_memory().unwrap();
+        conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
+
+        // 1. Run migrations up to 10
+        conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS schema_migrations (
+                version INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );",
+        )
+        .unwrap();
+
+        for (version, name, sql) in MIGRATIONS.iter().take(10) {
+            conn.execute_batch(sql).unwrap();
+            conn.execute(
+                "INSERT INTO schema_migrations (version, name) VALUES (?1, ?2);",
+                params![version, name],
+            )
+            .unwrap();
+        }
+
+        // 2. Insert legacy 1.0.2 batch with T-000042 format
+        conn.execute(
+            "INSERT INTO ticket_batches (id, batch_code, name, ticket_count, format, rows, cols, song_count)
+             VALUES (1, 'B-LEGACY', 'Legacy Batch', 2, 'CLASSIC_90', 3, 9, 90);",
+            [],
+        )
+        .unwrap();
+
+        conn.execute(
+            "INSERT INTO tickets (id, batch_id, ticket_code, layout_hash, format, rows, cols)
+             VALUES (1, 1, 'T-000001', 'hash1', 'CLASSIC_90', 3, 9),
+                    (2, 1, 'T-000042', 'hash2', 'CLASSIC_90', 3, 9);",
+            [],
+        )
+        .unwrap();
+
+        // Insert legacy game and claim
+        conn.execute(
+            "INSERT INTO games (id, game_code, status, ticket_batch_id, draw_sequence_json, current_draw_position, format, song_count)
+             VALUES (1, 'G-LEGACY', 'ACTIVE', 1, '[1,2,3]', 3, 'CLASSIC_90', 90);",
+            [],
+        )
+        .unwrap();
+
+        conn.execute(
+            "INSERT INTO claims (id, game_id, ticket_id, ticket_code_submitted, scheme_id, current_draw_position, qualification_position, status)
+             VALUES (1, 1, 2, 'T-000042', 1, 3, 3, 'ACCEPTED');",
+            [],
+        )
+        .unwrap();
+
+        // 3. Apply migration 0011
+        let final_version: i32 = run_migrations(&conn).unwrap();
+        assert_eq!(final_version, 11);
+
+        // 4. Assert ticket codes are cleanly backfilled to simple numbers
+        let t1_code: String = conn
+            .query_row("SELECT ticket_code FROM tickets WHERE id = 1;", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(t1_code, "1");
+
+        let t2_code: String = conn
+            .query_row("SELECT ticket_code FROM tickets WHERE id = 2;", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(t2_code, "42");
+
+        let claim_code: String = conn
+            .query_row("SELECT ticket_code_submitted FROM claims WHERE id = 1;", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(claim_code, "42");
+    }
 }
