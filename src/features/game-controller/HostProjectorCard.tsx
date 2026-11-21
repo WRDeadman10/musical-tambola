@@ -6,13 +6,14 @@ import {
     listDisplays,
     openPresentation,
     presentationCommand,
-    presentationStatus,
     listenToPresentationAutoplayBlocked,
     listenToPresentationSuggested,
 } from "../../lib/api/presentation";
 import { DisplayInfo } from "../../types/presentation";
 import { GameState } from "../../types/game";
 import { useAppStore } from "../../stores/appStore";
+import { listSchemes } from "../../lib/api/schemes";
+import { useHostPresentation } from "../presentation/hostPresentationStore";
 
 interface HostProjectorCardProps {
     state: GameState;
@@ -34,8 +35,20 @@ export function HostProjectorCard({
     const t = useAppStore((value) => value.t);
     const [displays, setDisplays] = useState<DisplayInfo[]>([]);
     const [selectedDisplay, setSelectedDisplay] = useState<number>(0);
-    const [connected, setConnected] = useState<boolean>(false);
-    const [splash, setSplash] = useState<boolean>(false);
+    const connected: boolean = useHostPresentation((value) => value.projectorOpen);
+    const refreshProjectorStatus: () => Promise<void> = useHostPresentation(
+        (value) => value.refreshProjectorStatus,
+    );
+    const splash: boolean = useHostPresentation((value) => value.splashEnabled);
+    const setSplashEnabled: (value: boolean) => void = useHostPresentation(
+        (value) => value.setSplashEnabled,
+    );
+    const setShowAnswer: (value: boolean) => void = useHostPresentation(
+        (value) => value.setShowAnswer,
+    );
+    const setShowNumber: (value: boolean) => void = useHostPresentation(
+        (value) => value.setShowNumber,
+    );
     const [nextUp, setNextUp] = useState<string | null>(null);
     const [volume, setVolume] = useState<number>(
         useAppStore.getState().appInfo?.defaultVideoVolume ??
@@ -59,9 +72,7 @@ export function HostProjectorCard({
                 else if (nextDisplays[0] !== undefined) setSelectedDisplay(nextDisplays[0].index);
             })
             .catch(() => setDisplays([]));
-        void presentationStatus()
-            .then(setConnected)
-            .catch(() => setConnected(false));
+        void refreshProjectorStatus();
         let stop: (() => void) | null = null;
         void listenToPresentationAutoplayBlocked(setAutoplayBlocked)
             .then((cleanup) => {
@@ -78,9 +89,29 @@ export function HostProjectorCard({
             stop?.();
             stopSuggestion?.();
         };
-    }, []);
+    }, [refreshProjectorStatus]);
     const send = async (command: string, payload: Record<string, unknown> = {}): Promise<void> => {
         await presentationCommand(command, payload);
+    };
+    const openProjector = async (): Promise<void> => {
+        await openPresentation(selectedDisplay);
+        await refreshProjectorStatus();
+    };
+    const closeProjector = async (): Promise<void> => {
+        await closePresentation();
+        await refreshProjectorStatus();
+    };
+    // The projector needs the prize pattern to draw; the claim result only carries ids and names.
+    const announceClaim = async (): Promise<void> => {
+        if (acceptedClaim === null) return;
+        let mask: boolean[][];
+        try {
+            const schemes = await listSchemes();
+            mask = schemes.find((scheme) => scheme.id === acceptedClaim.schemeId)?.mask ?? [];
+        } catch {
+            mask = [];
+        }
+        await send("ANNOUNCE", { ...acceptedClaim, mask });
     };
     const loadNext = async (): Promise<void> => {
         const item: unknown = await getNextItem(state.game.id);
@@ -104,10 +135,10 @@ export function HostProjectorCard({
                         </option>
                     ))}
                 </select>
-                <Button type="button" onClick={() => void openPresentation(selectedDisplay)}>
+                <Button type="button" onClick={() => void openProjector()}>
                     {t("presentation.open")}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => void closePresentation()}>
+                <Button type="button" variant="outline" onClick={() => void closeProjector()}>
                     {t("presentation.close")}
                 </Button>
             </div>
@@ -119,16 +150,16 @@ export function HostProjectorCard({
                           ? t("presentation.connected")
                           : t("presentation.notConnected")}
                 </span>
-                <Button type="button" variant="outline" onClick={() => void send("SHOW_ANSWER")}>
+                <Button type="button" variant="outline" onClick={() => setShowAnswer(true)}>
                     {t("presentation.showAnswer")}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => void send("HIDE_ANSWER")}>
+                <Button type="button" variant="outline" onClick={() => setShowAnswer(false)}>
                     {t("presentation.hideAnswer")}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => void send("SHOW_NUMBER")}>
+                <Button type="button" variant="outline" onClick={() => setShowNumber(true)}>
                     {t("presentation.showNumber")}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => void send("HIDE_NUMBER")}>
+                <Button type="button" variant="outline" onClick={() => setShowNumber(false)}>
                     {t("presentation.hideNumber")}
                 </Button>
                 <label className="flex min-h-11 items-center gap-2 text-sm">
@@ -147,23 +178,18 @@ export function HostProjectorCard({
                     />
                     <span>{volume}</span>
                 </label>
-                <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                        const nextValue: boolean = !splash;
-                        setSplash(nextValue);
-                        void send("SPLASH", { enabled: nextValue });
-                    }}
-                >
+                <Button type="button" variant="outline" onClick={() => setSplashEnabled(!splash)}>
                     {splash ? t("presentation.disableSplash") : t("presentation.enableSplash")}
                 </Button>
                 <Button
                     type="button"
                     disabled={acceptedClaim === null}
-                    onClick={() => acceptedClaim && void send("ANNOUNCE", acceptedClaim)}
+                    onClick={() => void announceClaim()}
                 >
                     {t("presentation.announce")}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => void send("PLAY")}>
+                    {t("presentation.backToMedia")}
                 </Button>
             </div>
             <Button

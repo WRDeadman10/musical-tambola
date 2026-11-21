@@ -32,3 +32,13 @@
         -webkit-user-select: none;
     }
 }
+
+/* Scrolling ticker on the projector: text enters from the right and leaves on the left. */
+@keyframes marquee {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(-100%);
+    }
+}

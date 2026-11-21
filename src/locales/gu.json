@@ -10,11 +10,9 @@
         "ticketGenerator": "ટિકિટ જનરેટર",
         "ticketBatches": "ટિકિટ બેચ",
         "ticketPrinting": "ટિકિટ છાપો",
-        "schemes": "વિજેતા યોજનાઓ",
-        "tickets": "ટિકિટ્સ",
         "schemes": "વિનિંગ સ્કીમ્સ",
+        "tickets": "ટિકિટ્સ",
         "gameController": "ગેમ સ્ક્રીન",
-        "claimDesk": "ક્લેમ ડેસ્ક",
         "claimDesk": "ક્લેમ ડેસ્ક",
         "winnerHistory": "વિજેતા ઇતિહાસ",
         "settings": "સેટિંગ્સ"
@@ -336,7 +334,7 @@
         }
     },
     "errors": {
-        "UNKNOWN_ERROR": "અજ્ઞાત ભૂલ",
+        "UNKNOWN_ERROR": "અપેક્ષિત ન હોય તેવી ભૂલ આવી.",
         "NO_ACTIVE_GAME": "ચાલુ ગેમ નથી.",
         "GAME_NOT_ACCEPTING_CLAIMS": "આ ગેમ ક્લેમ સ્વીકારતી નથી.",
         "TICKET_NOT_FOUND": "ટિકિટ મળી નથી.",
@@ -374,8 +372,7 @@
         "SETTING_NOT_ALLOWLISTED": "સેટિંગ કી {{key}} માન્ય નથી.",
         "SETTING_INVALID_VALUE": "{{key}} માટે સેટિંગ મૂલ્ય અમાન્ય છે.",
         "LOCK_ERROR": "ડેટાબેઝ લોક મેળવી શકાયો નથી.",
-        "DATABASE_ERROR": "ટ્રાન્ઝેક્શન દરમિયાન ડેટાબેઝ ભૂલ આવી.",
-        "UNKNOWN_ERROR": "અપેક્ષિત ન હોય તેવી ભૂલ આવી."
+        "DATABASE_ERROR": "ટ્રાન્ઝેક્શન દરમિયાન ડેટાબેઝ ભૂલ આવી."
     },
     "presentation": {
         "idle": "મીડિયા તંબોલા",
@@ -399,7 +396,8 @@
         "autoplayBlocked": "આઇટમ {{number}} માટે આપમેળે ચલાવવું અટકાવાયું.",
         "retryPlayback": "ફરી ચલાવો",
         "secondScreenDetected": "બીજી સ્ક્રીન મળી: ત્યાં પ્રોજેક્ટર ખોલવો છે?",
-        "notNow": "હમણાં નહીં"
+        "notNow": "હમણાં નહીં",
+        "backToMedia": "મીડિયા પર પાછા જાઓ"
     },
     "game": {
         "title": "ગેમ કંટ્રોલર",
@@ -547,9 +545,8 @@
         "reason": "કારણ",
         "date": "તારીખ",
         "empty": "કોઈ ઇતિહાસ રેકોર્ડ મળ્યો નથી.",
-        "ticketDetails": "ટિકિટ દાવાનો ઇતિહાસ",
+        "ticketDetails": "ટિકિટ ઇતિહાસ",
         "loading": "ઇતિહાસ લોડ થઈ રહ્યો છે…",
-        "ticketEmpty": "આ ટિકિટ માટે કોઈ દાવા મળ્યા નથી.",
-        "ticketDetails": "ટિકિટ ઇતિહાસ"
+        "ticketEmpty": "આ ટિકિટ માટે કોઈ દાવા મળ્યા નથી."
     }
 }

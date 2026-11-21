@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "../../components/ui/button";
 import { MediaStage } from "../../components/media/MediaStage";
 import { GameState } from "../../types/game";
+import { useHostPresentation } from "../presentation/hostPresentationStore";
 
 export function AudiencePreview({
     state,
@@ -10,19 +11,22 @@ export function AudiencePreview({
     state: GameState;
     translate: (key: string) => string;
 }): React.JSX.Element {
-    const [showAnswer, setShowAnswer] = useState<boolean>(true);
-    const [showNumber, setShowNumber] = useState<boolean>(true);
+    // The same controls the keyboard shortcuts and the projector card use.
+    const showAnswer: boolean = useHostPresentation((value) => value.showAnswer);
+    const showNumber: boolean = useHostPresentation((value) => value.showNumber);
+    const toggleAnswer: () => void = useHostPresentation((value) => value.toggleAnswer);
+    const toggleNumber: () => void = useHostPresentation((value) => value.toggleNumber);
     return (
         <section className="space-y-3">
             <h2 className="text-lg font-semibold">{translate("hostPanel.audiencePreview")}</h2>
             <MediaStage item={state.current} autoplay={false} volume={1} translate={translate} />
             <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={() => setShowAnswer((value) => !value)}>
+                <Button variant="outline" onClick={toggleAnswer}>
                     {showAnswer
                         ? translate("hostPanel.hideAnswer")
                         : translate("hostPanel.showAnswer")}
                 </Button>
-                <Button variant="outline" onClick={() => setShowNumber((value) => !value)}>
+                <Button variant="outline" onClick={toggleNumber}>
                     {translate("hostPanel.number")}
                 </Button>
             </div>

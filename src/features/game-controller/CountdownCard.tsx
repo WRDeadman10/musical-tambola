@@ -1,16 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "../../components/ui/button";
+
+/** What the projector should show: counting, frozen, done (briefly shows 0) or nothing. */
+export type CountdownReport = "RUNNING" | "PAUSED" | "FINISHED" | "STOPPED";
 
 export function CountdownCard({
     translate,
     onChange,
 }: {
     translate: (key: string) => string;
-    onChange?: (seconds: number, running: boolean) => void;
+    onChange?: (seconds: number, state: CountdownReport) => void;
 }): React.JSX.Element {
     const [duration, setDuration] = useState<number>(30);
     const [remaining, setRemaining] = useState<number>(30);
     const [running, setRunning] = useState<boolean>(false);
+    const firstRun = useRef<boolean>(true);
+    // Always call the latest callback without re-sending whenever the parent re-renders.
+    const onChangeRef = useRef(onChange);
+    onChangeRef.current = onChange;
+
     useEffect(() => {
         if (!running || remaining <= 0) return undefined;
         const timer: number = window.setInterval(
@@ -19,6 +27,25 @@ export function CountdownCard({
         );
         return () => window.clearInterval(timer);
     }, [running, remaining]);
+
+    useEffect(() => {
+        if (running && remaining <= 0) setRunning(false);
+    }, [running, remaining]);
+
+    // Tell the projector on every change, so its countdown ticks along with this one.
+    useEffect(() => {
+        if (firstRun.current) {
+            firstRun.current = false;
+            return;
+        }
+        let report: CountdownReport;
+        if (remaining <= 0) report = "FINISHED";
+        else if (running) report = "RUNNING";
+        else if (remaining < duration) report = "PAUSED";
+        else report = "STOPPED";
+        onChangeRef.current?.(remaining, report);
+    }, [remaining, running, duration]);
+
     return (
         <section className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
             <div className="flex items-center justify-between">
@@ -40,7 +67,6 @@ export function CountdownCard({
                             setDuration(value);
                             setRemaining(value);
                             setRunning(false);
-                            onChange?.(value, false);
                         }}
                     >
                         {value} {translate("hostPanel.seconds")}
@@ -48,13 +74,10 @@ export function CountdownCard({
                 ))}
                 <Button
                     variant="outline"
-                    onClick={() =>
-                        setRunning((value: boolean) => {
-                            const nextRunning: boolean = !value;
-                            onChange?.(remaining, nextRunning);
-                            return nextRunning;
-                        })
-                    }
+                    onClick={() => {
+                        if (remaining <= 0) setRemaining(duration);
+                        setRunning((value: boolean) => !value);
+                    }}
                 >
                     {running ? translate("game.stopTimer") : translate("game.startTimer")}
                 </Button>

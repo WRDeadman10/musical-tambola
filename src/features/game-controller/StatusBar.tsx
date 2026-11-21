@@ -8,11 +8,13 @@ export function StatusBar({
     state,
     language,
     useGujaratiNumerals,
+    projectorConnected = false,
     translate,
 }: {
     state: GameState;
     language: Language;
     useGujaratiNumerals: boolean;
+    projectorConnected?: boolean;
     translate: (key: string) => string;
 }): React.JSX.Element {
     return (
@@ -35,7 +37,11 @@ export function StatusBar({
                         useGujaratiNumerals,
                     )}
                 </span>
-                <Badge variant="outline">{translate("hostPanel.projectorDisconnected")}</Badge>
+                <Badge variant={projectorConnected ? "success" : "outline"}>
+                    {projectorConnected
+                        ? translate("presentation.connected")
+                        : translate("hostPanel.projectorDisconnected")}
+                </Badge>
             </div>
         </header>
     );

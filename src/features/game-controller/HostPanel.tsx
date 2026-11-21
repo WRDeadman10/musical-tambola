@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { pauseGame, resumeGame } from "../../lib/api/game";
+import { pauseGame, resumeGame, setFullscreen } from "../../lib/api/game";
+import { PresentationPage } from "../presentation/PresentationPage";
+import { useHostPresentation, useProjectorStatus } from "../presentation/hostPresentationStore";
 import { useAppStore } from "../../stores/appStore";
 import { AudiencePreview } from "./AudiencePreview";
 import { CountdownCard } from "./CountdownCard";
@@ -28,8 +30,11 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
     const navigate = useNavigate();
     const claimInput = useRef<HTMLInputElement>(null);
     const [helpOpen, setHelpOpen] = useState<boolean>(false);
-    const [showAnswer, setShowAnswer] = useState<boolean>(true);
-    const [showNumber, setShowNumber] = useState<boolean>(true);
+    const showAnswer: boolean = useHostPresentation((state) => state.showAnswer);
+    const toggleAnswer: () => void = useHostPresentation((state) => state.toggleAnswer);
+    const toggleNumber: () => void = useHostPresentation((state) => state.toggleNumber);
+    const resetForNewCall: () => void = useHostPresentation((state) => state.resetForNewCall);
+    const projectorConnected: boolean = useProjectorStatus();
     const [presentMode, setPresentMode] = useState<boolean>(false);
     const [acceptedClaim, setAcceptedClaim] = useState<{
         schemeId: number;
@@ -38,12 +43,47 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
     } | null>(null);
     const playSound = useSoundEffects();
     const currentNumber: number | null = model.state?.current?.number ?? null;
+    const currentPosition: number | null = model.state?.current?.position ?? null;
+    const lastPosition = useRef<number | null>(currentPosition);
+    // While presenting on this window the projector view makes the sounds, so the host stays silent.
+    const hostSilent = useRef<boolean>(false);
+    hostSilent.current = presentMode;
     useEffect(() => {
-        if (currentNumber !== null) playSound("draw");
+        if (currentNumber !== null && !hostSilent.current) playSound("draw");
     }, [currentNumber, playSound]);
+    useEffect(() => {
+        // Each new call starts with its answer hidden (not on first load or after a recovery).
+        if (lastPosition.current !== null && currentPosition !== lastPosition.current) {
+            resetForNewCall();
+        }
+        lastPosition.current = currentPosition;
+    }, [currentPosition, resetForNewCall]);
+    const wasPresenting = useRef<boolean>(false);
+    useEffect(() => {
+        document.body.dataset.presenting = presentMode ? "true" : "false";
+        if (presentMode) {
+            wasPresenting.current = true;
+            Promise.resolve(setFullscreen(true)).catch((): void => undefined);
+        } else if (wasPresenting.current) {
+            wasPresenting.current = false;
+            Promise.resolve(setFullscreen(false)).catch((): void => undefined);
+        }
+        return () => {
+            document.body.dataset.presenting = "false";
+        };
+    }, [presentMode]);
+    useEffect(() => {
+        if (!presentMode) return undefined;
+        const onKey = (event: KeyboardEvent): void => {
+            if (event.key === "Escape") setPresentMode(false);
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [presentMode]);
     useEffect(() => {
         let stop: (() => void) | null = null;
         void listenToPresentationCommand((command) => {
+            if (hostSilent.current) return;
             if (command.command === "SHOW_ANSWER") playSound("reveal");
             if (command.command === "CLAIM_RESULT")
                 playSound(command.payload.status === "ACCEPTED" ? "accepted" : "rejected");
@@ -55,8 +95,6 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
             .catch(() => undefined);
         return () => stop?.();
     }, [playSound]);
-    const toggleAnswer = useCallback(() => setShowAnswer((value) => !value), []);
-    const toggleNumber = useCallback(() => setShowNumber((value) => !value), []);
     const togglePause = useCallback(
         () =>
             void model.changeStatus(model.state?.game.status === "PAUSED" ? resumeGame : pauseGame),
@@ -77,16 +115,29 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
     });
     if (model.state === null) return <div className="p-8">{translate("claims.noActiveGame")}</div>;
     return (
-        <div
-            className="space-y-4 p-6"
-            data-present-mode={presentMode}
-            data-show-answer={showAnswer}
-            data-show-number={showNumber}
-        >
+        <div className="space-y-4 p-6" data-show-answer={showAnswer}>
+            {presentMode && (
+                <div
+                    className="fixed inset-0 z-50 bg-black"
+                    role="dialog"
+                    aria-label={translate("hostPanel.present")}
+                    data-testid="present-overlay"
+                >
+                    <PresentationPage />
+                    <button
+                        className="absolute left-3 top-3 rounded bg-black/60 px-3 py-1 text-xs text-zinc-300 opacity-0 transition-opacity hover:opacity-100 focus:opacity-100"
+                        onClick={() => setPresentMode(false)}
+                        type="button"
+                    >
+                        {translate("hostPanel.exitPresent")}
+                    </button>
+                </div>
+            )}
             <StatusBar
                 state={model.state}
                 language={language}
                 useGujaratiNumerals={useGujaratiNumerals}
+                projectorConnected={projectorConnected}
                 translate={translate}
             />
             <div className="flex justify-end">
@@ -117,12 +168,14 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                     />
                     <CountdownCard
                         translate={translate}
-                        onChange={(seconds, running) =>
-                            void presentationCommand("COUNTDOWN", {
-                                seconds,
-                                state: running ? "RUNNING" : "STOPPED",
-                            })
-                        }
+                        onChange={(seconds: number, countdownState: string): void => {
+                            Promise.resolve(
+                                presentationCommand("COUNTDOWN", {
+                                    seconds,
+                                    state: countdownState,
+                                }),
+                            ).catch((): void => undefined);
+                        }}
                     />
                 </div>
                 <div className="space-y-4">
