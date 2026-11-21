@@ -76,6 +76,8 @@
     "allow-apply-song-title-import",
     "allow-get-ffmpeg-status",
     "allow-download-ffmpeg",
-    "allow-generate-media-posters"
+    "allow-generate-media-posters",
+    "allow-get-game-win-forecast",
+    "allow-reset-all-data"
   ]
 }

@@ -56,6 +56,21 @@ export function applyPresentationCommand(
             return { ...state, showNumber: true };
         case "HIDE_NUMBER":
             return { ...state, showNumber: false };
+        case "VIDEO": {
+            const action: string = asString(event.payload.action, "SYNC").toUpperCase();
+            if (action !== "PLAY" && action !== "PAUSE" && action !== "SEEK" && action !== "SYNC") {
+                return state;
+            }
+            return {
+                ...state,
+                videoControl: {
+                    seq: (state.videoControl?.seq ?? 0) + 1,
+                    action,
+                    time: Math.max(0, asNumber(event.payload.time, 0)),
+                    playing: event.payload.playing !== false,
+                },
+            };
+        }
         case "SPLASH":
             // Turns the number card on or off for upcoming calls; it never freezes the screen.
             return { ...state, splashEnabled: event.payload.enabled !== false };
@@ -111,5 +126,6 @@ export function applyGameState(state: PresentationState, game: GameState): Prese
         showAnswer: DEFAULT_SHOW_ANSWER,
         announcement: null,
         luckyDraw: null,
+        videoControl: undefined,
     };
 }

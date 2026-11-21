@@ -185,3 +185,16 @@ Open items: finished game screen has no "start new game" or winners summary; swi
 
 ## Finished-game screen (Claude)
 When the game status is COMPLETED the host panel shows a "Game finished" banner with "View winners" and "Start a new game" (new `startOver` in `useGameController` resets state and reloads batches); Pause and End are disabled. Test `a finished game shows a summary...` in `gameController.test.tsx`, mutation-checked. Files: HostPanel.tsx, DrawControls.tsx, useGameController.ts, en.json, gu.json, formats.test.tsx, gameController.test.tsx. Not run in the built exe yet (installer 17:15 predates this).
+
+## BT-42 progress (Claude): video sync, spacing
+- Audience Preview is the single video transport: new `VIDEO` presentation command (PLAY/PAUSE/SEEK/SYNC, relayed by the existing `presentation_command`, no backend change). Host preview is muted and follows the autoplay setting; projector video follows pause, play, seek, and corrects drift above 1 s every 2.5 s. Tests: `src/test/videoSync.test.tsx` (8), mutation-checked.
+- Host screen: stage fills the left column; Winners and Lucky draw moved to the middle column to remove empty space.
+- Found while building: AG's uncommitted migration 0011_simple_ticket_codes crashed the real exe at startup (no such table: ticket_claims). Reported in MSG-273. Not yet re-verified.
+- Still to do: Forecast tab, Settings danger zone, ticket numbers in UI (wait for BT-41 DTOs), v1.0.3 mockups.
+
+## BT-41/BT-42: forecast, reset, ticket numbers, verified in the built exe (Claude)
+- Ticket numbers: migration 0011 verified on a real 1.0.2 DB (50 tickets -> 1..50, game intact).
+- Win forecast: `get_game_win_forecast` -> `ForecastCard` (hidden until "Show forecast", per-ticket check). Real app returned Early Five 26@7, Four Corners 14@20, Top Line 19@23, Middle 34@24, Bottom 35@23, Full House 19@33.
+- Delete all data: `DangerZoneCard` (type DELETE, admin PIN if set). Real app on a scratch copy: games 1->0, batches 1->0, media 50->0, 17 default schemes reseeded, backup zip written.
+- Real-app run found: `get_game_win_forecast` and `reset_all_data` were missing from `build.rs` and `capabilities/main.json` (runtime error "not allowed by ACL"). Added, plus `src/test/commandPermissions.test.ts` which fails when any registered command lacks either entry.
+- Open: reset does not delete poster files; wipe is not one transaction; no settings-only reset yet; Classic/projector dual-monitor and print not re-run.

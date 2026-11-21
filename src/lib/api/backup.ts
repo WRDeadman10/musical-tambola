@@ -29,3 +29,13 @@ export async function createBackup(targetPath?: string): Promise<BackupResult> {
 export async function restoreBackup(path: string): Promise<RestoreResult> {
     return await invoke<RestoreResult>("restore_backup", { path });
 }
+
+export const RESET_ALL_DATA_CONFIRMATION: string = "RESET_ALL_DATA";
+
+/** Deletes games, tickets, media and settings after an automatic backup. */
+export async function resetAllData(pin?: string): Promise<BackupResult> {
+    return await invoke<BackupResult>("reset_all_data", {
+        confirm: RESET_ALL_DATA_CONFIRMATION,
+        pin: pin ?? null,
+    });
+}

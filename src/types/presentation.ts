@@ -36,6 +36,18 @@ export interface PresentationState {
     splashEnabled?: boolean;
     /** Increases each time the host asks the projector to (re)start playback. */
     playNonce?: number;
+    /** Latest transport action from the host's audience preview; the projector follows it. */
+    videoControl?: VideoControl;
+}
+
+export type VideoAction = "PLAY" | "PAUSE" | "SEEK" | "SYNC";
+
+export interface VideoControl {
+    /** Increases with every command so the same action twice still takes effect. */
+    seq: number;
+    action: VideoAction;
+    time: number;
+    playing: boolean;
 }
 
 export type PresentationCommandName =
@@ -48,6 +60,7 @@ export type PresentationCommandName =
     | "ANNOUNCE"
     | "SET_VOLUME"
     | "PLAY"
+    | "VIDEO"
     | "LUCKY_DRAW"
     | "SETTINGS_CHANGED"
     | "CLAIM_RESULT"

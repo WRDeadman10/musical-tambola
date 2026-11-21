@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-game-win-forecast"
+description = "Enables the get_game_win_forecast command without any pre-configured scope."
+commands.allow = ["get_game_win_forecast"]
+
+[[permission]]
+identifier = "deny-get-game-win-forecast"
+description = "Denies the get_game_win_forecast command without any pre-configured scope."
+commands.deny = ["get_game_win_forecast"]

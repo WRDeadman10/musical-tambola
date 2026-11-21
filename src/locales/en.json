@@ -40,7 +40,31 @@
         "noBatches": "No batches generated yet",
         "foundationReady": "Foundation setup complete. Ready for the Media Manager phase."
     },
+    "forecast": {
+        "title": "Win forecast (admin only)",
+        "warning": "Shows who wins each prize before it happens. Keep it away from the audience and the projector.",
+        "reveal": "Show forecast",
+        "hide": "Hide",
+        "noWinner": "No winner in this draw order",
+        "ticket": "Ticket",
+        "atDraw": "at draw",
+        "in": "in",
+        "passed": "passed",
+        "checkTicket": "Check a ticket number",
+        "noWins": "This ticket does not win any prize"
+    },
     "settings": {
+        "danger": {
+            "title": "Danger zone",
+            "body": "Delete every game, ticket, media entry and setting. A backup is saved automatically first.",
+            "deleteAll": "Delete all data",
+            "confirmTitle": "Delete all application data?",
+            "confirmBody": "This removes all games, ticket batches, media, schemes and settings and cannot be undone except by restoring the automatic backup.",
+            "typeToConfirm": "Type {{word}} to confirm",
+            "pin": "Admin PIN",
+            "confirmButton": "Delete everything",
+            "done": "All data deleted. Backup saved at"
+        },
         "eventBranding": "Event branding and sounds",
         "eventName": "Event name",
         "tickerText": "Projector ticker text",

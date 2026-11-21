@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { emitPresentationAutoplayBlocked } from "../../lib/api/presentation";
 import { useAppStore } from "../../stores/appStore";
-import { PresentationLuckyDraw, PresentationState } from "../../types/presentation";
+import { PresentationLuckyDraw, PresentationState, VideoControl } from "../../types/presentation";
 import { CalledItem } from "../../types/game";
 import { MiniPatternGrid } from "../../components/scheme/MiniPatternGrid";
 
@@ -72,6 +72,7 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
                     item={state.current}
                     volume={state.volume ?? 1}
                     playNonce={state.playNonce ?? 0}
+                    control={state.videoControl}
                 />
             ) : (
                 <img
@@ -104,14 +105,18 @@ export function ProjectorScene({ state }: { state: PresentationState }): React.J
  * Plays the call's video with the host's volume. If the browser refuses to start playback the
  * audience sees nothing wrong; the host is told so they can retry.
  */
+const MAX_VIDEO_DRIFT_SECONDS: number = 1;
+
 function ProjectorVideo({
     item,
     volume,
     playNonce,
+    control,
 }: {
     item: CalledItem;
     volume: number;
     playNonce: number;
+    control: VideoControl | undefined;
 }): React.JSX.Element {
     const videoRef = useRef<HTMLVideoElement>(null);
     const clamped: number = Math.max(0, Math.min(1, volume));
@@ -135,6 +140,26 @@ function ProjectorVideo({
             });
         }
     }, [item.position, item.number, playNonce]);
+
+    // The host's audience preview is the only transport: pause, play and seek follow it.
+    useEffect(() => {
+        const video: HTMLVideoElement | null = videoRef.current;
+        if (video === null || control === undefined) {
+            return;
+        }
+        const drift: number = Math.abs(video.currentTime - control.time);
+        if (control.action === "SEEK" || drift > MAX_VIDEO_DRIFT_SECONDS) {
+            video.currentTime = control.time;
+        }
+        if (control.action === "PAUSE" || (control.action === "SYNC" && !control.playing)) {
+            video.pause();
+        } else if (control.action === "PLAY" || control.action === "SYNC") {
+            const attempt: Promise<void> | undefined = video.play();
+            if (attempt !== undefined && typeof attempt.catch === "function") {
+                attempt.catch((): void => undefined);
+            }
+        }
+    }, [control]);
 
     return (
         <video

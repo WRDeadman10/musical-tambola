@@ -17,6 +17,7 @@ import { StatusBar } from "./StatusBar";
 import { useHostShortcuts } from "./useHostShortcuts";
 import { WinnersList } from "./WinnersList";
 import { LuckyDrawCard } from "./LuckyDrawCard";
+import { ForecastCard } from "./ForecastCard";
 import { useSoundEffects } from "../presentation/useSoundEffects";
 
 export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.Element {
@@ -187,7 +188,7 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                 </section>
             )}
             <div className="grid flex-1 gap-4 xl:min-h-0 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.1fr)]">
-                <div className="xl:min-h-0 xl:overflow-y-auto">
+                <div className="xl:min-h-0">
                     <AudiencePreview state={model.state} translate={translate} />
                 </div>
                 <div className="space-y-4 xl:min-h-0 xl:overflow-y-auto">
@@ -213,6 +214,10 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                             ).catch((): void => undefined);
                         }}
                     />
+                    <WinnersList schemes={model.state.schemes} translate={translate} />
+                    <div id="lucky-draw">
+                        <LuckyDrawCard />
+                    </div>
                 </div>
                 <div className="space-y-4 xl:min-h-0 xl:overflow-y-auto">
                     <QuickClaim
@@ -226,11 +231,11 @@ export function HostPanel({ model }: { model: GameControllerModel }): React.JSX.
                         }
                         onRejected={() => playSound("rejected")}
                     />
+                    <ForecastCard
+                        currentPosition={model.state.game.currentDrawPosition}
+                        gameId={model.state.game.id}
+                    />
                     <HostProjectorCard state={model.state} acceptedClaim={acceptedClaim} />
-                    <WinnersList schemes={model.state.schemes} translate={translate} />
-                    <div id="lucky-draw">
-                        <LuckyDrawCard />
-                    </div>
                     <button
                         className="text-sm text-indigo-300 underline"
                         onClick={() => navigate("/claims")}

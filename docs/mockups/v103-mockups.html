@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Media Tambola v1.0.3 mockups</title>
+<style>
+:root {
+  --s0: #0a0a12; --s1: #11111c; --s2: #181827; --s3: #20203a;
+  --line: #2a2a45; --t1: #f4f4fb; --t2: #b4b4cc; --t3: #7c7c9a;
+  --accent: #7c6cff; --accent2: #b06cff; --accent-soft: rgba(124,108,255,.16);
+  --gold: #ffc857; --ok: #3ddc97; --warn: #ffb347; --bad: #ff5d73;
+  --glow: 0 0 0 1px rgba(124,108,255,.5), 0 8px 32px rgba(124,108,255,.28);
+  --r1: 8px; --r2: 14px; --r3: 22px;
+  --shadow: 0 10px 30px rgba(0,0,0,.35);
+  font-family: "Noto Sans Gujarati", "Segoe UI", system-ui, sans-serif;
+}
+[data-theme="light"] {
+  --s0: #f3f3fa; --s1: #ffffff; --s2: #f7f7fd; --s3: #ececf8;
+  --line: #dcdcee; --t1: #14142a; --t2: #4a4a68; --t3: #8a8aa6;
+  --accent-soft: rgba(124,108,255,.12); --shadow: 0 10px 30px rgba(40,40,90,.12);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--s0); color: var(--t1); }
+.bar { display: flex; gap: 8px; padding: 10px 16px; background: var(--s1); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 9; }
+.bar button { background: var(--s2); color: var(--t1); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; font: inherit; }
+.bar button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.frame { width: 1920px; height: 1080px; margin: 16px auto; position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--s0); display: none; }
+.frame.show { display: block; }
+.app { display: grid; grid-template-columns: 76px 1fr; height: 100%; }
+.rail { background: var(--s1); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 8px; }
+.logo { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: grid; place-items: center; font-weight: 800; box-shadow: var(--glow); margin-bottom: 14px; color: #fff; }
+.ri { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; color: var(--t3); font-size: 20px; }
+.ri.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1px rgba(124,108,255,.45); }
+.rgap { flex: 1; }
+.main { display: grid; grid-template-rows: 64px 1fr 96px; min-height: 0; }
+.top { display: flex; align-items: center; gap: 14px; padding: 0 24px; border-bottom: 1px solid var(--line); background: var(--s1); }
+.top h1 { font-size: 18px; margin: 0; font-weight: 700; }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 13px; background: var(--s2); border: 1px solid var(--line); color: var(--t2); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.dot.off { background: var(--t3); box-shadow: none; }
+.sp { flex: 1; }
+.lang { display: inline-flex; background: var(--s2); border: 1px solid var(--line); border-radius: 999px; overflow: hidden; font-size: 13px; }
+.lang span { padding: 6px 12px; color: var(--t3); } .lang .on { background: var(--accent); color: #fff; }
+.cockpit { display: grid; grid-template-columns: 1.55fr 1fr; gap: 20px; padding: 20px 24px; min-height: 0; }
+.card { background: var(--s1); border: 1px solid var(--line); border-radius: var(--r2); box-shadow: var(--shadow); }
+.stage { display: grid; grid-template-rows: 1fr auto; gap: 14px; min-height: 0; }
+.video { border-radius: var(--r3); overflow: hidden; position: relative; background: radial-gradient(120% 120% at 20% 10%, #31306b 0%, #14142c 55%, #0b0b18 100%); box-shadow: var(--shadow), inset 0 0 0 1px var(--line); display: grid; place-items: center; }
+.video .art { font-size: 120px; opacity: .25; }
+.video .tag { position: absolute; top: 16px; left: 16px; }
+.ball { position: absolute; top: 16px; right: 16px; width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; font-size: 44px; font-weight: 800; color: #1b1330; background: radial-gradient(circle at 30% 25%, #fff 0%, var(--gold) 42%, #e0952a 100%); box-shadow: 0 8px 28px rgba(255,200,87,.45); }
+.transport { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 18px; display: flex; align-items: center; gap: 14px; background: linear-gradient(0deg, rgba(5,5,12,.82), rgba(5,5,12,0)); color: #fff; }
+.play { width: 46px; height: 46px; border-radius: 50%; background: var(--accent); display: grid; place-items: center; box-shadow: var(--glow); font-size: 18px; }
+.seek { flex: 1; height: 6px; border-radius: 99px; background: rgba(255,255,255,.22); position: relative; }
+.seek i { position: absolute; left: 0; top: 0; bottom: 0; width: 38%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.synced { font-size: 12px; color: #cfcfff; display: inline-flex; gap: 6px; align-items: center; }
+.under { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; padding: 14px 18px; }
+.answer small { color: var(--t3); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.answer b { display: block; font-size: 26px; letter-spacing: .02em; margin-top: 2px; }
+.btn { border: 1px solid var(--line); background: var(--s2); color: var(--t1); border-radius: 12px; padding: 10px 16px; font: inherit; font-weight: 600; font-size: 14px; display: inline-flex; gap: 8px; align-items: center; }
+.btn.pri { background: linear-gradient(135deg, var(--accent), var(--accent2)); border-color: transparent; color: #fff; box-shadow: var(--glow); }
+.btn.bad { background: rgba(255,93,115,.14); border-color: rgba(255,93,115,.5); color: #ff9aa9; }
+.btn.lg { padding: 18px 28px; font-size: 20px; border-radius: 16px; }
+.right { display: grid; grid-template-rows: auto 1fr; gap: 14px; min-height: 0; }
+.tabs { display: flex; gap: 6px; padding: 6px; background: var(--s1); border: 1px solid var(--line); border-radius: 14px; }
+.tab { flex: 1; text-align: center; padding: 9px 0; border-radius: 10px; color: var(--t3); font-weight: 600; font-size: 14px; }
+.tab.on { background: var(--accent-soft); color: var(--t1); box-shadow: inset 0 0 0 1px rgba(124,108,255,.45); }
+.panel { padding: 18px; display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: hidden; }
+.panel h3 { margin: 0; font-size: 15px; }
+.row { display: flex; gap: 10px; align-items: center; }
+.input { flex: 1; background: var(--s2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; color: var(--t2); font-size: 16px; }
+.fc { display: grid; gap: 8px; }
+.fcr { display: grid; grid-template-columns: 1.3fr 1fr 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--s2); font-size: 14px; }
+.fcr .tk { font-weight: 800; color: var(--gold); }
+.pill { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.pill.done { background: rgba(61,220,151,.16); color: var(--ok); } .pill.soon { background: rgba(255,200,87,.16); color: var(--gold); } .pill.later { background: var(--accent-soft); color: var(--accent); }
+.warnbox { font-size: 12px; color: var(--warn); background: rgba(255,179,71,.1); border: 1px solid rgba(255,179,71,.35); border-radius: 10px; padding: 8px 10px; }
+.dock { display: grid; grid-template-columns: auto auto auto 1fr auto; gap: 14px; align-items: center; padding: 0 24px; background: var(--s1); border-top: 1px solid var(--line); }
+.count { display: flex; align-items: center; gap: 12px; } .count b { font-size: 34px; font-variant-numeric: tabular-nums; }
+.rail2 { display: flex; gap: 8px; overflow: hidden; }
+.mini { min-width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: var(--s2); border: 1px solid var(--line); font-weight: 700; color: var(--t2); }
+.mini.now { background: radial-gradient(circle at 30% 25%, #fff, var(--gold) 45%, #e0952a); color: #1b1330; border: none; box-shadow: 0 6px 20px rgba(255,200,87,.4); }
+kbd { background: var(--s3); border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; font-size: 12px; color: var(--t2); }
+/* projector */
+.proj { width: 100%; height: 100%; background: radial-gradient(120% 120% at 50% 0%, #2a2870 0%, #0d0d22 60%, #05050c 100%); position: relative; display: grid; place-items: center; }
+.proj .art { font-size: 280px; opacity: .22; }
+.proj .ball { width: 190px; height: 190px; font-size: 96px; top: 48px; right: 56px; }
+.proj .lower { position: absolute; left: 56px; right: 56px; bottom: 56px; padding: 26px 36px; border-radius: 28px; background: rgba(8,8,20,.72); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.12); font-size: 56px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
+.proj .lower small { font-size: 22px; font-weight: 600; color: var(--t2); display: block; letter-spacing: .12em; text-transform: uppercase; }
+.proj .brand { position: absolute; top: 56px; left: 56px; font-size: 26px; font-weight: 800; letter-spacing: .06em; color: #cfcfff; }
+.proj .ticker { position: absolute; left: 0; right: 0; bottom: 0; height: 44px; background: var(--accent); display: flex; align-items: center; padding: 0 56px; font-size: 20px; font-weight: 600; color: #fff; }
+/* tickets */
+.page { padding: 28px 36px; display: grid; gap: 20px; align-content: start; }
+.page h2 { margin: 0; font-size: 30px; }
+.grid2 { display: grid; grid-template-columns: 420px 1fr; gap: 24px; }
+.tkt { background: var(--s1); border: 1px solid var(--line); border-radius: 18px; padding: 16px; box-shadow: var(--shadow); }
+.tkt .hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.tkt .no { font-size: 26px; font-weight: 800; color: var(--gold); }
+.cells { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.cell { aspect-ratio: 1.35; border-radius: 12px; background: var(--s2); border: 1px solid var(--line); display: grid; place-items: center; text-align: center; font-size: 13px; font-weight: 600; padding: 4px; color: var(--t2); }
+.cell.hit { background: rgba(61,220,151,.16); border-color: var(--ok); color: var(--t1); }
+.tgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <button class="on" data-f="f1">1. Host cockpit</button>
+  <button data-f="f2">2. Projector</button>
+  <button data-f="f3">3. Tickets</button>
+  <span style="flex:1"></span>
+  <button id="theme">Light / Dark</button>
+  <button id="lang">English / ગુજરાતી</button>
+</div>
+
+<!-- 1. Host cockpit -->
+<section class="frame show" id="f1">
+  <div class="app">
+    <aside class="rail">
+      <div class="logo">MT</div>
+      <div class="ri">⌂</div><div class="ri">▣</div><div class="ri">🎟</div><div class="ri">★</div>
+      <div class="ri on">🎮</div><div class="ri">✔</div><div class="ri">⟲</div>
+      <div class="rgap"></div><div class="ri">⚙</div>
+    </aside>
+    <div class="main">
+      <header class="top">
+        <h1 data-en="Diwali Night · Game 1" data-gu="દિવાળી નાઈટ · ગેમ 1">Diwali Night · Game 1</h1>
+        <span class="chip"><i class="dot"></i><span data-en="Live" data-gu="લાઇવ">Live</span></span>
+        <span class="chip"><i class="dot"></i><span data-en="Projector connected" data-gu="પ્રોજેક્ટર જોડાયેલ">Projector connected</span></span>
+        <span class="sp"></span>
+        <span class="lang"><span class="on">EN</span><span>ગુ</span></span>
+      </header>
+      <div class="cockpit">
+        <div class="stage">
+          <div class="video">
+            <span class="chip tag"><span data-en="Audience preview · controls the projector" data-gu="ઓડિયન્સ પ્રીવ્યૂ · પ્રોજેક્ટરને નિયંત્રિત કરે છે">Audience preview · controls the projector</span></span>
+            <div class="ball">36</div>
+            <div class="art">▶</div>
+            <div class="transport">
+              <div class="play">❚❚</div>
+              <span>0:21</span><div class="seek"><i></i></div><span>0:54</span>
+              <span class="synced"><i class="dot"></i><span data-en="Projector in sync" data-gu="પ્રોજેક્ટર સિંક">Projector in sync</span></span>
+            </div>
+          </div>
+          <div class="card under">
+            <div class="answer"><small data-en="Song (hidden from audience)" data-gu="ગીત (ઓડિયન્સથી છુપાયેલ)">Song (hidden from audience)</small><b>Tum Hi Ho — Arijit Singh</b></div>
+            <div class="row"><span class="btn pri" data-en="Reveal answer" data-gu="જવાબ બતાવો">Reveal answer</span><span class="btn" data-en="Hide number" data-gu="નંબર છુપાવો">Hide number</span></div>
+          </div>
+        </div>
+        <div class="right">
+          <div class="tabs"><div class="tab" data-en="Claim" data-gu="ક્લેમ">Claim</div><div class="tab on" data-en="Forecast" data-gu="ફોરકાસ્ટ">Forecast</div><div class="tab" data-en="Projector" data-gu="પ્રોજેક્ટર">Projector</div><div class="tab" data-en="Lucky draw" data-gu="લકી ડ્રો">Lucky draw</div></div>
+          <div class="card panel">
+            <h3 data-en="Win forecast · admin only" data-gu="વિજેતા ફોરકાસ્ટ · ફક્ત એડમિન">Win forecast · admin only</h3>
+            <div class="warnbox" data-en="Shows future draws. Never visible on the projector." data-gu="આગામી ડ્રો બતાવે છે. પ્રોજેક્ટર પર ક્યારેય દેખાતું નથી.">Shows future draws. Never visible on the projector.</div>
+            <div class="fc">
+              <div class="fcr"><span>Early Five</span><span>Ticket <span class="tk">12</span></span><span>Draw 9</span><span class="pill done">Won</span></div>
+              <div class="fcr"><span>Four Corners</span><span>Ticket <span class="tk">29</span></span><span>Draw 20</span><span class="pill done">Won</span></div>
+              <div class="fcr"><span>Top Line</span><span>Ticket <span class="tk">7</span></span><span>Draw 38</span><span class="pill soon">In 2</span></div>
+              <div class="fcr"><span>Middle Line</span><span>Ticket <span class="tk">41</span></span><span>Draw 44</span><span class="pill later">In 8</span></div>
+              <div class="fcr"><span>Full House</span><span>Ticket <span class="tk">3</span> <small style="color:var(--t3)">(tie: 18)</small></span><span>Draw 63</span><span class="pill later">In 27</span></div>
+            </div>
+            <div class="row"><span class="input">Ticket number…</span><span class="btn" data-en="Check ticket" data-gu="ટિકિટ ચકાસો">Check ticket</span></div>
+          </div>
+        </div>
+      </div>
+      <footer class="dock">
+        <span class="btn pri lg">Next <kbd>Space</kbd></span>
+        <span class="btn lg">Pause</span>
+        <span class="count"><b>00:21</b><span class="btn">30s</span></span>
+        <div class="rail2"><div class="mini">17</div><div class="mini">20</div><div class="mini">5</div><div class="mini">13</div><div class="mini">8</div><div class="mini">45</div><div class="mini">7</div><div class="mini">2</div><div class="mini now">36</div></div>
+        <span class="btn bad lg">End game</span>
+      </footer>
+    </div>
+  </div>
+</section>
+
+<!-- 2. Projector -->
+<section class="frame" id="f2">
+  <div class="proj">
+    <div class="brand">DIWALI NIGHT</div>
+    <div class="art">▶</div>
+    <div class="ball">36</div>
+    <div class="lower"><div><small data-en="Now playing" data-gu="હવે વાગી રહ્યું છે">Now playing</small>Tum Hi Ho</div><div style="color:var(--gold)">#36</div></div>
+    <div class="ticker">Welcome to Diwali Night — winners will be announced after every prize.</div>
+  </div>
+</section>
+
+<!-- 3. Tickets -->
+<section class="frame" id="f3">
+  <div class="app">
+    <aside class="rail"><div class="logo">MT</div><div class="ri">⌂</div><div class="ri">▣</div><div class="ri on">🎟</div><div class="ri">★</div><div class="ri">🎮</div><div class="rgap"></div><div class="ri">⚙</div></aside>
+    <div class="main" style="grid-template-rows:64px 1fr">
+      <header class="top"><h1 data-en="Tickets" data-gu="ટિકિટ">Tickets</h1><span class="sp"></span><span class="btn pri" data-en="Generate batch" data-gu="બેચ બનાવો">Generate batch</span></header>
+      <div class="page">
+        <div class="grid2">
+          <div class="card" style="padding:20px;display:grid;gap:14px;align-content:start">
+            <h3 style="margin:0" data-en="New batch" data-gu="નવો બેચ">New batch</h3>
+            <div class="input">Diwali Night</div>
+            <div class="row"><span class="input">100</span></div>
+            <div class="row"><span class="btn">50</span><span class="btn pri">100</span><span class="btn">200</span><span class="btn">500</span></div>
+            <div class="chip">Song Grid · 3×5 · 67 songs</div>
+            <span class="btn pri" style="justify-content:center">Generate 100 tickets</span>
+          </div>
+          <div class="tgrid">
+            <div class="tkt"><div class="hd"><span class="no">No. 1</span><span class="chip">Batch A</span></div><div class="cells"><div class="cell">Tum Hi Ho</div><div class="cell hit">Kal Ho</div><div class="cell">Raabta</div><div class="cell">Zinda</div><div class="cell">Ae Dil</div><div class="cell">Kesariya</div><div class="cell">Gerua</div><div class="cell hit">Chaiyya</div><div class="cell">Senorita</div><div class="cell">Dil Se</div><div class="cell">Jai Ho</div><div class="cell">Pehla</div><div class="cell hit">Tera</div><div class="cell">Ishq</div><div class="cell">Sajna</div></div></div>
+            <div class="tkt"><div class="hd"><span class="no">No. 2</span><span class="chip">Batch A</span></div><div class="cells"><div class="cell">Raabta</div><div class="cell">Zinda</div><div class="cell">Gerua</div><div class="cell">Jai Ho</div><div class="cell">Dil Se</div><div class="cell">Ishq</div><div class="cell">Sajna</div><div class="cell">Kal Ho</div><div class="cell">Tera</div><div class="cell">Pehla</div><div class="cell">Ae Dil</div><div class="cell">Kesariya</div><div class="cell">Tum Hi Ho</div><div class="cell">Senorita</div><div class="cell">Chaiyya</div></div></div>
+            <div class="tkt"><div class="hd"><span class="no">No. 3</span><span class="chip">Batch A</span></div><div class="cells"><div class="cell">Jai Ho</div><div class="cell">Ae Dil</div><div class="cell">Tera</div><div class="cell">Gerua</div><div class="cell">Zinda</div><div class="cell">Kal Ho</div><div class="cell">Ishq</div><div class="cell">Raabta</div><div class="cell">Dil Se</div><div class="cell">Pehla</div><div class="cell">Senorita</div><div class="cell">Sajna</div><div class="cell">Kesariya</div><div class="cell">Chaiyya</div><div class="cell">Tum Hi Ho</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+document.querySelectorAll(".bar [data-f]").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".bar [data-f]").forEach((x) => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".frame").forEach((f) => f.classList.toggle("show", f.id === b.dataset.f));
+}));
+document.getElementById("theme").addEventListener("click", () => {
+  const r = document.documentElement; r.dataset.theme = r.dataset.theme === "dark" ? "light" : "dark";
+});
+let gu = false;
+document.getElementById("lang").addEventListener("click", () => {
+  gu = !gu;
+  document.querySelectorAll("[data-en]").forEach((el) => { el.textContent = gu ? el.dataset.gu : el.dataset.en; });
+});
+</script>
+</body>
+</html>

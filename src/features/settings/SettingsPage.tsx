@@ -9,6 +9,7 @@ import { getGameFormat, setGameFormat } from "../../lib/api/formats";
 import { GameFormat } from "../../types/game";
 import { EventBrandingCard } from "./EventBrandingCard";
 import { DataManagementCard } from "./DataManagementCard";
+import { DangerZoneCard } from "./DangerZoneCard";
 import { presentationCommand } from "../../lib/api/presentation";
 
 type Theme = "dark" | "light" | "system";
@@ -330,6 +331,7 @@ export const SettingsPage: React.FC = () => {
                     ))}
                 </CardContent>
             </Card>
+            <DangerZoneCard />
             <Card>
                 <CardHeader>
                     <CardTitle>{t("settings.about")}</CardTitle>

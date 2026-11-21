@@ -69,6 +69,8 @@ const ALL_COMMANDS: &[&str] = &[
     "get_ffmpeg_status",
     "download_ffmpeg",
     "generate_media_posters",
+    "get_game_win_forecast",
+    "reset_all_data",
 ];
 
 fn main() {
