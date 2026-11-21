@@ -73,6 +73,9 @@
     "allow-clear-admin-pin",
     "allow-get-admin-pin-status",
     "allow-preview-song-title-import",
-    "allow-apply-song-title-import"
+    "allow-apply-song-title-import",
+    "allow-get-ffmpeg-status",
+    "allow-download-ffmpeg",
+    "allow-generate-media-posters"
   ]
 }

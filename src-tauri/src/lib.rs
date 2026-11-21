@@ -16,9 +16,10 @@ use commands::game::{
 use commands::history::{get_dashboard_stats, list_claim_history, list_winners};
 use commands::lucky_draw::{create_lucky_draw, draw_lucky_winner, list_lucky_draws};
 use commands::media::{
-    apply_media_assignments, clear_media, clear_media_poster, get_media, list_media,
-    pick_media_file, pick_media_folder, save_media, save_media_poster, scan_media_folder,
-    validate_all_media, validate_media,
+    apply_media_assignments, clear_media, clear_media_poster, download_ffmpeg,
+    generate_media_posters, get_ffmpeg_status, get_media, list_media, pick_media_file,
+    pick_media_folder, save_media, save_media_poster, scan_media_folder, validate_all_media,
+    validate_media,
 };
 use commands::presentation::{
     close_presentation, get_next_item, get_presentation_state, list_displays, open_presentation,
@@ -142,6 +143,9 @@ pub fn run() {
             get_admin_pin_status,
             preview_song_title_import,
             apply_song_title_import,
+            get_ffmpeg_status,
+            download_ffmpeg,
+            generate_media_posters,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Media Tambola application");

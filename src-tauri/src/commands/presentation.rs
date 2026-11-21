@@ -72,6 +72,7 @@ pub struct PresentationInnerState {
     pub scene: String,
     pub show_answer: bool,
     pub show_number: bool,
+    pub splash_enabled: bool,
     pub countdown: Option<PresentationCountdownDto>,
     pub announcement: Option<PresentationAnnouncementDto>,
     pub lucky_draw: Option<PresentationLuckyDrawDto>,
@@ -82,8 +83,9 @@ impl Default for PresentationInnerState {
     fn default() -> Self {
         Self {
             scene: "IDLE".to_string(),
-            show_answer: true,
-            show_number: true,
+            show_answer: false, // Default HIDDEN per Owner decision (MSG-254)
+            show_number: true,  // Default SHOWN
+            splash_enabled: false,
             countdown: None,
             announcement: None,
             lucky_draw: None,
@@ -188,6 +190,13 @@ pub fn open_presentation(
         }
         let _ = existing_window.show();
         let _ = existing_window.set_focus();
+        let _ = app.emit(
+            "presentation-status-changed",
+            serde_json::json!({
+                "open": true,
+                "displayIndex": target_idx
+            }),
+        );
         return Ok(());
     }
 
@@ -219,6 +228,27 @@ pub fn open_presentation(
         let _ = win.set_fullscreen(true);
     }
 
+    let app_clone = app.clone();
+    win.on_window_event(move |event| {
+        if let tauri::WindowEvent::Destroyed = event {
+            let _ = app_clone.emit(
+                "presentation-status-changed",
+                serde_json::json!({
+                    "open": false,
+                    "displayIndex": None::<usize>
+                }),
+            );
+        }
+    });
+
+    let _ = app.emit(
+        "presentation-status-changed",
+        serde_json::json!({
+            "open": true,
+            "displayIndex": target_idx
+        }),
+    );
+
     Ok(())
 }
 
@@ -233,6 +263,13 @@ pub fn close_presentation(window: Window, app: AppHandle) -> Result<(), AppError
             )
         })?;
     }
+    let _ = app.emit(
+        "presentation-status-changed",
+        serde_json::json!({
+            "open": false,
+            "displayIndex": None::<usize>
+        }),
+    );
     Ok(())
 }
 
@@ -258,7 +295,18 @@ pub fn presentation_command(
             "HIDE_ANSWER" => inner.show_answer = false,
             "SHOW_NUMBER" => inner.show_number = true,
             "HIDE_NUMBER" => inner.show_number = false,
-            "SPLASH" => inner.scene = "SPLASH".to_string(),
+            "SPLASH" => {
+                let enabled: bool = payload
+                    .get("enabled")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(true);
+                inner.splash_enabled = enabled;
+                if enabled {
+                    inner.scene = "SPLASH".to_string();
+                } else if inner.scene == "SPLASH" {
+                    inner.scene = "MEDIA".to_string();
+                }
+            }
             "PLAY" => inner.scene = "MEDIA".to_string(),
             "COUNTDOWN" => {
                 inner.scene = "COUNTDOWN".to_string();
@@ -424,8 +472,9 @@ mod tests {
     fn test_presentation_inner_state_defaults() {
         let state: PresentationInnerState = PresentationInnerState::default();
         assert_eq!(state.scene, "IDLE");
-        assert!(state.show_answer);
+        assert!(!state.show_answer); // Default HIDDEN per Owner decision (MSG-254)
         assert!(state.show_number);
+        assert!(!state.splash_enabled);
         assert!(state.countdown.is_none());
         assert!(state.announcement.is_none());
         assert!(state.lucky_draw.is_none());

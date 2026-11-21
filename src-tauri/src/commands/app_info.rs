@@ -23,6 +23,9 @@ pub enum AppSettingKey {
     SoundEnabled,
     SoundVolume,
     SoundProjector,
+    PresentationShowAnswer,
+    PresentationShowNumber,
+    AutoOpenPresentation,
 }
 
 impl FromStr for AppSettingKey {
@@ -44,6 +47,9 @@ impl FromStr for AppSettingKey {
             "sound_enabled" => Ok(Self::SoundEnabled),
             "sound_volume" => Ok(Self::SoundVolume),
             "sound_projector" => Ok(Self::SoundProjector),
+            "presentation_show_answer" => Ok(Self::PresentationShowAnswer),
+            "presentation_show_number" => Ok(Self::PresentationShowNumber),
+            "auto_open_presentation" => Ok(Self::AutoOpenPresentation),
             _ => {
                 log::warn!("Rejected invalid app setting key: '{}'", s);
                 Err(AppError::new(
@@ -164,6 +170,39 @@ pub fn validate_app_setting(key_str: &str, value: &str) -> Result<AppSettingKey,
                 return Err(AppError::new(
                     "SETTING_INVALID_VALUE",
                     "Sound projector must be 'true' or 'false'",
+                )
+                .with_param("key", key_str)
+                .with_param("value", value));
+            }
+        }
+        AppSettingKey::PresentationShowAnswer => {
+            if value != "true" && value != "false" {
+                log::warn!("Invalid presentation show answer value: '{}'", value);
+                return Err(AppError::new(
+                    "SETTING_INVALID_VALUE",
+                    "Presentation show answer must be 'true' or 'false'",
+                )
+                .with_param("key", key_str)
+                .with_param("value", value));
+            }
+        }
+        AppSettingKey::PresentationShowNumber => {
+            if value != "true" && value != "false" {
+                log::warn!("Invalid presentation show number value: '{}'", value);
+                return Err(AppError::new(
+                    "SETTING_INVALID_VALUE",
+                    "Presentation show number must be 'true' or 'false'",
+                )
+                .with_param("key", key_str)
+                .with_param("value", value));
+            }
+        }
+        AppSettingKey::AutoOpenPresentation => {
+            if value != "true" && value != "false" {
+                log::warn!("Invalid auto open presentation value: '{}'", value);
+                return Err(AppError::new(
+                    "SETTING_INVALID_VALUE",
+                    "Auto open presentation must be 'true' or 'false'",
                 )
                 .with_param("key", key_str)
                 .with_param("value", value));

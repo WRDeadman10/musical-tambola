@@ -66,6 +66,9 @@ const ALL_COMMANDS: &[&str] = &[
     "get_admin_pin_status",
     "preview_song_title_import",
     "apply_song_title_import",
+    "get_ffmpeg_status",
+    "download_ffmpeg",
+    "generate_media_posters",
 ];
 
 fn main() {

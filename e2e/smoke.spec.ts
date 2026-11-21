@@ -3,6 +3,7 @@ import { expect, Page, test } from "@playwright/test";
 function installTauriStub(page: Page): Promise<void> {
     return page.addInitScript(() => {
         const storedState: string | null = window.sessionStorage.getItem("smoke-game-state");
+        const storedLang: string | null = window.sessionStorage.getItem("smoke-lang");
         const state: { currentPosition: number; activeGame: boolean } = storedState
             ? (JSON.parse(storedState) as { currentPosition: number; activeGame: boolean })
             : { currentPosition: 0, activeGame: false };
@@ -17,7 +18,7 @@ function installTauriStub(page: Page): Promise<void> {
             data_dir: "C:\\AppData\\MediaTambola\\data",
             db_path: "C:\\AppData\\MediaTambola\\data\\tambola.sqlite",
             schema_version: 4,
-            language: "en",
+            language: storedLang ?? "en",
             theme: "dark",
             settings: { show_internal_numbers: false },
             defaultVideoVolume: 80,
@@ -70,7 +71,13 @@ function installTauriStub(page: Page): Promise<void> {
             if (command === "get_app_info") return appInfo;
             if (command === "get_admin_pin_status")
                 return { pinSet, isUnlocked: false, failedAttempts: 0, lockedUntil: null };
-            if (command === "set_app_setting") return undefined;
+            if (command === "set_app_setting") {
+                if (args?.key === "language" && typeof args?.value === "string") {
+                    appInfo.language = args.value;
+                    window.sessionStorage.setItem("smoke-lang", args.value);
+                }
+                return undefined;
+            }
             if (command === "get_game_format")
                 return { format: gameFormat, songCount: gameFormat === "SONG_GRID" ? 45 : 90 };
             if (command === "get_presentation_state")
@@ -108,6 +115,8 @@ function installTauriStub(page: Page): Promise<void> {
                         },
                     ],
                 };
+            if (command === "get_ffmpeg_status")
+                return { available: true, source: "APP", path: "C:\\tools\\ffmpeg.exe", version: "ffmpeg 7.1" };
             if (command === "apply_song_title_import") return 1;
             if (command === "list_lucky_draws") return [];
             if (command === "create_lucky_draw")

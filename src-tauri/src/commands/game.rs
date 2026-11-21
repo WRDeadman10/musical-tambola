@@ -10,6 +10,63 @@ use rusqlite::{params, Connection};
 use std::sync::MutexGuard;
 use tauri::{AppHandle, Emitter, Manager, State, Window};
 
+pub fn handle_multimonitor_presentation_on_game_start(
+    app: &AppHandle,
+    window: &Window,
+    state: &State<'_, DbState>,
+) {
+    if let Ok(monitors) = app.available_monitors() {
+        if monitors.len() >= 2 && app.get_webview_window("presentation").is_none() {
+            let auto_open: bool = {
+                if let Ok(conn) = state.conn.lock() {
+                    conn.query_row(
+                        "SELECT value FROM app_settings WHERE key = 'auto_open_presentation';",
+                        [],
+                        |r| r.get::<_, String>(0),
+                    )
+                    .map(|v| v != "false")
+                    .unwrap_or(true)
+                } else {
+                    true
+                }
+            };
+
+            let primary_name: Option<String> = app
+                .primary_monitor()
+                .ok()
+                .flatten()
+                .and_then(|m: tauri::Monitor| m.name().cloned());
+
+            let mut target_idx: usize = 1;
+            for (idx, mon) in monitors.iter().enumerate() {
+                let name = mon.name().cloned().unwrap_or_default();
+                let is_primary = primary_name
+                    .as_ref()
+                    .map(|p| p == &name)
+                    .unwrap_or(idx == 0);
+                if !is_primary {
+                    target_idx = idx;
+                    break;
+                }
+            }
+
+            if auto_open {
+                let _ = crate::commands::presentation::open_presentation(
+                    Some(target_idx),
+                    window.clone(),
+                    app.clone(),
+                    state.clone(),
+                );
+            } else {
+                let _ = app.emit(
+                    "presentation-suggested",
+                    serde_json::json!({ "displayIndex": target_idx }),
+                );
+            }
+        }
+    }
+}
+
 pub fn suggest_presentation_display_if_multimonitor(app: &AppHandle) {
     if let Ok(monitors) = app.available_monitors() {
         if monitors.len() >= 2 && app.get_webview_window("presentation").is_none() {
@@ -102,7 +159,7 @@ pub fn create_game(
             }
         })?;
 
-    suggest_presentation_display_if_multimonitor(&app);
+    handle_multimonitor_presentation_on_game_start(&app, &window, &state);
     let _ = app.emit("game-state-changed", &res);
     Ok(res)
 }

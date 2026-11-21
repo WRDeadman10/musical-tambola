@@ -456,3 +456,37 @@ pub fn clear_media_poster(
 
     MediaRepository::clear_poster(&conn, number).map_err(AppError::database_error)
 }
+
+#[tauri::command]
+pub fn get_ffmpeg_status(
+    app_handle: AppHandle,
+) -> Result<crate::services::ffmpeg::FfmpegStatusDto, AppError> {
+    Ok(crate::services::ffmpeg::get_ffmpeg_status_impl(&app_handle))
+}
+
+#[tauri::command]
+pub async fn download_ffmpeg(
+    window: Window,
+    app_handle: AppHandle,
+) -> Result<crate::services::ffmpeg::FfmpegStatusDto, AppError> {
+    crate::errors::require_main_window(&window)?;
+    crate::services::ffmpeg::download_ffmpeg_impl(&app_handle).await
+}
+
+#[tauri::command]
+pub fn generate_media_posters(
+    input: crate::services::ffmpeg::GeneratePostersInput,
+    window: Window,
+    app_handle: AppHandle,
+    state: State<'_, DbState>,
+    pin_state: State<'_, crate::services::admin_pin::AdminPinState>,
+) -> Result<crate::services::ffmpeg::GeneratePostersResultDto, AppError> {
+    crate::errors::require_main_window(&window)?;
+    {
+        let conn: MutexGuard<'_, Connection> =
+            state.conn.lock().map_err(|_| AppError::lock_error())?;
+        crate::services::admin_pin::require_admin_pin_if_game_in_progress(&conn, &pin_state)?;
+    }
+
+    crate::services::ffmpeg::generate_media_posters_impl(&state, &app_handle, input)
+}
