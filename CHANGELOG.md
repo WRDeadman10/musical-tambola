@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Pinned Gyan Essentials download streaming with SHA-256 validation, 150MB zip cap, and zip slip protection.
   - Video preview poster generation (2 workers, midpoint frame, DB mutex non-blocking, poster progress events) (`e44ad84`, `75699cf`).
 - **Ticket Codes & Template Printing (BT-38)**:
-  - 8-char nanoid code per ticket with prominent display.
+  - Formatted sequential ticket code (`T-{:06}`) per ticket with prominent display.
   - PrintableTicket 2:1 template layout with dynamic media title loading and `@media print` A4 pagination (`5d70211`).
 - **Presentation System Hardening (BT-36)**:
   - Default hidden song titles on game start and draw transitions.

@@ -213,7 +213,7 @@
 | **U5** | Song Title Import UI | DONE | Codex (X) | Wave 3 | TitleImportCard, CSV/XLS/XLSX file read, preview table, apply with outOfFormatRange warnings (committed `a88ef3d`) |
 | **BT-33** | v1.0.1 Release Backend Hardening & Packaging | DONE | AG (A) | Wave 4 | Extended SONG_GRID acceptance suite (125 tests total), v1.0.1 version bump, final NSIS packaging (`v1.0.1-rc1`), smoke test PASS, CHANGELOG & README updated |
 | **BT-34** | v1.0.1 Release Frontend Verification & E2E | DONE | Codex (X) | Wave 4 | SetupGuard page-level test (/game & /claims non-locking), format race request guards, Playwright v1.0.1 smoke test suite, UI layout overflow & Gujarati audit |
-| **BT-38** | Ticket Codes & Template Printing | DONE | AG (A) / Claude (C) | Wave 5 | 8-char nanoid code per ticket, generator page template layout & range filter (committed `5d70211`) |
+| **BT-38** | Ticket Codes & Template Printing | DONE | AG (A) / Claude (C) | Wave 5 | Formatted sequential ticket code (T-{:06}) per ticket, generator page template layout & range filter (committed `5d70211`) |
 | **BT-39** | Game Screen Live Status & Media Library Slots | DONE | AG (A) | Wave 5 | Active game screen live status, song list filter, media library slot count reflecting active game format (committed `b84fa03`) |
 | **BT-35** | FFmpeg Status, Download & Preview Engine | DONE | Claude (C) / AG (A) | Wave 5 | UI (committed `e44ad84`), Backend downloader with SHA-256 validation, zip slip safety, DB mutex lock dropping, 2-worker preview generator (committed `75699cf`) |
 | **BT-36** | Presentation Window Hardening | DONE | AG (A) | Wave 5 | Default hidden song title, splash_enabled flag, presentation-status-changed events, auto-open multi-monitor on game create (committed `75699cf`) |
