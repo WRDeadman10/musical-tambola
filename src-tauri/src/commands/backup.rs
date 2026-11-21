@@ -141,6 +141,41 @@ pub fn reset_all_data(
     Ok(backup_dto)
 }
 
+/// Settings rows that are not preferences: deleting them would corrupt data or weaken security.
+/// `ticket_sequence_counter` numbers new tickets (a reset would reuse numbers of existing tickets),
+/// the format keys match the stored batches and media, and the PIN hash protects the app.
+pub const PRESERVED_SETTING_KEYS: [&str; 5] = [
+    "ticket_sequence_counter",
+    "active_game_format",
+    "active_song_count",
+    "admin_pin_hash",
+    "__smoke_sentinel__",
+];
+
+/// Puts every preference back to its default by deleting it; the rest of `app_settings` stays.
+pub fn reset_preference_rows(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
+    let placeholders: String = PRESERVED_SETTING_KEYS
+        .iter()
+        .map(|_| "?")
+        .collect::<Vec<&str>>()
+        .join(",");
+    let sql: String = format!(
+        "DELETE FROM app_settings WHERE key NOT IN ({});",
+        placeholders
+    );
+    conn.execute_batch("BEGIN IMMEDIATE;")?;
+    match conn.execute(
+        &sql,
+        rusqlite::params_from_iter(PRESERVED_SETTING_KEYS.iter()),
+    ) {
+        Ok(_) => conn.execute_batch("COMMIT;"),
+        Err(error) => {
+            let _ = conn.execute_batch("ROLLBACK;");
+            Err(error)
+        }
+    }
+}
+
 #[tauri::command]
 pub fn reset_app_settings(
     confirm: String,
@@ -197,19 +232,69 @@ pub fn reset_app_settings(
 
     let backup_dto: BackupResultDto = create_backup_archive_in_dir(None, &app_data_dir, &conn)?;
 
-    // 2. Clear app_settings inside a transaction
-    conn.execute_batch(
-        "BEGIN IMMEDIATE;
-         DELETE FROM app_settings;
-         COMMIT;",
-    )
-    .map_err(|e| {
-        let _ = conn.execute_batch("ROLLBACK;");
-        AppError::database_error(e)
-    })?;
+    // 2. Reset the preference rows inside a transaction; internal state is kept.
+    reset_preference_rows(&conn).map_err(AppError::database_error)?;
 
     // Clear unlocked PIN session
     pin_state.clear_session();
 
     Ok(backup_dto)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn connection_with_settings() -> rusqlite::Connection {
+        let conn: rusqlite::Connection = rusqlite::Connection::open_in_memory().unwrap();
+        conn.execute_batch(
+            "CREATE TABLE app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+             INSERT INTO app_settings VALUES ('language', 'en');
+             INSERT INTO app_settings VALUES ('theme', 'light');
+             INSERT INTO app_settings VALUES ('ticket_sequence_counter', '50');
+             INSERT INTO app_settings VALUES ('admin_pin_hash', 'hash');
+             INSERT INTO app_settings VALUES ('active_game_format', 'SONG_GRID');
+             INSERT INTO app_settings VALUES ('active_song_count', '67');",
+        )
+        .unwrap();
+        conn
+    }
+
+    fn keys(conn: &rusqlite::Connection) -> Vec<String> {
+        let mut statement = conn
+            .prepare("SELECT key FROM app_settings ORDER BY key;")
+            .unwrap();
+        statement
+            .query_map([], |row| row.get::<_, String>(0))
+            .unwrap()
+            .map(|row| row.unwrap())
+            .collect()
+    }
+
+    #[test]
+    fn settings_reset_removes_preferences_but_keeps_counters_format_and_pin() {
+        let conn = connection_with_settings();
+        reset_preference_rows(&conn).unwrap();
+        assert_eq!(
+            keys(&conn),
+            vec![
+                "active_game_format",
+                "active_song_count",
+                "admin_pin_hash",
+                "ticket_sequence_counter"
+            ]
+        );
+    }
+
+    #[test]
+    fn settings_reset_rolls_back_when_it_fails() {
+        let conn = connection_with_settings();
+        conn.execute_batch(
+            "CREATE TRIGGER block_delete BEFORE DELETE ON app_settings
+             WHEN old.key = 'theme' BEGIN SELECT RAISE(ABORT, 'blocked'); END;",
+        )
+        .unwrap();
+        assert!(reset_preference_rows(&conn).is_err());
+        assert_eq!(keys(&conn).len(), 6);
+    }
 }
